@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -11,10 +8,9 @@ export default {
         // The purple in the design looks like violet-700/800.
       },
       fontFamily: {
-        // We will stick to default sans for now, but adding 'Kanit' via Google Fonts later would be good.
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
+        sans: ["Poppins", "sans-serif"],
+      },
     },
   },
   plugins: [],
-}
+};
