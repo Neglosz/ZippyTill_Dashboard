@@ -28,7 +28,7 @@ const StatusModal = ({
           )}
           {isSuccess && (
             <div className="h-14 w-14 bg-green-50 rounded-full flex items-center justify-center text-[#00A753] shadow-sm ring-4 ring-green-50/50">
-              <Check size={32} strokeWidth={3} />
+              <CheckCircle size={32} strokeWidth={3} />
             </div>
           )}
         </div>

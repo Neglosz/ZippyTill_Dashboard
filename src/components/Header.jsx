@@ -6,7 +6,7 @@ const Header = ({ title = "รายการค้างชำระ" }) => {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
+    <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] z-10">
       <h2 className="text-2xl font-bold text-[#1B2559]">{title}</h2>
 
       <div className="flex items-center gap-6">

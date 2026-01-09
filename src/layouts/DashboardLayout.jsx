@@ -1,7 +1,7 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import Header from '../components/Header';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
 
 const DashboardLayout = () => {
   return (
@@ -16,8 +16,11 @@ const DashboardLayout = () => {
         <Header />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-8 bg-[#F4F7FE]">
-           <Outlet />
+        <main
+          className="flex-1 overflow-y-auto pl-6 pt-4 pr-6 bg-[#F4F7FE]"
+          style={{ scrollbarGutter: "stable" }}
+        >
+          <Outlet />
         </main>
       </div>
     </div>
