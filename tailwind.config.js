@@ -8,7 +8,7 @@ export default {
         // The purple in the design looks like violet-700/800.
       },
       fontFamily: {
-        sans: ["Poppins", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
       },
     },
   },

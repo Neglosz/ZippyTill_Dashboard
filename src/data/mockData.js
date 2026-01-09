@@ -28,13 +28,4 @@ export const initialOverdueItems = [
   },
 ];
 
-export const initialPaidItems = [
-  {
-    id: 1,
-    name: "สมศรี มีตังค์",
-    phone: "081-999-8888",
-    amount: "500.00",
-    paidDate: "05/01/2026",
-    dueDate: "01/01/2026",
-  },
-];
+export const initialPaidItems = [];
