@@ -47,13 +47,13 @@ const DebtorCard = ({ item, type = "overdue", onEdit, onDelete }) => {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-5">
           {/* Left: Debt Amount (Amber theme to match summary) */}
-          <div className="bg-amber-50/50 rounded-2xl p-3 border border-amber-100/50">
+          <div className="bg-indigo-50/50 rounded-2xl p-3 border border-indigo-100/50">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 ยอดค้างชำระ
               </span>
             </div>
-            <div className="text-2xl font-extrabold text-[#1B2559] tracking-tight">
+            <div className="text-lg font-extrabold text-[#1B2559] tracking-tight">
               ฿
               {parseFloat(item.amount || 0).toLocaleString("th-TH", {
                 minimumFractionDigits: 2,
@@ -70,7 +70,7 @@ const DebtorCard = ({ item, type = "overdue", onEdit, onDelete }) => {
                 ครบกำหนด
               </span>
             </div>
-            <div className="text-base font-extrabold text-[#1B2559] mt-1">
+            <div className="text-md font-extrabold text-[#1B2559] mt-1">
               {formatDate(item.dueDate)}
             </div>
           </div>
@@ -79,7 +79,7 @@ const DebtorCard = ({ item, type = "overdue", onEdit, onDelete }) => {
         {/* Action Button */}
         <button
           onClick={() => onEdit && onEdit(item)}
-          className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all border border-indigo-100"
+          className="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all border border-gray-100"
         >
           <PenLine size={16} />
           แก้ไข

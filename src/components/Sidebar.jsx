@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 const Sidebar = () => {
+  const navigate = useNavigate();
   const menuItems = [
     {
       id: "dashboard",
@@ -48,7 +49,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-[200px] bg-white border-r border-gray-100 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20">
+    <aside className="w-[200px] bg-white border-r border-gray-100 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-[30]">
       <div>
         <div className="p-6 pb-6 flex items-center justify-center">
           <h1 className="text-2xl font-extrabold text-[#1B2559] tracking-wider">
@@ -61,6 +62,7 @@ const Sidebar = () => {
             <NavLink
               key={item.id}
               to={item.path}
+              replace
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 group ${
@@ -81,8 +83,14 @@ const Sidebar = () => {
         </nav>
       </div>
 
-      <div className="p-3">
-        <button className="flex items-center gap-3 px-4 py-3.5 w-full text-white bg-[#FF6B6B] hover:bg-[#ff5252] rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">
+      <div className="p-4">
+        <button
+          onClick={() => {
+            console.log("Signing out...");
+            navigate("/", { replace: true });
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FF7474] text-white rounded-2xl font-bold hover:bg-[#ff5f5f] transition-all shadow-lg shadow-red-100 active:scale-95"
+        >
           <LogOut size={20} />
           Sign Out
         </button>
