@@ -87,12 +87,6 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
             ))
           )}
         </div>
-
-        <div className="p-3 text-center border-t border-gray-50 bg-gray-50/50">
-          <button className="text-xs font-bold text-[#6d28d9] hover:text-[#5b21b6]">
-            View All
-          </button>
-        </div>
       </div>
     </>
   );
