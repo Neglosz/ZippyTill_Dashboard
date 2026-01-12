@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardPage from "./pages/DashboardPage";
 import OverduePage from "./pages/OverduePage";
 
 function App() {
@@ -12,13 +13,7 @@ function App() {
 
         {/* Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
-          {/* Redirect /dashboard to /dashboard/outstanding by default for now */}
-          <Route index element={<Navigate to="dashboard" replace />} />
-
-          <Route
-            path="dashboard"
-            element={<div className="p-10">Dashboard Page Placeholder</div>}
-          />
+          <Route index element={<DashboardPage />} />
           <Route path="overdue" element={<OverduePage />} />
           {/* Placeholders for other routes if needed later */}
           <Route

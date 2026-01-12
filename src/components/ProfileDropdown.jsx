@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield } from "lucide-react";
 
 const ProfileDropdown = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   if (!isOpen) return null;
 
   return (
@@ -40,7 +42,7 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all group"
             onClick={() => {
               console.log("Signing out...");
-              // Add actual sign out logic here later if needed
+              navigate("/" ,{replace: true});
               onClose();
             }}
           >

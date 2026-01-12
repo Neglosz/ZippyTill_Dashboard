@@ -1,11 +1,23 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Users, Bell, ChevronDown } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 
-const Header = ({ title = "รายการค้างชำระ" }) => {
+const Header = () => {
+  const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
+  // Dynamic title mapping
+  const getTitle = () => {
+    const path = location.pathname;
+    if (path === "/dashboard" || path === "/dashboard/") return "ภาพรวม";
+    if (path.includes("overdue")) return "รายการค้างชำระ";
+    return "เมนูหลัก";
+  };
+
+  const title = getTitle();
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] z-[40]">

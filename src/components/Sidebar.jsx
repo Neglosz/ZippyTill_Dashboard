@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 const Sidebar = () => {
+  const navigate = useNavigate();
   const menuItems = [
     {
       id: "dashboard",
@@ -61,6 +62,7 @@ const Sidebar = () => {
             <NavLink
               key={item.id}
               to={item.path}
+              replace
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 group ${
@@ -79,6 +81,19 @@ const Sidebar = () => {
             </NavLink>
           ))}
         </nav>
+      </div>
+
+      <div className="p-4">
+        <button
+          onClick={() => {
+            console.log("Signing out...");
+            navigate("/", { replace: true });
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FF7474] text-white rounded-2xl font-bold hover:bg-[#ff5f5f] transition-all shadow-lg shadow-red-100 active:scale-95"
+        >
+          <LogOut size={20} />
+          Sign Out
+        </button>
       </div>
     </aside>
   );
