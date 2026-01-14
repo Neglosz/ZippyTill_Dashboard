@@ -4,7 +4,6 @@ import {
   ShoppingCart,
   Package,
   Users,
-  ArrowUpRight,
   FileText,
   Download,
   MoreVertical,
@@ -16,7 +15,7 @@ const SALES_METRICS = [
   {
     label: "ยอดขายทั้งหมด",
     value: "฿1,000",
-    change: "+8% จากเมื่อวาน",
+    change: "+8%",
     color: "text-rose-500",
     bg: "bg-rose-50",
     icon: FileText,
@@ -24,7 +23,7 @@ const SALES_METRICS = [
   {
     label: "ออเดอร์ทั้งหมด",
     value: "300",
-    change: "+5% จากเมื่อวาน",
+    change: "+5%",
     color: "text-amber-500",
     bg: "bg-amber-50",
     icon: ShoppingCart,
@@ -32,7 +31,7 @@ const SALES_METRICS = [
   {
     label: "สินค้าขายออก",
     value: "5",
-    change: "+1.2% จากเมื่อวาน",
+    change: "+1.2%",
     color: "text-green-500",
     bg: "bg-green-50",
     icon: Package,
@@ -102,18 +101,18 @@ const EXPIRING_PRODUCTS = [
 
 const DashboardPage = () => {
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-4 pb-8">
       {/* Row 1: Sales Summary | Outstanding | Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Sales Today Card */}
-        <div className="lg:col-span-4 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between h-full">
-          <div className="flex justify-between items-center mb-6">
+        <div className="lg:col-span-5 bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col justify-between h-[235px]">
+          <div className="flex justify-between items-center mb-3">
             <div>
-              <h3 className="text-xl font-bold text-[#1B2559]">ยอดขายวันนี้</h3>
-              <p className="text-gray-400 text-sm">สรุปการขาย</p>
+              <h3 className="text-lg font-bold text-[#1B2559]">ยอดขายวันนี้</h3>
+              <p className="text-gray-400 text-[10px]">สรุปการขาย</p>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-all">
-              <Download size={14} /> Export
+            <button className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 transition-all">
+              <Download size={12} /> Export
             </button>
           </div>
 
@@ -121,112 +120,103 @@ const DashboardPage = () => {
             {SALES_METRICS.map((item, idx) => (
               <div
                 key={idx}
-                className={`${item.bg} rounded-2xl p-4 flex flex-col items-center text-center`}
+                className={`${item.bg} rounded-[20px] p-3 flex flex-col items-center text-center`}
               >
                 <div
-                  className={`h-10 w-10 bg-white rounded-xl flex items-center justify-center ${item.color} mb-3 shadow-sm`}
+                  className={`h-9 w-9 bg-white rounded-xl flex items-center justify-center ${item.color} mb-2 shadow-sm`}
                 >
-                  <item.icon size={20} />
+                  <item.icon size={18} />
                 </div>
-                <p className="text-lg font-extrabold text-[#1B2559] mb-1">
+                <p className="text-base font-extrabold text-[#1B2559] mb-0.5">
                   {item.value}
                 </p>
-                <p className="text-[10px] text-gray-500 font-bold leading-tight">
+                <p className="text-[9px] text-gray-500 font-bold leading-tight">
                   {item.label}
                 </p>
                 <div className="mt-2 flex items-center gap-0.5">
-                  <TrendingUp size={10} className={item.color} />
+                  <TrendingUp size={9} className={item.color} />
                   <span className={`text-[8px] font-bold ${item.color}`}>
-                    {item.change.split(" ")[0]}
+                    {item.change}
                   </span>
                 </div>
-                <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
-                  จากเมื่อวาน
-                </p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Total Outstanding Card */}
-        <div className="lg:col-span-3 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 h-full">
-          <h3 className="text-xl font-bold text-[#1B2559] mb-8 text-center lg:text-left">
+        <div className="lg:col-span-3 bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 h-[235px] flex flex-col">
+          <h3 className="text-lg font-bold text-[#1B2559] mb-3">
             ยอดค้างชำระทั้งหมด
           </h3>
-          <div className="bg-[#F4F1FF] rounded-[24px] p-8 flex flex-col items-center justify-center text-center h-[calc(100%-80px)]">
-            <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center text-[#6d28d9] mb-6 shadow-md">
-              <Users size={32} />
+          <div className="flex-1 bg-[#F4F1FF] rounded-[24px] p-3 flex flex-col items-center justify-center text-center">
+            <div className="bg-white rounded-full h-10 w-10 flex items-center justify-center text-[#6d28d9] mb-2 shadow-sm">
+              <Users size={20} strokeWidth={2.5} />
             </div>
-            <p className="text-3xl font-extrabold text-[#1B2559] mb-1">8 คน</p>
-            <p className="text-gray-500 text-sm font-bold mb-4">
+            <p className="text-lg font-extrabold text-[#1B2559] mb-0.5">8 คน</p>
+            <p className="text-gray-400 text-[9px] font-bold mb-1">
               ยอดเงินทั้งหมด
             </p>
-            <p className="text-4xl font-black text-[#1B2559]">฿1,930</p>
+            <p className="text-2xl font-black text-[#1B2559] leading-tight">
+              ฿1,930
+            </p>
           </div>
         </div>
 
-        {/* Target vs Sales Chart Placeholder */}
-        <div className="lg:col-span-5 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col h-full">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-[#1B2559]">
+        {/* Target vs Sales Chart */}
+        <div className="lg:col-span-4 bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col h-[235px]">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-bold text-[#1B2559]">
               เป้าหมาย vs ยอดขาย
             </h3>
-            <MoreVertical size={18} className="text-gray-300 cursor-pointer" />
+            <MoreVertical size={16} className="text-gray-300 cursor-pointer" />
           </div>
 
           <div className="flex-1 flex flex-col justify-end">
-            {/* Custom Bar Chart using CSS */}
-            <div className="flex items-end justify-between gap-2 h-48 px-2">
+            <div className="flex items-end justify-between gap-1.5 h-32 px-1">
               {[
-                { m: "Jan", v1: 60, v2: 40 },
-                { m: "Feb", v1: 70, v2: 45 },
-                { m: "Mar", v1: 65, v2: 50 },
-                { m: "Apr", v1: 85, v2: 60 },
-                { m: "May", v1: 75, v2: 55 },
-                { m: "June", v1: 95, v2: 70 },
-                { m: "July", v1: 90, v2: 65 },
+                { m: "Jan", v1: 45, v2: 65 },
+                { m: "Feb", v1: 55, v2: 75 },
+                { m: "Mar", v1: 50, v2: 70 },
+                { m: "Apr", v1: 70, v2: 90 },
+                { m: "May", v1: 60, v2: 80 },
+                { m: "June", v1: 85, v2: 100 },
+                { m: "July", v1: 75, v2: 95 },
               ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col items-center flex-1 gap-1"
-                >
-                  <div className="w-full flex justify-center gap-1 items-end h-full min-h-[150px]">
+                <div key={idx} className="flex flex-col items-center flex-1">
+                  <div className="w-full flex justify-center gap-0.5 items-end h-[110px]">
                     <div
-                      className="w-2.5 bg-[#4318FF] rounded-t-full"
-                      style={{ height: `${item.v2}%` }}
-                    ></div>
-                    <div
-                      className="w-2.5 bg-[#F4F7FE] rounded-t-full"
+                      className="w-2 bg-[#00E096] rounded-t-full"
                       style={{ height: `${item.v1}%` }}
                     ></div>
+                    <div
+                      className="w-2 bg-[#FFA41B] rounded-t-full"
+                      style={{ height: `${item.v2}%` }}
+                    ></div>
                   </div>
-                  <span className="text-[10px] font-bold text-gray-300 mt-2 uppercase">
+                  <span className="text-[8px] font-bold text-gray-300 mt-1 uppercase">
                     {item.m}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 flex justify-center gap-8 border-t border-gray-50 pt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-indigo-50 rounded-md flex items-center justify-center border border-indigo-100">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-sm"></div>
-                </div>
-                <span className="text-xs font-bold text-gray-500">
+            <div className="mt-4 flex justify-center gap-6 border-t border-gray-50 pt-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-green-400 rounded-sm"></div>
+                <span className="text-[9px] font-bold text-gray-500">
                   ยอดขายจริง
                 </span>
-                <span className="text-xs font-bold text-green-500 uppercase ml-2">
+                <span className="text-[9px] font-bold text-green-500 ml-1">
                   8,823
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-amber-50 rounded-md flex items-center justify-center border border-amber-100">
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-sm"></div>
-                </div>
-                <span className="text-xs font-bold text-gray-500">
-                  ยอดขายเป้าหมาย
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-amber-400 rounded-sm"></div>
+                <span className="text-[9px] font-bold text-gray-500">
+                  เป้าหมาย
                 </span>
-                <span className="text-xs font-bold text-amber-500 uppercase ml-2">
+                <span className="text-[9px] font-bold text-amber-500 ml-1">
                   12,122
                 </span>
               </div>
@@ -235,159 +225,124 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Row 2: Best Sellers | Recent Sales */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Best Sellers Table */}
-        <div className="lg:col-span-5 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
-          <h3 className="text-xl font-bold text-[#1B2559] mb-6">สินค้าขายดี</h3>
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                  <th className="pb-4 pr-4">#</th>
-                  <th className="pb-4 pr-4">ชื่อ</th>
-                  <th className="pb-4 pr-4 w-1/2">ความนิยม</th>
-                  <th className="pb-4 text-center">ยอดขาย</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {BEST_SELLERS.map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className="group hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="py-4 text-sm font-bold text-gray-400 pr-4">
-                      {(idx + 1).toString().padStart(2, "0")}
-                    </td>
-                    <td className="py-4 text-sm font-bold text-[#1B2559] pr-4">
-                      {item.name}
-                    </td>
-                    <td className="py-4 pr-4">
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ${
-                            idx === 0
-                              ? "bg-[#00B5FF]"
-                              : idx === 1
-                              ? "bg-[#00E096]"
-                              : idx === 2
-                              ? "bg-[#8833FF]"
-                              : "bg-[#FFA41B]"
-                          }`}
-                          style={{ width: `${item.popularity}%` }}
-                        ></div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-center">
-                      <span
-                        className={`px-4 py-1.5 rounded-full text-xs font-black border ${
+      {/* Row 2: Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-5 bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100">
+          <h3 className="text-lg font-bold text-[#1B2559] mb-4">สินค้าขายดี</h3>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                <th className="pb-3 px-2">#</th>
+                <th className="pb-3 px-2">ชื่อ</th>
+                <th className="pb-3 px-2 w-1/2">ความนิยม</th>
+                <th className="pb-3 px-2 text-center">ยอดขาย</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {BEST_SELLERS.map((item, idx) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-2.5 px-2 text-xs font-bold text-gray-400">
+                    {(idx + 1).toString().padStart(2, "0")}
+                  </td>
+                  <td className="py-2.5 px-2 text-xs font-bold text-[#1B2559]">
+                    {item.name}
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ${
                           idx === 0
-                            ? "bg-blue-50 text-blue-500 border-blue-100"
+                            ? "bg-[#00B5FF]"
                             : idx === 1
-                            ? "bg-green-50 text-green-500 border-green-100"
-                            : idx === 2
-                            ? "bg-purple-50 text-purple-500 border-purple-100"
-                            : "bg-amber-50 text-amber-500 border-amber-100"
+                            ? "bg-[#00E096]"
+                            : "bg-[#8833FF]"
                         }`}
-                      >
-                        {item.sales}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        style={{ width: `${item.popularity}%` }}
+                      ></div>
+                    </div>
+                  </td>
+                  <td className="py-2.5 px-2 text-center">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-500 border border-blue-100">
+                      {item.sales}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {/* Recent Transactions Table */}
-        <div className="lg:col-span-7 bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-[#1B2559]">
-              รายการการขายล่าสุด
-            </h3>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 cursor-pointer hover:bg-gray-100">
-              ธันวาคม <ChevronDown size={14} />
+        <div className="lg:col-span-7 bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-[#1B2559]">รายการล่าสุด</h3>
+            <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-100 rounded text-[10px] font-bold text-gray-500 cursor-pointer">
+              ธันวาคม <ChevronDown size={12} />
             </div>
           </div>
-
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                  <th className="pb-4 pr-4">เลขที่บิล</th>
-                  <th className="pb-4 pr-4">วันที่-เวลา</th>
-                  <th className="pb-4 pr-4">ประเภท</th>
-                  <th className="pb-4 pr-4">ยอดรวม</th>
-                  <th className="pb-4 text-center">สถานะ</th>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                <th className="pb-3 px-2">บิล</th>
+                <th className="pb-3 px-2">วันที่</th>
+                <th className="pb-3 px-2">ประเภท</th>
+                <th className="pb-3 px-2">ยอดรวม</th>
+                <th className="pb-3 px-2 text-center">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {RECENT_SALES.map((sale, idx) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-2.5 px-2 text-xs font-bold text-[#1B2559]">
+                    {sale.id}
+                  </td>
+                  <td className="py-2.5 px-2 text-[10px] font-semibold text-gray-500">
+                    {sale.time.split(" ")[0]}
+                  </td>
+                  <td className="py-2.5 px-2 text-[10px] font-bold text-gray-600">
+                    {sale.type}
+                  </td>
+                  <td className="py-2.5 px-2 text-xs font-extrabold text-[#1B2559]">
+                    {sale.total}
+                  </td>
+                  <td className="py-2.5 px-2 text-center">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-bold text-white ${sale.statusColor}`}
+                    >
+                      {sale.status}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {RECENT_SALES.map((sale, idx) => (
-                  <tr
-                    key={idx}
-                    className="group hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="py-4 pr-4 flex items-center gap-3">
-                      <FileText size={16} className="text-gray-300" />
-                      <span className="text-sm font-bold text-[#1B2559]">
-                        {sale.id}
-                      </span>
-                    </td>
-                    <td className="py-4 text-xs font-semibold text-gray-500 pr-4">
-                      {sale.time}
-                    </td>
-                    <td className="py-4 text-xs font-bold text-gray-600 pr-4">
-                      {sale.type}
-                    </td>
-                    <td className="py-4 text-sm font-extrabold text-[#1B2559] pr-4">
-                      {sale.total}
-                    </td>
-                    <td className="py-4 text-center">
-                      <span
-                        className={`px-4 py-1 rounded-full text-[10px] font-bold text-white ${sale.statusColor} shadow-sm`}
-                      >
-                        {sale.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Row 3: Expiring Products */}
-      <div className="bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
-        <h3 className="text-xl font-bold text-[#1B2559] mb-8">
-          รายการสินค้าใกล้หมดอายุ
+      {/* Row 3: Product Grid */}
+      <div className="bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100">
+        <h3 className="text-lg font-bold text-[#1B2559] mb-5">
+          สินค้าใกล้หมดอายุ
         </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {EXPIRING_PRODUCTS.map((prod, idx) => (
             <div
               key={idx}
-              className="bg-[#F8F9FD] rounded-3xl p-6 border border-gray-100/50 flex flex-col items-center text-center group hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-[#F8F9FD] rounded-[24px] p-4 border border-gray-100/50 flex flex-col items-center text-center group hover:shadow-lg transition-all"
             >
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-white rounded-full scale-110 shadow-sm opacity-50"></div>
+              <div className="relative mb-3 h-20 flex items-center justify-center">
                 <img
                   src={prod.image}
                   alt={prod.name}
-                  className="relative z-10 w-24 h-32 object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500"
+                  className="w-16 h-20 object-contain drop-shadow-md group-hover:scale-105 transition-transform"
                 />
               </div>
-              <h4 className="text-lg font-bold text-[#1B2559] mb-3">
+              <h4 className="text-sm font-bold text-[#1B2559] mb-1">
                 {prod.name}
               </h4>
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">
-                  {prod.expiry}
-                </p>
-                <p className="text-sm font-black text-[#1B2559] tracking-widest">
-                  {prod.time}
-                </p>
-              </div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase">
+                {prod.expiry}
+              </p>
+              <p className="text-xs font-black text-[#1B2559]">{prod.time}</p>
             </div>
           ))}
         </div>
