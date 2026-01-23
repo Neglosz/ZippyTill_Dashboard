@@ -38,7 +38,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-gray-50 flex justify-between items-center">
           <h3 className="font-bold text-[#1B2559]">Notifications</h3>
           <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
-            2 New
+            0 New
           </span>
         </div>
 
