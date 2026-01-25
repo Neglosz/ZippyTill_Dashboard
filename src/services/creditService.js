@@ -21,6 +21,7 @@ export const creditService = {
     // Transform data to flat structure for UI
     return data.map((item) => ({
       id: item.id,
+      customerId: item.customer_id, // Add customerId for grouping
       name: item.customers_info?.name || "Unknown",
       phone: item.customers_info?.phone || "-",
       amount: item.remaining_amount, // Show remaining debt
@@ -81,6 +82,7 @@ export const creditService = {
 
     return {
       id: data.id,
+      customerId: data.customer_id,
       name: data.customers_info?.name || "Unknown",
       phone: data.customers_info?.phone || "-",
       amount: data.remaining_amount,

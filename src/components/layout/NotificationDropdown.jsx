@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import React, { useEffect, useState } from "react";
 import { Bell, Clock, AlertCircle } from "lucide-react";
 
@@ -59,11 +59,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               >
                 <div className="flex gap-3">
                   <div
-                    className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      notif.type === "alert"
-                        ? "bg-red-50 text-red-500"
-                        : "bg-orange-50 text-orange-500"
-                    }`}
+                    className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${notif.type === "alert"
+                      ? "bg-red-50 text-red-500"
+                      : "bg-orange-50 text-orange-500"
+                      }`}
                   >
                     {notif.type === "alert" ? (
                       <AlertCircle size={16} />

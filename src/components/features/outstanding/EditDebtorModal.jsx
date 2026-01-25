@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import CustomDatePicker from "../../CustomDatePicker";
+import CustomDatePicker from "../../common/CustomDatePicker";
 
 const EditDebtorModal = ({ item, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState(item || {});
