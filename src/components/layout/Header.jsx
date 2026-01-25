@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Users, Bell, ChevronDown } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
-import ProfileDropdown from "./ProfileDropdown";
+import ProfileDropdown from "../ProfileDropdown";
 
 const Header = () => {
   const location = useLocation();
@@ -27,11 +27,10 @@ const Header = () => {
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative p-2 rounded-full transition-colors ${
-              showNotifications
+            className={`relative p-2 rounded-full transition-colors ${showNotifications
                 ? "bg-[#E9E3FF] text-[#6d28d9]"
                 : "bg-[#F4F7FE] text-gray-400 hover:text-[#6d28d9]"
-            }`}
+              }`}
           >
             <Bell size={20} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -58,9 +57,8 @@ const Header = () => {
             </div>
             <ChevronDown
               size={16}
-              className={`text-gray-400 transition-transform duration-200 ${
-                showProfile ? "rotate-180" : ""
-              }`}
+              className={`text-gray-400 transition-transform duration-200 ${showProfile ? "rotate-180" : ""
+                }`}
             />
           </button>
           <ProfileDropdown

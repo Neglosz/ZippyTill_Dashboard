@@ -4,12 +4,14 @@ import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
 import OverduePage from "./pages/OverduePage";
+import BranchSelectionPage from "./pages/BranchSelectionPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/select-branch" element={<BranchSelectionPage />} />
 
         {/* Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
