@@ -7,6 +7,7 @@ import InventoryPage from "./pages/InventoryPage";
 import OverduePage from "./pages/OverduePage";
 import BranchSelectionPage from "./pages/BranchSelectionPage";
 import TaxCalculationPage from "./pages/TaxCalculationPage";
+import FinancePage from "./pages/FinancePage";
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
           />
           <Route
             path="finance"
-            element={<div className="p-10">Finance Page Placeholder</div>}
+            element={<FinancePage />}
           />
           <Route
             path="tax"
