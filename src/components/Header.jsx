@@ -14,6 +14,7 @@ const Header = () => {
     const path = location.pathname;
     if (path === "/dashboard" || path === "/dashboard/") return "ภาพรวม";
     if (path.includes("overdue")) return "รายการค้างชำระ";
+    if (path.includes("finance")) return "การเงิน";
     return "เมนูหลัก";
   };
 
