@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
+import InventoryPage from "./pages/InventoryPage";
 import OverduePage from "./pages/OverduePage";
 import BranchSelectionPage from "./pages/BranchSelectionPage";
 import TaxCalculationPage from "./pages/TaxCalculationPage";
@@ -19,10 +20,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="overdue" element={<OverduePage />} />
           {/* Placeholders for other routes if needed later */}
-          <Route
-            path="stock"
-            element={<div className="p-10">Stock Page Placeholder</div>}
-          />
+          <Route path="stock" element={<InventoryPage />} />
           <Route
             path="sales"
             element={<div className="p-10">Sales Page Placeholder</div>}
