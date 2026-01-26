@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Users, Bell, ChevronDown } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
-import ProfileDropdown from "./ProfileDropdown";
+import ProfileDropdown from "../ProfileDropdown";
 
 const Header = () => {
   const location = useLocation();
@@ -14,6 +14,7 @@ const Header = () => {
     const path = location.pathname;
     if (path === "/dashboard" || path === "/dashboard/") return "ภาพรวม";
     if (path.includes("overdue")) return "รายการค้างชำระ";
+    if (path.includes("stock")) return "คลังสินค้า";
     if (path.includes("finance")) return "การเงิน";
     return "เมนูหลัก";
   };

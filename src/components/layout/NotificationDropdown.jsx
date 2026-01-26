@@ -1,6 +1,6 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import React, { useEffect, useState } from "react";
-import { Bell, Clock, AlertCircle } from "lucide-react";
+import { Clock, AlertCircle } from "lucide-react";
 
 const NotificationDropdown = ({ isOpen, onClose }) => {
   const [notifications, setNotifications] = useState([]);
@@ -14,7 +14,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
           const { data, error } = await supabase
             .from("notifications")
             .select("*")
-            .order("id", { ascending: false }); // Assuming 'id' or a timestamp for ordering
+            .order("created_at", { ascending: false }); // Using created_at for better reliability
 
           if (error) throw error;
           setNotifications(data || []);
@@ -59,11 +59,10 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
               >
                 <div className="flex gap-3">
                   <div
-                    className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      notif.type === "alert"
-                        ? "bg-red-50 text-red-500"
-                        : "bg-orange-50 text-orange-500"
-                    }`}
+                    className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${notif.type === "alert"
+                      ? "bg-red-50 text-red-500"
+                      : "bg-orange-50 text-orange-500"
+                      }`}
                   >
                     {notif.type === "alert" ? (
                       <AlertCircle size={16} />
@@ -79,7 +78,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
                       {notif.message}
                     </p>
                     <span className="text-[10px] text-gray-400 mt-2 block">
-                      {notif.time}
+                      {notif.time || (notif.created_at && new Date(notif.created_at).toLocaleTimeString())}
                     </span>
                   </div>
                 </div>

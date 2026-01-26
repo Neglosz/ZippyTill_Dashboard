@@ -1,31 +1,29 @@
-export const initialOverdueItems = [
-  {
-    id: 1,
-    name: "วินัย มานะสมชื่อ",
-    phone: "083-123-4567",
-    amount: 250.0,
-    dueDate: "05/12/2025",
-    status: "ค้างชำระ",
-    overdueDays: 7,
-  },
-  {
-    id: 2,
-    name: "สมชาย ใจดี",
-    phone: "089-999-9999",
-    amount: 1500.0,
-    dueDate: "01/12/2025",
-    status: "ค้างชำระ",
-    overdueDays: 12,
-  },
-  {
-    id: 3,
-    name: "มานี มีแชร์",
-    phone: "081-555-4444",
-    amount: 4500.5,
-    dueDate: "15/11/2025",
-    status: "ค้างชำระ",
-    overdueDays: 28,
-  },
+export const initialPaidItems = [
+    {
+        id: 101,
+        name: "Paid Customer A",
+        phone: "081-234-5678",
+        amount: "5000",
+        dueDate: "2023-12-01",
+        status: "Paid",
+        overdueDays: 0,
+    },
+    {
+        id: 102,
+        name: "Paid Customer B",
+        phone: "089-876-5432",
+        amount: "12000",
+        dueDate: "2023-11-20",
+        status: "Paid",
+        overdueDays: 0,
+    },
+    {
+        id: 103,
+        name: "Paid Customer C",
+        phone: "086-555-4444",
+        amount: "3500",
+        dueDate: "2023-12-05",
+        status: "Paid",
+        overdueDays: 0,
+    },
 ];
-
-export const initialPaidItems = [];
