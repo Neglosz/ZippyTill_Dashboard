@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
 import OverduePage from "./pages/OverduePage";
+import FinancePage from "./pages/FinancePage";
 
 function App() {
   return (
@@ -26,7 +27,7 @@ function App() {
           />
           <Route
             path="finance"
-            element={<div className="p-10">Finance Page Placeholder</div>}
+            element={<FinancePage />}
           />
           <Route
             path="tax"

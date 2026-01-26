@@ -25,9 +25,9 @@ const LoginPage = () => {
           scrollbar-width: none;
         }
       `}</style>
-      <div className="w-full lg:w-1/2 bg-[#6d28d9] text-white p-6 lg:p-12 flex flex-col justify-between relative overflow-hidden shrink-0 lg:h-screen">
+      <div className="w-full lg:w-1/2 bg-[#1E2022] text-white p-6 lg:p-12 flex flex-col justify-between relative overflow-hidden shrink-0 lg:h-screen">
         {/* Background Gradient */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] opacity-100 z-0"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#1E2022] to-[#1F252A] opacity-100 z-0"></div>
 
         {/* Decorative Circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
@@ -53,7 +53,7 @@ const LoginPage = () => {
                 <br className="hidden lg:block" />
                 <span className="lg:inline block">ที่ทรงพลังและใช้งานง่าย</span>
               </h2>
-              <p className="text-purple-100 text-sm lg:text-base max-w-md leading-relaxed">
+              <p className="text-gray-400 text-sm lg:text-base max-w-md leading-relaxed">
                 จัดการธุรกิจของคุณอย่างมีประสิทธิภาพด้วยระบบที่ออกแบบมาเพื่อคุณ
                 ไม่ว่าจะเป็นการจัดการสต็อก ติดตามยอดขายหรือวิเคราะห์การเงิน
               </p>
@@ -62,13 +62,13 @@ const LoginPage = () => {
             <div className="flex gap-8 lg:gap-12 mb-8 lg:mb-12">
               <div>
                 <p className="text-2xl lg:text-3xl font-bold">670+</p>
-                <p className="text-xs lg:text-sm text-purple-200">
+                <p className="text-xs lg:text-sm text-gray-500">
                   ร้านค้าในระบบ
                 </p>
               </div>
               <div>
                 <p className="text-2xl lg:text-3xl font-bold">24/7</p>
-                <p className="text-xs lg:text-sm text-purple-200">ซัพพอร์ต</p>
+                <p className="text-xs lg:text-sm text-gray-500">ซัพพอร์ต</p>
               </div>
             </div>
           </div>
@@ -157,7 +157,7 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-2.5 lg:py-3 text-sm lg:text-base rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-purple-200"
+              className="w-full bg-gradient-to-r from-[#1E2022] to-[#1F252A] text-white font-bold py-2.5 lg:py-3 text-sm lg:text-base rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-gray-400"
             >
               เข้าสู่ระบบ
             </button>
@@ -174,13 +174,13 @@ const LoginPage = () => {
 
 // Helper component for features to keep code clean and uniform
 const FeatureItem = ({ icon: Icon, title, desc }) => (
-  <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl flex items-center gap-4 border border-white/10">
+  <div className="bg-white/5 backdrop-blur-sm p-3 rounded-xl flex items-center gap-4 border border-white/10">
     <div className="bg-white text-[#6d28d9] p-2 rounded-lg shrink-0">
       <Icon size={20} />
     </div>
     <div>
       <h3 className="font-bold text-sm lg:text-base">{title}</h3>
-      <p className="text-xs text-purple-100">{desc}</p>
+      <p className="text-xs text-gray-400">{desc}</p>
     </div>
   </div>
 );
