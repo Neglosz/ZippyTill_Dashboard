@@ -5,6 +5,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
 import OverduePage from "./pages/OverduePage";
 import BranchSelectionPage from "./pages/BranchSelectionPage";
+import TaxCalculationPage from "./pages/TaxCalculationPage";
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
           />
           <Route
             path="tax"
-            element={<div className="p-10">Tax Page Placeholder</div>}
+            element={<TaxCalculationPage />}
           />
           <Route
             path="ai-promo"
