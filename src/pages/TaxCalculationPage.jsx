@@ -3,13 +3,13 @@ import { Calculator, TrendingUp, DollarSign, Wallet, ShoppingCart, ReceiptText, 
 
 const TaxCalculationPage = () => {
     // --- PIT State ---
-    const [income, setIncome] = useState(0);
-    const [expenses, setExpenses] = useState(0);
-    const [deductions, setDeductions] = useState(0);
+    const [income, setIncome] = useState('');
+    const [expenses, setExpenses] = useState('');
+    const [deductions, setDeductions] = useState('');
 
     // --- VAT State ---
-    const [buyVatAmount, setBuyVatAmount] = useState(0);
-    const [sellVatAmount, setSellVatAmount] = useState(0);
+    const [buyVatAmount, setBuyVatAmount] = useState('');
+    const [sellVatAmount, setSellVatAmount] = useState('');
 
     // --- PIT Calculation Logic ---
     const taxableIncome = Math.max(0, (Number(income) || 0) - (Number(expenses) || 0) - (Number(deductions) || 0));
@@ -106,6 +106,7 @@ const TaxCalculationPage = () => {
                                 value={income}
                                 onChange={(e) => handleNumberInput(e, setIncome)}
                                 onWheel={handleWheel}
+                                placeholder="0.00"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-800 font-bold text-lg"
                             />
                         </div>
@@ -120,6 +121,7 @@ const TaxCalculationPage = () => {
                                 value={expenses}
                                 onChange={(e) => handleNumberInput(e, setExpenses)}
                                 onWheel={handleWheel}
+                                placeholder="0.00"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-800 font-bold text-lg"
                             />
                         </div>
@@ -134,6 +136,7 @@ const TaxCalculationPage = () => {
                                 value={deductions}
                                 onChange={(e) => handleNumberInput(e, setDeductions)}
                                 onWheel={handleWheel}
+                                placeholder="0.00"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-800 font-bold text-lg"
                             />
                         </div>
@@ -163,14 +166,14 @@ const TaxCalculationPage = () => {
                                     <div className="text-white/60">{item.icon}</div>
                                     <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{item.label}</span>
                                 </div>
-                                <div className="text-xl font-bold tracking-tight">฿{formatCurrency(item.val)}</div>
+                                <div className="text-xl font-bold tracking-tight break-all">฿{formatCurrency(item.val)}</div>
                             </div>
                         ))}
                     </div>
 
                     <div className="bg-[#FF9500] rounded-2xl p-6 relative z-10 shadow-lg border border-orange-400/30">
                         <span className="text-xs font-bold text-white/80 uppercase tracking-widest block mb-1">ภาษีที่ต้องชำระ (เบื้องต้น)</span>
-                        <div className="text-4xl font-black">฿{formatCurrency(pitResult.totalTax)}</div>
+                        <div className="text-4xl font-black break-all">฿{formatCurrency(pitResult.totalTax)}</div>
                     </div>
 
                     <div className="bg-blue-900/40 rounded-xl p-4 border border-blue-400/20 text-[10px] leading-relaxed text-blue-100/70 relative z-10 italic">
@@ -195,11 +198,12 @@ const TaxCalculationPage = () => {
                             value={buyVatAmount}
                             onChange={(e) => handleNumberInput(e, setBuyVatAmount)}
                             onWheel={handleWheel}
+                            placeholder="0.00"
                             className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-emerald-500/10 transition-all mb-4"
                         />
                         <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 transition-transform hover:scale-[1.02] cursor-default">
                             <div className="text-xs font-medium text-emerald-600/80 mb-1">VAT 7%</div>
-                            <div className="text-3xl font-black text-emerald-600">฿{formatCurrency(buyVat)}</div>
+                            <div className="text-3xl font-black text-emerald-600 break-all">฿{formatCurrency(buyVat)}</div>
                         </div>
                     </div>
                 </div>
@@ -221,11 +225,12 @@ const TaxCalculationPage = () => {
                             value={sellVatAmount}
                             onChange={(e) => handleNumberInput(e, setSellVatAmount)}
                             onWheel={handleWheel}
+                            placeholder="0.00"
                             className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/10 transition-all mb-4"
                         />
                         <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 transition-transform hover:scale-[1.02] cursor-default">
                             <div className="text-xs font-medium text-blue-600/80 mb-1">VAT 7%</div>
-                            <div className="text-3xl font-black text-blue-600">฿{formatCurrency(sellVat)}</div>
+                            <div className="text-3xl font-black text-blue-600 break-all">฿{formatCurrency(sellVat)}</div>
                         </div>
                     </div>
                 </div>
@@ -249,16 +254,16 @@ const TaxCalculationPage = () => {
                         <div className="flex flex-col md:flex-row items-center gap-4 md:gap-12">
                             <div className="flex flex-col items-center md:items-start">
                                 <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">ภาษีขาย</span>
-                                <span className="text-2xl font-bold">฿{formatCurrency(sellVat)}</span>
+                                <span className="text-2xl font-bold break-all">฿{formatCurrency(sellVat)}</span>
                             </div>
                             <div className="w-8 h-[1px] md:h-8 md:w-[1px] bg-white/20"></div>
                             <div className="flex flex-col items-center md:items-start">
                                 <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">ภาษีซื้อ</span>
-                                <span className="text-2xl font-bold">฿{formatCurrency(buyVat)}</span>
+                                <span className="text-2xl font-bold break-all">฿{formatCurrency(buyVat)}</span>
                             </div>
                             <div className="bg-white/10 rounded-2xl p-6 border border-white/20 backdrop-blur-md min-w-[200px]">
                                 <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest mb-1 block">ยอดสุทธิที่ต้องนำส่ง</span>
-                                <span className="text-4xl font-black block">฿{formatCurrency(netVat)}</span>
+                                <span className="text-4xl font-black block break-all">฿{formatCurrency(netVat)}</span>
                             </div>
                         </div>
                     </div>
@@ -297,13 +302,13 @@ const TaxCalculationPage = () => {
                                     <td className="px-6 py-4 text-sm font-medium text-gray-600">{row.range}</td>
                                     <td className="px-6 py-4 text-right">
                                         <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold ${row.highlight ? 'bg-emerald-100 text-emerald-700' :
-                                                idx === 1 ? 'bg-emerald-50 text-emerald-600' :
-                                                    idx === 2 ? 'bg-teal-50 text-teal-600' :
-                                                        idx === 3 ? 'bg-blue-50 text-blue-600' :
-                                                            idx === 4 ? 'bg-indigo-50 text-indigo-600' :
-                                                                idx === 5 ? 'bg-purple-50 text-purple-600' :
-                                                                    idx === 6 ? 'bg-pink-50 text-pink-600' :
-                                                                        'bg-rose-50 text-rose-600'
+                                            idx === 1 ? 'bg-emerald-50 text-emerald-600' :
+                                                idx === 2 ? 'bg-teal-50 text-teal-600' :
+                                                    idx === 3 ? 'bg-blue-50 text-blue-600' :
+                                                        idx === 4 ? 'bg-indigo-50 text-indigo-600' :
+                                                            idx === 5 ? 'bg-purple-50 text-purple-600' :
+                                                                idx === 6 ? 'bg-pink-50 text-pink-600' :
+                                                                    'bg-rose-50 text-rose-600'
                                             }`}>
                                             {row.rate}
                                         </span>
