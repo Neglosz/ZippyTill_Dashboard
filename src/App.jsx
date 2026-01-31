@@ -8,6 +8,7 @@ import OverduePage from "./pages/OverduePage";
 import BranchSelectionPage from "./pages/BranchSelectionPage";
 import TaxCalculationPage from "./pages/TaxCalculationPage";
 import FinancePage from "./pages/FinancePage";
+import AIPromotionPage from "./pages/AIPromotionPage";
 
 function App() {
   return (
@@ -26,18 +27,9 @@ function App() {
             path="sales"
             element={<div className="p-10">Sales Page Placeholder</div>}
           />
-          <Route
-            path="finance"
-            element={<FinancePage />}
-          />
-          <Route
-            path="tax"
-            element={<TaxCalculationPage />}
-          />
-          <Route
-            path="ai-promo"
-            element={<div className="p-10">AI Promo Page Placeholder</div>}
-          />
+          <Route path="finance" element={<FinancePage />} />
+          <Route path="tax" element={<TaxCalculationPage />} />
+          <Route path="ai-promo" element={<AIPromotionPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
