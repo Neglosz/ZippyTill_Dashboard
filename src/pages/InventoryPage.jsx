@@ -91,21 +91,39 @@ const InventoryPage = () => {
       </div>
 
       {/* Top Section: Header & Stats */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-1.5 px-4">
-          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
-            Inventory
-          </h2>
-          <div className="flex items-center gap-2 opacity-80">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
-            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-              จัดการสต็อกสินค้าและดูภาพรวมของคลังสินค้าทั้งหมด
-            </p>
+      <div className="flex flex-col gap-5">
+        {/* Header Section in a white box */}
+        <div className="bg-white rounded-[24px] p-6 shadow-premium border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden group transition-all duration-500 hover:shadow-float">
+          <div className="flex flex-col gap-1 px-2 relative z-10">
+            <h2 className="text-2xl lg:text-3xl font-black text-gray-900 tracking-tighter">
+              Inventory
+            </h2>
+            <div className="flex items-center gap-1.5 opacity-80">
+              <div className="w-1.2 h-1.2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
+              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.15em]">
+                จัดการสต็อกสินค้าและดูภาพรวมของคลังสินค้าทั้งหมด
+              </p>
+            </div>
           </div>
+
+          <button className="bg-primary hover:bg-primary/95 rounded-[20px] px-6 py-4 flex items-center justify-center gap-4 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 group/btn relative overflow-hidden border border-white/10 active:scale-95 shrink-0 z-10">
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+            <div className="bg-white/20 p-2.5 rounded-[15px] text-white shadow-inner group-hover/btn:rotate-90 transition-transform duration-500">
+              <Plus size={16} strokeWidth={3} />
+            </div>
+            <div className="text-left">
+              <p className="text-[8px] font-black text-white/70 uppercase tracking-[0.1em] mb-0.5">
+                จัดการสต็อก
+              </p>
+              <h3 className="text-[12px] font-black tracking-widest text-white uppercase leading-none">
+                เพิ่มสินค้า
+              </h3>
+            </div>
+          </button>
         </div>
 
-        {/* Stats Cards - High Dimension */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Stats Cards - Adjusted to 2 Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Total Products */}
           <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
@@ -139,22 +157,6 @@ const InventoryPage = () => {
               </h3>
             </div>
           </div>
-
-          {/* Card 3: Action Button */}
-          <button className="bg-primary rounded-[32px] p-7 flex items-center justify-center gap-4 shadow-xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden border border-white/10 active:scale-95">
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="bg-white/20 p-4 rounded-[22px] text-white shadow-inner group-hover:rotate-90 transition-transform duration-500">
-              <Plus size={28} strokeWidth={3} />
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] mb-0.5">
-                Manage Stock
-              </p>
-              <h3 className="text-xl font-black tracking-widest text-white uppercase">
-                Add Product
-              </h3>
-            </div>
-          </button>
         </div>
       </div>
 
@@ -200,11 +202,10 @@ const InventoryPage = () => {
             <button
               key={tag}
               onClick={() => setActiveTag(tag)}
-              className={`px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-widest border ${
-                activeTag === tag
-                  ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
-                  : "bg-white text-inactive hover:text-gray-900 border-gray-100 hover:bg-gray-50"
-              }`}
+              className={`px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-widest border ${activeTag === tag
+                ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
+                : "bg-white text-inactive hover:text-gray-900 border-gray-100 hover:bg-gray-50"
+                }`}
             >
               {tag}
             </button>
