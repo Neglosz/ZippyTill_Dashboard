@@ -16,7 +16,10 @@ const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
 
   useEffect(() => {
     if (product) {
-      setFormData(product);
+      setFormData({
+        ...product,
+        image: product.image_url || product.image || "",
+      });
     }
   }, [product]);
 

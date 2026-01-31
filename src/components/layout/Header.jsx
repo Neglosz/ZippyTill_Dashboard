@@ -24,21 +24,34 @@ const Header = () => {
   const title = getTitle();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] z-[40]">
-      <h2 className="text-2xl font-bold text-[#1B2559]">{title}</h2>
+    <header className="h-20 shrink-0 px-8 flex items-center justify-between bg-white shadow-elevation sticky top-0 z-40 relative group/header border-b border-gray-100/50">
+      {/* Edge lighting effect - High Dimension */}
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col">
+        <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-snug">
+          {title}
+        </h2>
+        <div className="flex items-center gap-2 mt-1.5 opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+            Overview & Metrics
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative p-2 rounded-full transition-colors ${
+            className={`relative p-3 rounded-xl transition-all duration-300 border ${
               showNotifications
-                ? "bg-[#E9E3FF] text-[#6d28d9]"
-                : "bg-[#F4F7FE] text-gray-400 hover:text-[#6d28d9]"
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "bg-gray-50 text-inactive hover:text-primary hover:bg-gray-100 hover:border-gray-200"
             }`}
           >
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            <Bell size={20} className={showNotifications ? "rotate-0" : ""} />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
           </button>
           <NotificationDropdown
             isOpen={showNotifications}
@@ -46,25 +59,43 @@ const Header = () => {
           />
         </div>
 
+        {/* Vertical Divider */}
+        <div className="h-8 w-[1px] bg-gray-100 mx-1" />
+
+        {/* User Profile */}
         <div className="relative">
           <button
             onClick={() => setShowProfile(!showProfile)}
-            className="flex items-center gap-3 bg-white p-1 pr-2 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+            className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl transition-all duration-300 border ${
+              showProfile
+                ? "bg-primary text-white border-primary"
+                : "bg-gray-50 hover:bg-gray-100 border-transparent hover:border-gray-200"
+            }`}
           >
-            <div className="h-10 w-10 bg-[#F4F7FE] rounded-full flex items-center justify-center text-[#6d28d9]">
-              <Users size={20} />
+            <div
+              className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors duration-300 ${
+                showProfile
+                  ? "bg-white/20 text-white"
+                  : "bg-primary/10 text-primary"
+              }`}
+            >
+              AD
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-bold text-[#1B2559] leading-tight">
+            <div className="text-left hidden md:block">
+              <p
+                className={`text-xs font-bold leading-none ${showProfile ? "text-white" : "text-gray-900"}`}
+              >
                 Admin
               </p>
-              <p className="text-xs text-gray-400 font-medium">Administrator</p>
+              <p
+                className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${showProfile ? "text-white/70" : "text-inactive"}`}
+              >
+                Administrator
+              </p>
             </div>
             <ChevronDown
-              size={16}
-              className={`text-gray-400 transition-transform duration-200 ${
-                showProfile ? "rotate-180" : ""
-              }`}
+              size={14}
+              className={`transition-transform duration-300 ${showProfile ? "rotate-180" : ""}`}
             />
           </button>
           <ProfileDropdown

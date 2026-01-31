@@ -61,15 +61,22 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-[200px] bg-white border-r border-gray-100 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-[30]">
+    <aside className="w-[240px] bg-white border-r border-gray-100 shadow-elevation flex flex-col justify-between shrink-0 h-screen sticky top-0 z-[30] relative group/sidebar">
+      {/* Edge lighting effect - High Dimension */}
+
       <div>
-        <div className="p-6 pb-6 flex items-center justify-center">
-          <h1 className="text-2xl font-extrabold text-[#1B2559] tracking-wider">
-            ZIPPY TILL
-          </h1>
+        <div className="p-8 pb-10 flex items-center justify-center group/logo cursor-pointer">
+          <div className="relative">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tighter group-hover/logo:text-primary transition-colors duration-500">
+              ZIPPY TILL
+            </h1>
+            <div className="absolute -bottom-2 left-0 right-0 h-1 bg-primary/20 rounded-full overflow-hidden">
+              <div className="h-full bg-primary w-0 group-hover/logo:w-full transition-all duration-700 ease-out" />
+            </div>
+          </div>
         </div>
 
-        <nav className="px-3 space-y-2">
+        <nav className="px-4 space-y-2.5">
           {menuItems.map((item) => (
             <NavLink
               key={item.id}
@@ -77,28 +84,48 @@ const Sidebar = () => {
               replace
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 group ${isActive
-                  ? "text-[#6d28d9]"
-                  : "text-gray-400 hover:text-[#6d28d9] hover:bg-gray-50"
+                `flex items-center gap-4 px-5 py-4 rounded-[12px] text-sm font-bold transition-all duration-300 group relative ${
+                  isActive
+                    ? "bg-primary/5 text-primary"
+                    : "text-inactive hover:text-gray-900 hover:bg-gray-50"
                 }`
               }
             >
-              <item.icon
-                size={22}
-                strokeWidth={2}
-                className="group-hover:scale-110 transition-transform duration-200"
-              />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    size={22}
+                    strokeWidth={isActive ? 3 : 2}
+                    className={`transition-all duration-500 group-hover:scale-110 ${
+                      isActive
+                        ? "text-primary rotate-3"
+                        : "text-inactive group-hover:text-primary"
+                    }`}
+                  />
+                  <span className="tracking-tight relative z-10">
+                    {item.label}
+                  </span>
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
       </div>
 
-      <div className="p-3">
-        <button className="flex items-center gap-3 px-4 py-3.5 w-full text-white bg-[#FF6B6B] hover:bg-[#ff5252] rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-          onClick={handleSignOut}>
-          <LogOut size={20} />
-          Sign Out
+      <div className="p-4">
+        <button
+          className="flex items-center gap-4 px-6 py-4 w-full text-inactive hover:text-white bg-gray-50 hover:bg-primary rounded-2xl text-sm font-black transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 group border border-transparent hover:border-primary/20"
+          onClick={handleSignOut}
+        >
+          <LogOut
+            size={20}
+            strokeWidth={2.5}
+            className="group-hover:-translate-x-1 transition-transform duration-300"
+          />
+          <span className="tracking-tight">Sign Out</span>
         </button>
       </div>
     </aside>

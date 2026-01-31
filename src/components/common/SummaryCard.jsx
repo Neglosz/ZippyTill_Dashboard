@@ -15,43 +15,57 @@ const SummaryCard = ({
   title,
   value,
   subtext,
-  iconBgColor = "bg-gray-100",
-  iconColor = "text-gray-600",
+  iconBgColor,
+  iconColor,
   isDark = false,
 }) => {
   return (
     <div
-      className={`rounded-2xl p-6 flex items-center gap-5 shadow-sm border border-transparent transition-all duration-300 hover:shadow-md cursor-default group ${
+      className={`rounded-[32px] p-6 flex items-center gap-6 transition-all duration-700 cursor-default group relative overflow-hidden flex-1 ${
         isDark
-          ? "bg-white/10 backdrop-blur-md border-white/5 hover:bg-white/15"
-          : "bg-white hover:border-[#7B5CFA]/20"
-      }`}
+          ? "bg-gradient-to-b from-[#24262b] to-[#1a1b1f] border-white/5 shadow-2xl shadow-black/40 hover:shadow-black/60"
+          : "bg-white border-gray-100 shadow-premium hover:shadow-premium-hover"
+      } hover:-translate-y-1`}
     >
+      {!isDark && (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      )}
+      {isDark && (
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/10" />
+      )}
+
       <div
-        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-transform group-hover:scale-110 duration-300 ${iconBgColor} ${iconColor}`}
+        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-transform group-hover:scale-110 duration-500 relative z-10 ${
+          isDark
+            ? "bg-white/5 text-white border border-white/10 shadow-inner"
+            : "bg-gray-50 text-primary border border-gray-100 shadow-sm"
+        }`}
       >
+        {isDark && (
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
         {icon}
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col relative z-10">
         <span
-          className={`text-sm font-medium mb-1 transition-colors ${
-            isDark
-              ? "text-gray-300"
-              : "text-gray-500 group-hover:text-[#7B5CFA]"
+          className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 transition-colors ${
+            isDark ? "text-gray-500 opacity-60" : "text-inactive"
           }`}
         >
           {title}
         </span>
         <div className="flex flex-col">
           <span
-            className={`text-xl font-bold leading-tight ${
-              isDark ? "text-white" : "text-[#1B2559]"
+            className={`text-2xl font-black leading-tight tracking-tighter ${
+              isDark ? "text-white" : "text-gray-900"
             }`}
           >
             {value}
           </span>
           {subtext && (
-            <span className="text-gray-400 text-xs font-medium mt-1">
+            <span
+              className={`text-xs font-medium mt-1 ${isDark ? "text-gray-400" : "text-inactive"}`}
+            >
               {subtext}
             </span>
           )}
