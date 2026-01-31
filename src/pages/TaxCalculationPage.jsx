@@ -183,15 +183,15 @@ const TaxCalculationPage = () => {
                 </div>
 
                 {/* PIT Results Card */}
-                <div className="bg-primary rounded-[32px] p-8 shadow-lg shadow-primary/20 text-white relative flex flex-col gap-8 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div className="bg-[#FFF7ED] rounded-[32px] p-8 shadow-premium border border-orange-100 relative flex flex-col gap-8 overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/20 transition-colors"></div>
 
 
                     <div className="flex items-center gap-3 relative z-10">
-                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-sm">
-                            <Calculator className="w-7 h-7" />
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-sm">
+                            <Calculator className="w-7 h-7 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight">ผลการคำนวณ</h2>
+                        <h2 className="text-2xl font-black tracking-tight text-gray-900">ผลการคำนวณ</h2>
                     </div>
 
 
@@ -220,15 +220,15 @@ const TaxCalculationPage = () => {
                         ].map((item, idx) => (
                             <div
                                 key={idx}
-                                className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 hover:bg-white/20 transition-all"
+                                className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-orange-100/50 hover:border-primary/30 transition-all group/item shadow-sm"
                             >
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="text-white/60">{item.icon}</div>
-                                    <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">
+                                    <div className="text-primary/60 group-hover/item:text-primary transition-colors">{item.icon}</div>
+                                    <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                                         {item.label}
                                     </span>
                                 </div>
-                                <div className="text-xl font-black tracking-tighter">
+                                <div className="text-xl font-black tracking-tighter text-gray-900">
                                     ฿{formatCurrency(item.val)}
 
                                 </div>
@@ -236,16 +236,16 @@ const TaxCalculationPage = () => {
                         ))}
                     </div>
 
-                    <div className="bg-white/10 rounded-2xl p-7 relative z-10 border border-white/20 shadow-sm group">
-                        <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] block mb-2">
+                    <div className="bg-white rounded-2xl p-7 relative z-10 border border-primary/20 shadow-premium group hover:shadow-lg transition-all">
+                        <span className="text-[10px] font-black text-primary/70 uppercase tracking-[0.2em] block mb-2">
                             ภาษีที่ต้องชำระ (เบื้องต้น)
                         </span>
-                        <div className="text-5xl font-black text-white drop-shadow-lg group-hover:scale-105 transition-transform tracking-tighter">
+                        <div className="text-5xl font-black text-primary drop-shadow-sm group-hover:scale-105 transition-transform tracking-tighter">
                             ฿{formatCurrency(pitResult.totalTax)}
                         </div>
                     </div>
 
-                    <div className="bg-black/10 rounded-xl p-4 border border-white/10 text-[10px] font-bold leading-relaxed text-white/70 relative z-10 italic">
+                    <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 text-[10px] font-bold leading-relaxed text-orange-800/60 relative z-10 italic">
                         หมายเหตุ: การคำนวณนี้เป็นเพียงการประมาณการเบื้องต้น
                         สำหรับข้อมูลที่แน่นอนกรุณาปรึกษากับผู้เชี่ยวชาญด้านภาษี
                     </div>
@@ -359,11 +359,11 @@ const TaxCalculationPage = () => {
                                     ฿{formatCurrency(buyVat)}
                                 </span>
                             </div>
-                            <div className="bg-primary rounded-3xl p-7 shadow-lg shadow-primary/20 min-w-[240px] text-center text-white">
-                                <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] mb-2 block">
+                            <div className="bg-primary/5 rounded-3xl p-7 shadow-premium min-w-[240px] text-center border border-primary/10 group-hover:bg-primary/10 transition-colors">
+                                <span className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-2 block">
                                     ยอดนำส่งสุทธิ
                                 </span>
-                                <span className="text-5xl font-black block tracking-tighter">
+                                <span className="text-5xl font-black block tracking-tighter text-primary">
                                     ฿{formatCurrency(netVat)}
                                 </span>
                             </div>
@@ -421,8 +421,8 @@ const TaxCalculationPage = () => {
                                     <td className="px-6 py-4 text-right">
                                         <span
                                             className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${row.highlight
-                                                    ? "bg-emerald-50 text-emerald-600"
-                                                    : "bg-gray-100 text-inactive group-hover:bg-primary/10 group-hover:text-primary transition-all"
+                                                ? "bg-emerald-50 text-emerald-600"
+                                                : "bg-gray-100 text-inactive group-hover:bg-primary/10 group-hover:text-primary transition-all"
                                                 }`}
                                         >
                                             {row.rate}
