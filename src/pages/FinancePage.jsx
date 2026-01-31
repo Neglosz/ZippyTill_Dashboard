@@ -1,5 +1,14 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Coins, Wallet, Banknote, QrCode, HandCoins, LogOut } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Coins,
+  Wallet,
+  Banknote,
+  QrCode,
+  HandCoins,
+  LogOut,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -10,7 +19,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Legend
+  Legend,
 } from "recharts";
 
 const FinancePage = () => {
@@ -116,13 +125,62 @@ const FinancePage = () => {
   ];
 
   const recentTransactions = [
-    { id: "TXN-001", date: "20-12-2025", detail: "ขายสินค้า - คุณสมชาย", type: "รายรับ", amount: "฿1,250", status: "สำเร็จ" },
-    { id: "TXN-002", date: "20-12-2025", detail: "ซื้อสินค้าเข้า - บริษัท ABC", type: "รายจ่าย", amount: "฿8,500", status: "สำเร็จ" },
-    { id: "TXN-003", date: "19-12-2025", detail: "ขายสินค้า - ร้านค้าส่ง XYZ", type: "รายรับ", amount: "฿5,600", status: "สำเร็จ" },
-    { id: "TXN-004", date: "19-12-2025", detail: "ค่าไฟฟ้า", type: "รายจ่าย", amount: "฿2,300", status: "รอดำเนินการ" },
-    { id: "TXN-005", date: "18-12-2025", detail: "ขายสินค้า - คุณสมหญิง", type: "รายรับ", amount: "฿890", status: "สำเร็จ" },
-    { id: "TXN-006", date: "18-12-2025", detail: "ค่าเช่า", type: "รายจ่าย", amount: "฿15,000", status: "สำเร็จ" },
-    { id: "TXN-007", date: "17-12-2025", detail: "ขายสินค้า - บริษัท DEF", type: "รายรับ", amount: "฿12,500", status: "สำเร็จ" },
+    {
+      id: "TXN-001",
+      date: "20-12-2025",
+      detail: "ขายสินค้า - คุณสมชาย",
+      type: "รายรับ",
+      amount: "฿1,250",
+      status: "สำเร็จ",
+    },
+    {
+      id: "TXN-002",
+      date: "20-12-2025",
+      detail: "ซื้อสินค้าเข้า - บริษัท ABC",
+      type: "รายจ่าย",
+      amount: "฿8,500",
+      status: "สำเร็จ",
+    },
+    {
+      id: "TXN-003",
+      date: "19-12-2025",
+      detail: "ขายสินค้า - ร้านค้าส่ง XYZ",
+      type: "รายรับ",
+      amount: "฿5,600",
+      status: "สำเร็จ",
+    },
+    {
+      id: "TXN-004",
+      date: "19-12-2025",
+      detail: "ค่าไฟฟ้า",
+      type: "รายจ่าย",
+      amount: "฿2,300",
+      status: "รอดำเนินการ",
+    },
+    {
+      id: "TXN-005",
+      date: "18-12-2025",
+      detail: "ขายสินค้า - คุณสมหญิง",
+      type: "รายรับ",
+      amount: "฿890",
+      status: "สำเร็จ",
+    },
+    {
+      id: "TXN-006",
+      date: "18-12-2025",
+      detail: "ค่าเช่า",
+      type: "รายจ่าย",
+      amount: "฿15,000",
+      status: "สำเร็จ",
+    },
+    {
+      id: "TXN-007",
+      date: "17-12-2025",
+      detail: "ขายสินค้า - บริษัท DEF",
+      type: "รายรับ",
+      amount: "฿12,500",
+      status: "สำเร็จ",
+    },
   ];
 
   const monthlyData = [
@@ -141,10 +199,16 @@ const FinancePage = () => {
           <p className="text-gray-500 text-sm mb-1">08/01/67</p>
           <div className="flex flex-col gap-1">
             <p className="text-sm font-medium text-orange-400">
-              เงินเข้า <br/> <span className="text-black text-lg">{payload[0].value.toLocaleString()}</span>
+              เงินเข้า <br />{" "}
+              <span className="text-black text-lg">
+                {payload[0].value.toLocaleString()}
+              </span>
             </p>
             <p className="text-sm font-medium text-purple-400">
-              เงินออก <br/> <span className="text-black text-lg">{payload[1].value.toLocaleString()}</span>
+              เงินออก <br />{" "}
+              <span className="text-black text-lg">
+                {payload[1].value.toLocaleString()}
+              </span>
             </p>
           </div>
         </div>
@@ -154,81 +218,145 @@ const FinancePage = () => {
   };
 
   return (
-    <div className="pb-10 space-y-6">
-      <div className="flex flex-col gap-1">
-        <p className="text-gray-500">จัดการติดตามรายรับรายจ่าย</p>
+    <div className="relative pb-10 space-y-6 min-h-screen bg-[#F3F4F6]">
+      {/* Background Decorative Blobs - High Dimension */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-[10%] right-[-5%] w-[35%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[40%] bg-purple-500/5 rounded-full blur-[100px]" />
       </div>
 
-      {/* 4 Cards */}
+      <div className="flex flex-col gap-1.5 px-4">
+        <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+          Finance
+        </h2>
+        <div className="flex items-center gap-2 opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+            จัดการและติดตามรายรับรายจ่าย พร้อมการวิเคราะห์ข้อมูลขั้นสูง
+          </p>
+        </div>
+      </div>
+
+      {/* 4 Cards - High Dimension */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {financeTopics.map((topic) => (
           <div
             key={topic.id}
-            className={`${topic.color} border-none rounded-[24px] p-4 shadow-sm relative overflow-hidden h-[180px] flex flex-col`}
+            className="bg-white border border-gray-100 rounded-[32px] p-7 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
           >
-            <div className={`w-12 h-12 rounded-full ${topic.iconBg} flex items-center justify-center text-white mb-4`}>
-              <topic.icon size={24} />
+            {/* Edge lighting */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+            <div
+              className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color.replace("bg-", "bg-")}`}
+            />
+
+            <div className="flex justify-between items-start mb-8 relative z-10">
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+              >
+                <topic.icon
+                  size={24}
+                  strokeWidth={2.5}
+                  className={topic.iconBg.replace("bg-", "text-")}
+                />
+              </div>
+              <div
+                className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
+              >
+                Metric Active
+              </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-2xl font-extrabold text-[#1B2559]">{topic.amount}</h3>
-              <p className="text-sm font-medium text-gray-600">{topic.title}</p>
-              <p className={`text-xs font-medium ${topic.subtextColor} mt-1`}>{topic.subtext}</p>
+
+            <div className="relative z-10">
+              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+                {topic.title}
+              </p>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                  <span className="text-xl mr-1 opacity-40 italic">฿</span>
+                  {topic.amount}
+                </h3>
+                <p
+                  className={`text-[10px] font-black mt-2 flex items-center gap-1.5 ${topic.subtextColor}`}
+                >
+                  <span className="inline-block w-1 h-1 rounded-full bg-current opacity-50" />
+                  {topic.subtext}
+                </p>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Chart Section */}
-      <div className="bg-white rounded-[24px] p-6 shadow-sm">
-        <div className="flex justify-between items-start mb-6">
+      <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+        <div className="flex justify-between items-start mb-8 relative z-10">
           <div>
-            <h2 className="text-2xl font-bold text-[#1B2559]">กระแสเงินรายวัน</h2>
-            <p className="text-gray-500">Chain ratio</p>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
+              กระแสเงินรายวัน
+            </h2>
+            <p className="text-inactive text-[10px] font-black uppercase tracking-widest">
+              Daily Cash Flow
+            </p>
           </div>
           <div className="flex gap-4">
-             <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-orange-400"></span>
-                <span className="text-sm text-gray-500">เงินเข้า</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-purple-400"></span>
-                <span className="text-sm text-gray-500">เงินออก</span>
-             </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-primary"></span>
+              <span className="text-sm text-inactive">เงินเข้า</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-purple-400"></span>
+              <span className="text-sm text-inactive">เงินออก</span>
+            </div>
           </div>
         </div>
-        
-        <div className="h-[300px] w-full">
+
+        <div className="h-[300px] w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E0E0" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A3AED0', fontSize: 12 }} 
+            <LineChart
+              data={data}
+              margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#F1F5F9"
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 12 }}
                 dy={10}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A3AED0', fontSize: 12 }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 12 }}
                 tickFormatter={(value) => `${value / 1000}K`}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#E0E0E0', strokeWidth: 1, strokeDasharray: '4 4' }} />
-              <Line 
-                type="monotone" 
-                dataKey="income" 
-                stroke="#FB923C" 
-                strokeWidth={3} 
-                dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#FB923C' }} 
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{
+                  stroke: "#E2E8F0",
+                  strokeWidth: 1,
+                  strokeDasharray: "4 4",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="income"
+                stroke="#ED7117"
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2, fill: "#fff", stroke: "#ED7117" }}
                 activeDot={{ r: 8 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="expense" 
-                stroke="#A78BFA" 
-                strokeWidth={3} 
-                dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#A78BFA' }} 
+              <Line
+                type="monotone"
+                dataKey="expense"
+                stroke="#A78BFA"
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2, fill: "#fff", stroke: "#A78BFA" }}
                 activeDot={{ r: 8 }}
               />
             </LineChart>
@@ -236,123 +364,170 @@ const FinancePage = () => {
         </div>
       </div>
 
-      {/* Payment Channels Section */}
-      <div className="bg-white rounded-[24px] p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-[#1B2559] mb-6">ช่องทางการชำระเงิน</h2>
-        <div className="flex flex-col gap-6">
-          {paymentChannels.map((channel) => (
-            <div key={channel.id} className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full ${channel.iconBg} flex items-center justify-center shrink-0`}>
-                <channel.icon size={24} className={channel.iconBg.includes('text') ? '' : 'text-white'} />
-              </div>
-              
-              <div className="flex-1">
-                 <div className="flex justify-between mb-2">
-                    <span className="text-[#1B2559] font-bold">{channel.name}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Payment Channels Section */}
+        <div className="lg:col-span-4 bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight mb-8">
+            ช่องทางการชำระเงิน
+          </h2>
+          <div className="flex flex-col gap-6">
+            {paymentChannels.map((channel) => (
+              <div key={channel.id} className="flex items-center gap-4">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg.includes("text") ? "bg-gray-50 text-primary" : "bg-primary text-white"}`}
+                >
+                  <channel.icon size={22} strokeWidth={2.5} />
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-900 font-bold tracking-tight">
+                      {channel.name}
+                    </span>
                     <div className="text-right">
-                       <p className="text-[#1B2559] font-bold">{channel.amount}</p>
-                       <p className="text-gray-500 text-xs">{channel.percent}%</p>
+                      <p className="text-gray-900 font-black tracking-tighter">
+                        ฿{channel.amount}
+                      </p>
                     </div>
-                 </div>
-                 <div className="w-full bg-gray-100 rounded-full h-3">
-                    <div 
-                      className={`h-3 rounded-full ${channel.color}`} 
+                  </div>
+                  <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-primary`}
                       style={{ width: `${channel.percent}%` }}
                     ></div>
-                 </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Recent Transactions Section */}
-      <div className="bg-white rounded-[24px] p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-[#1B2559]">รายการล่าสุด</h2>
-          <button className="flex items-center gap-2 bg-orange-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-500 transition-colors">
-            <LogOut size={16} />
-            Export
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm rounded-l-lg">เลขที่รายการ</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm">วันที่</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm">รายละเอียด</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm">ประเภท</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm">จำนวนเงิน</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium text-sm rounded-r-lg">สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTransactions.map((tx, index) => (
-                <tr key={index} className="border-b border-gray-50 last:border-none hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4 text-gray-600 text-sm">{tx.id}</td>
-                  <td className="py-4 px-4 text-gray-600 text-sm">{tx.date}</td>
-                  <td className="py-4 px-4 text-gray-800 text-sm font-medium">{tx.detail}</td>
-                  <td className={`py-4 px-4 text-sm font-medium ${tx.type === 'รายรับ' ? 'text-green-500' : 'text-red-500'}`}>
-                    {tx.type === 'รายรับ' ? '↗' : '↘'} {tx.type}
-                  </td>
-                  <td className={`py-4 px-4 text-sm font-medium ${tx.type === 'รายรับ' ? 'text-green-500' : 'text-red-500'}`}>
-                    {tx.type === 'รายรับ' ? '+' : '-'}{tx.amount}
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${tx.status === 'สำเร็จ' ? 'bg-green-500' : 'bg-yellow-400'}`}>
-                      {tx.status}
-                    </span>
-                  </td>
+        {/* Recent Transactions Section */}
+        <div className="lg:col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+          <div className="flex justify-between items-center mb-8 relative z-10">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
+              รายการล่าสุด
+            </h2>
+            <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#d66515] transition-all shadow-sm">
+              <LogOut size={16} strokeWidth={2.5} />
+              Export
+            </button>
+          </div>
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-50">
+                  <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    รายการ
+                  </th>
+                  <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    วันที่
+                  </th>
+                  <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    ประเภท
+                  </th>
+                  <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    จำนวน
+                  </th>
+                  <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    สถานะ
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentTransactions.map((tx, index) => (
+                  <tr
+                    key={index}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="py-4 px-4 text-xs font-bold text-inactive">
+                      {tx.id}
+                    </td>
+                    <td className="py-4 px-4 text-xs font-bold text-inactive">
+                      {tx.date}
+                    </td>
+                    <td className="py-4 px-4 text-sm font-bold text-gray-900">
+                      {tx.type}
+                    </td>
+                    <td
+                      className={`py-4 px-4 text-sm font-black ${tx.type === "รายรับ" ? "text-emerald-500" : "text-rose-500"}`}
+                    >
+                      {tx.amount}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.status === "สำเร็จ" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Monthly Summary Section */}
-      <div className="bg-white rounded-[24px] p-6 shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-[#1B2559]">สรุปรายเดือน</h2>
+      <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+        <div className="mb-8 relative z-10">
+          <h2 className="text-xl font-black text-gray-900 tracking-tight">
+            สรุปรายเดือน
+          </h2>
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData} margin={{ top: 5, right: 0, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E0E0" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A3AED0', fontSize: 12 }} 
+            <BarChart
+              data={monthlyData}
+              margin={{ top: 5, right: 0, bottom: 5, left: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#F1F5F9"
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 12 }}
                 dy={10}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#A3AED0', fontSize: 12 }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 12 }}
               />
-              <Tooltip 
-                cursor={{ fill: 'transparent' }}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              <Tooltip
+                cursor={{ fill: "#F8FAFC" }}
+                contentStyle={{
+                  borderRadius: "16px",
+                  border: "none",
+                  boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.05)",
+                }}
               />
-              <Legend 
-                verticalAlign="bottom" 
-                height={36} 
-                iconType="rect"
-                formatter={(value) => <span className="text-gray-500 ml-2">{value}</span>}
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                iconType="circle"
+                formatter={(value) => (
+                  <span className="text-inactive font-bold text-xs ml-2 uppercase tracking-widest">
+                    {value}
+                  </span>
+                )}
               />
-              <Bar 
-                dataKey="รายรับ" 
-                fill="#10B981" 
-                barSize={30} 
-                radius={[4, 4, 0, 0]} 
+              <Bar
+                dataKey="รายรับ"
+                fill="#ED7117"
+                barSize={32}
+                radius={[8, 8, 0, 0]}
               />
-              <Bar 
-                dataKey="รายจ่าย" 
-                fill="#EF4444" 
-                barSize={30} 
-                radius={[4, 4, 0, 0]} 
+              <Bar
+                dataKey="รายจ่าย"
+                fill="#94A3B8"
+                barSize={32}
+                radius={[8, 8, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>

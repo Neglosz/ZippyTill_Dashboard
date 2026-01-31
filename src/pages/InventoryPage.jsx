@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Package,
   Truck,
@@ -14,50 +14,35 @@ import waterImg from "../assets/water.jpg";
 import cokeImg from "../assets/coke-full-red-pet-500-ml.png";
 import ExportModal from "../components/features/outstanding/ExportModal";
 import EditProductModal from "../components/features/inventory/EditProductModal";
-
-const PRODUCTS = [
-  {
-    id: "0001",
-    name: "เลย์",
-    category: "ขนม",
-    qty: 100,
-    cost: 18,
-    price: 22,
-    exp: "20-05-2026",
-    remaining: 56,
-    image: "/lays_pack_1768246959348.png", // Using the previously generated image
-  },
-  {
-    id: "0002",
-    name: "น้ำสิงห์ 1.5L",
-    category: "เครื่องดื่ม",
-    qty: 50,
-    cost: 10,
-    price: 15,
-    exp: "12-12-2026",
-    remaining: 24,
-    image: waterImg,
-  },
-  {
-    id: "0003",
-    name: "โค้ก 325ml",
-    category: "เครื่องดื่ม",
-    qty: 200,
-    cost: 12,
-    price: 18,
-    exp: "01-01-2027",
-    remaining: 150,
-    image: cokeImg,
-  },
-  // Add more mock data if needed
-];
+import { productService } from "../services/productService";
 
 const CATEGORY_TAGS = ["สินค้าทั่วไป", "สินค้า 1", "สินค้า 2", "สินค้า 3"];
 
 const InventoryPage = () => {
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTag, setActiveTag] = useState("สินค้าทั่วไป");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await productService.getAllProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setError(err.message || "An error occurred while fetching products");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleExportPDF = () => {
     console.log("Exporting PDF...");
@@ -72,54 +57,103 @@ const InventoryPage = () => {
   const handleSaveProduct = (updatedProduct) => {
     console.log("Saving product:", updatedProduct);
     // Here you would typically update the state or call an API
+    fetchProducts(); // Refresh list after save
     setEditingProduct(null);
   };
 
-  return (
-    <div className="space-y-6 pb-10">
-      {/* Top Section: stats & Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        {/* Stats Cards */}
-        <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-          {/* Card 1: Total Products */}
-          <div className="bg-[#FFE2E5] rounded-2xl p-4 flex items-center gap-4 min-w-[240px] shadow-sm">
-            <div className="bg-white p-3 rounded-full text-[#FA5A7D] shadow-[0_2px_10px_rgba(250,90,125,0.2)]">
-              <Package size={24} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-[#1B2559]">510</h3>
-              <p className="text-sm font-medium text-gray-500">
-                จำนวนสินค้าทั้งหมด
-              </p>
-            </div>
-          </div>
+  if (error) {
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-xl font-bold text-red-500 mb-4">
+          Error Loading Inventory
+        </h2>
+        <p className="text-gray-700 bg-gray-100 p-4 rounded-lg inline-block">
+          {error}
+        </p>
+        <div className="mt-6">
+          <button
+            onClick={fetchProducts}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Card 2: Total Stock */}
-          <div className="bg-[#FFF4DE] rounded-2xl p-4 flex items-center gap-4 min-w-[240px] shadow-sm">
-            <div className="bg-white p-3 rounded-full text-[#FF947A] shadow-[0_2px_10px_rgba(255,148,122,0.2)]">
-              <Truck size={24} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-[#1B2559]">510</h3>
-              <p className="text-sm font-medium text-gray-500">
-                จำนวนสินค้าทั้งหมด
-              </p>
-            </div>
+  return (
+    <div className="relative space-y-8 pb-10 min-h-screen bg-[#F3F4F6]">
+      {/* Background Decorative Blobs - High Dimension */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[35%] h-[35%] bg-blue-500/5 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Top Section: Header & Stats */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1.5 px-4">
+          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+            Inventory
+          </h2>
+          <div className="flex items-center gap-2 opacity-80">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+              จัดการสต็อกสินค้าและดูภาพรวมของคลังสินค้าทั้งหมด
+            </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-          <button
-            onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#FFB547] text-white rounded-xl font-bold hover:bg-[#ffca7a] transition-all shadow-md active:scale-95"
-          >
-            <Download size={18} />
-            Export
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#FF5656] text-white rounded-xl font-bold hover:bg-[#ff6b6b] transition-all shadow-md active:scale-95">
-            <Plus size={18} />
-            เพิ่มสินค้า
+        {/* Stats Cards - High Dimension */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Card 1: Total Products */}
+          <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+            <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm group-hover:rotate-6 transition-transform border border-rose-100 shrink-0">
+              <Package size={28} strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
+                Total Products
+              </p>
+              <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                {products.length}{" "}
+                <span className="text-lg font-black text-inactive">รายการ</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Card 2: Low Stock */}
+          <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+            <div className="bg-amber-50 p-4 rounded-[22px] text-amber-500 shadow-sm group-hover:rotate-6 transition-transform border border-amber-100 shrink-0">
+              <Truck size={28} strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
+                Low Stock Alert
+              </p>
+              <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
+                12{" "}
+                <span className="text-lg font-black text-inactive">รายการ</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Card 3: Action Button */}
+          <button className="bg-primary rounded-[32px] p-7 flex items-center justify-center gap-4 shadow-xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden border border-white/10 active:scale-95">
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-white/20 p-4 rounded-[22px] text-white shadow-inner group-hover:rotate-90 transition-transform duration-500">
+              <Plus size={28} strokeWidth={3} />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] mb-0.5">
+                Manage Stock
+              </p>
+              <h3 className="text-xl font-black tracking-widest text-white uppercase">
+                Add Product
+              </h3>
+            </div>
           </button>
         </div>
       </div>
@@ -140,21 +174,21 @@ const InventoryPage = () => {
       />
 
       {/* Filters Section */}
-      <div className="bg-white rounded-[20px] p-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col lg:flex-row gap-4 justify-between items-center">
+      <div className="bg-white rounded-[24px] p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative overflow-hidden">
         {/* Search & Filter */}
         <div className="flex items-center gap-3 w-full lg:w-auto">
           <div className="relative w-full lg:w-[320px]">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-inactive"
               size={18}
             />
             <input
               type="text"
               placeholder="ค้นหาสินค้า....."
-              className="w-full bg-gray-100 rounded-lg pl-10 pr-4 py-2.5 text-sm font-medium text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-[#FF5656]/20 transition-all placeholder:text-gray-400"
+              className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-inactive"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold hover:bg-gray-200 transition-all text-sm">
+          <button className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-100 text-inactive rounded-2xl font-black hover:text-gray-900 hover:bg-gray-50 transition-all text-[10px] uppercase tracking-widest">
             <Filter size={16} />
             ตัวกรอง
           </button>
@@ -166,10 +200,10 @@ const InventoryPage = () => {
             <button
               key={tag}
               onClick={() => setActiveTag(tag)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-widest border ${
                 activeTag === tag
-                  ? "bg-gray-200 text-[#1B2559]"
-                  : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                  ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
+                  : "bg-white text-inactive hover:text-gray-900 border-gray-100 hover:bg-gray-50"
               }`}
             >
               {tag}
@@ -179,75 +213,94 @@ const InventoryPage = () => {
       </div>
 
       {/* Product Table */}
-      <div className="bg-white rounded-[20px] p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-[32px] p-2 border border-gray-100 shadow-premium relative overflow-hidden">
+        <div className="overflow-x-auto p-4 scrollbar-hide">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-gray-400 text-xs font-bold tracking-wider bg-gray-50/50">
-                <th className="py-4 pl-4 rounded-l-xl">รูปภาพ</th>
-                <th className="py-4">รหัสสินค้า</th>
-                <th className="py-4">ชื่อสินค้า</th>
-                <th className="py-4">หมวดหมู่</th>
-                <th className="py-4 text-center">จำนวน</th>
-                <th className="py-4 text-center">ราคาทุน</th>
-                <th className="py-4 text-center">ราคาขาย</th>
-                <th className="py-4">EXP.</th>
-                <th className="py-4 text-center">คงเหลือ</th>
-                <th className="py-4 pr-4 rounded-r-xl text-center"></th>
+              <tr className="text-inactive text-[10px] font-black uppercase tracking-[0.2em] border-b border-gray-50">
+                <th className="py-6 pl-4">รูปภาพ</th>
+                <th className="py-6">ชื่อสินค้า</th>
+                <th className="py-6">หมวดหมู่</th>
+                <th className="py-6 text-center">คงเหลือ</th>
+                <th className="py-6 text-center">ทุน</th>
+                <th className="py-6 text-center">ขาย</th>
+                <th className="py-6 pr-4 text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {PRODUCTS.map((product) => (
-                <tr
-                  key={product.id}
-                  className="group hover:bg-gray-50 transition-colors"
-                >
-                  <td className="py-3 pl-4">
-                    <div className="h-12 w-12 rounded-lg bg-gray-100 p-1 flex items-center justify-center border border-gray-100">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="h-full w-full object-contain"
-                        onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/50";
-                        }}
-                      />
-                    </div>
-                  </td>
-                  <td className="py-3 text-sm font-medium text-gray-500">
-                    {product.id}
-                  </td>
-                  <td className="py-3 text-sm font-bold text-[#1B2559]">
-                    {product.name}
-                  </td>
-                  <td className="py-3 text-sm font-medium text-gray-500">
-                    {product.category}
-                  </td>
-                  <td className="py-3 text-center text-sm font-bold text-[#1B2559]">
-                    {product.qty}
-                  </td>
-                  <td className="py-3 text-center text-sm font-bold text-gray-500">
-                    {product.cost}
-                  </td>
-                  <td className="py-3 text-center text-sm font-bold text-[#1B2559]">
-                    {product.price}
-                  </td>
-                  <td className="py-3 text-sm font-medium text-gray-500">
-                    {product.exp}
-                  </td>
-                  <td className="py-3 text-center text-sm font-bold text-[#1B2559]">
-                    {product.remaining}
-                  </td>
-                  <td className="py-3 pr-4 text-center">
-                    <button
-                      onClick={() => setEditingProduct(product)}
-                      className="p-2 resize hover:bg-gray-200 rounded-lg text-gray-400 hover:text-[#1B2559] transition-colors"
-                    >
-                      <Edit size={16} />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="text-center py-20 text-inactive font-bold"
+                  >
+                    กำลังโหลดข้อมูล...
                   </td>
                 </tr>
-              ))}
+              ) : products.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="text-center py-20 text-inactive font-bold"
+                  >
+                    ไม่พบข้อมูลสินค้า
+                  </td>
+                </tr>
+              ) : (
+                products.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="group hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="py-4 pl-4">
+                      <div className="h-14 w-14 rounded-2xl bg-gray-50 p-2 flex items-center justify-center border border-gray-100 shadow-sm group-hover:scale-105 transition-transform">
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/50";
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4">
+                      <p className="text-sm font-black text-gray-900 group-hover:text-primary transition-colors">
+                        {product.name}
+                      </p>
+                      <p className="text-[10px] font-bold text-inactive mt-1">
+                        #{product.barcode || product.id.slice(0, 8)}
+                      </p>
+                    </td>
+                    <td className="py-4">
+                      <span className="text-[10px] font-black text-inactive uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                        {product.product_categories?.name || "ทั่วไป"}
+                      </span>
+                    </td>
+                    <td className="py-4 text-center">
+                      <span
+                        className={`text-sm font-black ${product.stock_qty < 10 ? "text-rose-500" : "text-gray-900"}`}
+                      >
+                        {product.stock_qty}
+                      </span>
+                    </td>
+                    <td className="py-4 text-center text-sm font-bold text-inactive">
+                      ฿{product.cost_price}
+                    </td>
+                    <td className="py-4 text-center text-sm font-black text-primary">
+                      ฿{product.price}
+                    </td>
+                    <td className="py-4 pr-4 text-center">
+                      <button
+                        onClick={() => setEditingProduct(product)}
+                        className="p-3 bg-white border border-gray-100 hover:border-primary/30 hover:bg-primary/5 rounded-2xl text-inactive hover:text-primary transition-all shadow-sm active:scale-95"
+                      >
+                        <Edit size={16} strokeWidth={2.5} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
