@@ -16,6 +16,8 @@ const Header = () => {
     if (path.includes("overdue")) return "รายการค้างชำระ";
     if (path.includes("stock")) return "คลังสินค้า";
     if (path.includes("finance")) return "การเงิน";
+    if (path.includes("sales")) return "ยอดขาย";
+    if (path.includes("tax")) return "ภาษี";
     return "เมนูหลัก";
   };
 

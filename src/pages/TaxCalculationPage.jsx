@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 const TaxCalculationPage = () => {
+
   // --- PIT State ---
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(0);
@@ -18,6 +19,7 @@ const TaxCalculationPage = () => {
   // --- VAT State ---
   const [buyVatAmount, setBuyVatAmount] = useState(0);
   const [sellVatAmount, setSellVatAmount] = useState(0);
+
 
   // --- PIT Calculation Logic ---
   const taxableIncome = Math.max(
@@ -82,6 +84,7 @@ const TaxCalculationPage = () => {
         <div className="absolute bottom-[-5%] left-[-5%] w-[35%] h-[35%] bg-blue-500/5 rounded-full blur-[110px]" />
       </div>
 
+
       {/* Header Banner - High Dimension */}
       <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
@@ -124,6 +127,7 @@ const TaxCalculationPage = () => {
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-inactive" />
               </div>
             </div>
+
 
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
@@ -179,12 +183,14 @@ const TaxCalculationPage = () => {
         <div className="bg-primary rounded-[32px] p-8 shadow-lg shadow-primary/20 text-white relative flex flex-col gap-8 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
 
+
           <div className="flex items-center gap-3 relative z-10">
             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-sm">
               <Calculator className="w-7 h-7" />
             </div>
             <h2 className="text-2xl font-black tracking-tight">ผลการคำนวณ</h2>
           </div>
+
 
           <div className="grid grid-cols-2 gap-4 relative z-10">
             {[
@@ -221,6 +227,7 @@ const TaxCalculationPage = () => {
                 </div>
                 <div className="text-xl font-black tracking-tighter">
                   ฿{formatCurrency(item.val)}
+
                 </div>
               </div>
             ))}
@@ -275,6 +282,7 @@ const TaxCalculationPage = () => {
           </div>
         </div>
 
+
         {/* Sell VAT Card */}
         <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-6 relative overflow-hidden group">
           <div className="flex items-center gap-4 relative z-10">
@@ -297,6 +305,7 @@ const TaxCalculationPage = () => {
                 onWheel={handleWheel}
                 className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 text-2xl font-black text-gray-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all tracking-tighter"
               />
+
             </div>
             <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10 group">
               <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">
@@ -326,6 +335,7 @@ const TaxCalculationPage = () => {
               </div>
             </div>
 
+
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-12">
               <div className="flex flex-col items-center md:items-start">
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest mb-1">
@@ -352,6 +362,7 @@ const TaxCalculationPage = () => {
                   ฿{formatCurrency(netVat)}
                 </span>
               </div>
+
             </div>
           </div>
         </div>
