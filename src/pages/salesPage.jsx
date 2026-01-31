@@ -106,7 +106,7 @@ const SalesPage = () => {
       case "1D": return data1D;
       case "1M": return data1M;
       case "1Y": return data1Y;
-      case "Max": return data1Y; 
+      case "Max": return data1Y;
       default: return data1D;
     }
   };
@@ -120,21 +120,51 @@ const SalesPage = () => {
   ];
 
   return (
-    <div className="pb-10 space-y-6">
+    <div className="relative pb-10 space-y-8 min-h-screen bg-[#F3F4F6]">
+      {/* Background Decorative Blobs - High Dimension */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[130px] animate-pulse" />
+        <div className="absolute bottom-[-5%] left-[-5%] w-[35%] h-[35%] bg-blue-500/5 rounded-full blur-[110px]" />
+      </div>
+
+      {/* Header - Matches the style of other pages */}
+      <div className="bg-white rounded-[32px] p-6 flex flex-col md:flex-row items-center gap-6 shadow-premium relative overflow-hidden border border-gray-100 group">
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+        <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
+          <BarChart3 className="w-10 h-10 text-primary" strokeWidth={2.5} />
+        </div>
+        <div className="text-center md:text-left">
+          <h1 className="text-2xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+            Sales Overview
+            <span className="text-primary">.</span>
+          </h1>
+          <div className="flex items-center justify-center md:justify-start gap-2 opacity-80">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+              สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <div
             key={index}
-            className={`${stat.bgColor} border-none rounded-[24px] p-4 shadow-sm relative overflow-hidden h-[180px] flex flex-col`}
+            className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-premium-hover transition-all duration-300"
           >
-            <div className={`w-12 h-12 rounded-full ${stat.bgIcon} flex items-center justify-center shrink-0 mb-4`}>
-              {stat.icon}
+            <div className={`w-14 h-14 rounded-2xl ${stat.bgIcon.replace('bg-', 'bg-').replace('400', '10').replace('500', '10')} bg-opacity-10 flex items-center justify-center shrink-0 mb-6 border border-gray-100`}>
+              {React.cloneElement(stat.icon, { className: "w-7 h-7", style: { color: stat.bgIcon.includes('red') ? '#F87171' : stat.bgIcon.includes('orange') ? '#FB923C' : stat.bgIcon.includes('green') ? '#22C55E' : '#A855F7' } })}
             </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-2xl font-extrabold text-[#1B2559] mb-1">{stat.value}</h3>
-              <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-              <p className={`${stat.trendColor} text-xs font-medium mt-1`}>{stat.trend}</p>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">{stat.label}</span>
+              <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">{stat.value}</h3>
+              <div className="flex items-center gap-2">
+                <div className={`text-[10px] font-black ${stat.trendColor} uppercase tracking-widest bg-gray-50 px-2 py-1 rounded-full border border-gray-100`}>
+                  {stat.trend}
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -143,22 +173,24 @@ const SalesPage = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Chart: Total Sales */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[24px] shadow-sm">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-premium border border-gray-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
-              <h3 className="text-gray-600 font-medium">ยอดขายรวมทั้งหมด</h3>
-              <p className="text-3xl font-bold text-gray-800">294,420</p>
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">สถิติยอดขาย</span>
+              </div>
+              <p className="text-3xl font-black text-gray-900 tracking-tighter">฿294,420</p>
             </div>
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
               {["1D", "1M", "1Y", "Max"].map((range) => (
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-4 py-1 text-sm font-medium rounded-md transition-colors ${
-                    timeRange === range
-                      ? "bg-white shadow-sm text-gray-800"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
+                    ? "bg-white shadow-sm text-primary border border-gray-100"
+                    : "text-inactive hover:text-gray-900"
+                    }`}
                 >
                   {range}
                 </button>
@@ -166,137 +198,160 @@ const SalesPage = () => {
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={getChartData()} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="#E5E7EB" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                  dy={10}
+                <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="#F1F5F9" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }}
+                  dy={15}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                  width={45}
-                  tickCount={5}
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }}
+                  width={60}
+                  tickCount={6}
                   domain={[0, 'auto']}
                   tickFormatter={(value) => value === 0 ? "0" : value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
                 />
-                <Tooltip 
-                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                   labelFormatter={(value) => timeRange === '1M' ? `วันที่ ${value}` : value}
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '20px',
+                    border: '1px solid #F1F5F9',
+                    boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.05)',
+                    padding: '12px 16px'
+                  }}
+                  labelStyle={{ fontWeight: 900, color: '#1E293B', marginBottom: '8px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                  itemStyle={{ fontSize: '11px', fontWeight: 700, padding: '2px 0' }}
+                  labelFormatter={(value) => timeRange === '1M' ? `วันที่ ${value}` : value}
                 />
-                <Line type="monotone" dataKey="general" stroke="#A855F7" strokeWidth={2} dot={false} name="ของใช้ทั่วไป" />
-                <Line type="monotone" dataKey="home" stroke="#F97316" strokeWidth={2} dot={false} name="ของใช้ในบ้าน" />
-                <Line type="monotone" dataKey="fresh" stroke="#2563EB" strokeWidth={2} dot={false} name="ของสด" />
-                <Line type="monotone" dataKey="snack" stroke="#22C55E" strokeWidth={2} dot={false} name="ขนม" />
+                <Line type="monotone" dataKey="general" stroke="#A855F7" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} name="ของใช้ทั่วไป" />
+                <Line type="monotone" dataKey="home" stroke="#F97316" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} name="ของใช้ในบ้าน" />
+                <Line type="monotone" dataKey="fresh" stroke="#2563EB" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} name="ของสด" />
+                <Line type="monotone" dataKey="snack" stroke="#22C55E" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} name="ขนม" />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-6 max-w-[400px]">
-             <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-purple-500"></span>
-                <span className="text-gray-600 font-medium">ของใช้ทั่วไป</span>
-             </div>
-             <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-blue-600"></span>
-                <span className="text-gray-600 font-medium">ของสด</span>
-             </div>
-             <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-orange-500"></span>
-                <span className="text-gray-600 font-medium">ของใช้ในบ้าน</span>
-             </div>
-             <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-green-500"></span>
-                <span className="text-gray-600 font-medium">ขนม</span>
-             </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-200"></span>
+              <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของใช้ทั่วไป</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-blue-600 shadow-sm shadow-blue-200"></span>
+              <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของสด</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-orange-500 shadow-sm shadow-orange-200"></span>
+              <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของใช้ในบ้าน</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-200"></span>
+              <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ขนม</span>
+            </div>
           </div>
         </div>
 
         {/* Right Chart: Income Structure */}
-        <div className="bg-white p-6 rounded-[24px] shadow-sm flex flex-col">
-           <div className="mb-4">
-              <h3 className="text-gray-600 font-medium">ยอดขายรวมทั้งหมด</h3>
-              <p className="text-3xl font-bold text-gray-800">294,420</p>
-           </div>
-           
-           <div className="flex-1 min-h-[250px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={0}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-           </div>
+        <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <span className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">โครงสร้างรายได้</span>
+            </div>
+            <p className="text-3xl font-black text-gray-900 tracking-tighter">294,420</p>
+          </div>
 
-           <div className="mt-4 space-y-3">
-              {pieData.map((item, index) => (
-                 <div key={index} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-                       <span className="text-sm text-gray-600">{item.name}</span>
-                    </div>
-                    <span className="text-sm font-medium text-gray-800">{item.value}%</span>
-                 </div>
-              ))}
-           </div>
+          <div className="flex-1 min-h-[280px] relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={95}
+                  paddingAngle={8}
+                  dataKey="value"
+                  cornerRadius={10}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: '20px', border: '1px solid #F1F5F9', boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.05)' }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] font-black text-inactive uppercase tracking-widest">Total</span>
+              <span className="text-2xl font-black text-gray-900 tracking-tighter">100%</span>
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-4">
+            {pieData.map((item, index) => (
+              <div key={index} className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-primary/20 transition-all group">
+                <div className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></span>
+                  <span className="text-[10px] font-black text-inactive uppercase tracking-widest group-hover:text-gray-900 transition-colors">{item.name}</span>
+                </div>
+                <span className="text-sm font-black text-gray-900 tracking-tighter">{item.value}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Top 5 Products Section */}
-      <div className="bg-white p-6 rounded-[24px] shadow-sm">
-        <h3 className="text-lg font-bold text-gray-800 mb-6">สินค้าขายดี Top 5</h3>
+      <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">สินค้าขายดี Top 5</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-left text-gray-500 text-sm border-b border-gray-100">
-                <th className="pb-4 font-medium pl-4">อันดับ</th>
-                <th className="pb-4 font-medium">ชื่อสินค้า</th>
-                <th className="pb-4 font-medium">ยอดขาย</th>
-                <th className="pb-4 font-medium">รายได้</th>
-                <th className="pb-4 font-medium">แนวโน้ม</th>
+              <tr className="text-left text-inactive text-[10px] font-black uppercase tracking-[0.2em] border-b border-gray-50">
+                <th className="pb-6 pl-4">อันดับ</th>
+                <th className="pb-6">ชื่อสินค้า</th>
+                <th className="pb-6">ยอดขาย</th>
+                <th className="pb-6">รายได้</th>
+                <th className="pb-6">แนวโน้ม</th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {[
-                { rank: 1, name: "เลย์ รสออริจินอล", sales: "1250 ชิ้น", revenue: "฿25,000", trend: "12%", trendUp: true, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Lays_Classic_Chips.png/600px-Lays_Classic_Chips.png" }, // Using a generic placeholder if needed or just styling
+                { rank: 1, name: "เลย์ รสออริจินอล", sales: "1250 ชิ้น", revenue: "฿25,000", trend: "12%", trendUp: true },
                 { rank: 2, name: "เบียร์ช้าง", sales: "890 ชิ้น", revenue: "฿44,500", trend: "8%", trendUp: true },
                 { rank: 3, name: "น้ำมะนาว", sales: "750 ชิ้น", revenue: "฿11,250", trend: "3%", trendUp: false },
                 { rank: 4, name: "ข้าวสาร 5 กก.", sales: "420 ชิ้น", revenue: "฿75,600", trend: "15%", trendUp: true },
                 { rank: 5, name: "น้ำดื่ม", sales: "1520 ชิ้น", revenue: "฿15,200", trend: "5%", trendUp: true },
               ].map((product, index) => (
-                <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 pl-4 font-medium">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                      ${product.rank === 1 ? 'bg-yellow-400 text-white' : 
-                        product.rank === 2 ? 'bg-gray-400 text-white' : 
-                        product.rank === 3 ? 'bg-orange-500 text-white' : 
-                        'bg-gray-200 text-gray-600'}`}>
+                <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-all group">
+                  <td className="py-6 pl-4 font-black">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
+                      ${product.rank === 1 ? 'bg-amber-400 text-white shadow-amber-200' :
+                        product.rank === 2 ? 'bg-slate-400 text-white shadow-slate-200' :
+                          product.rank === 3 ? 'bg-orange-400 text-white shadow-orange-200' :
+                            'bg-gray-100 text-inactive border border-gray-100'}`}>
                       {product.rank}
                     </div>
                   </td>
-                  <td className="py-4 text-gray-800 font-medium">{product.name}</td>
-                  <td className="py-4 text-gray-600">{product.sales}</td>
-                  <td className="py-4 text-gray-600">{product.revenue}</td>
-                  <td className="py-4">
-                    <div className={`flex items-center gap-1 ${product.trendUp ? "text-green-500" : "text-red-500"}`}>
-                      {product.trendUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  <td className="py-6 text-gray-900 font-black tracking-tight">{product.name}</td>
+                  <td className="py-6 text-inactive font-bold">{product.sales}</td>
+                  <td className="py-6 text-gray-900 font-black tracking-tight">{product.revenue}</td>
+                  <td className="py-6">
+                    <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-flex ${product.trendUp ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
+                      {product.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       <span>{product.trend}</span>
                     </div>
                   </td>
