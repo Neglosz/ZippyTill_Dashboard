@@ -90,7 +90,7 @@ const Header = () => {
               <p
                 className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${showProfile ? "text-white/70" : "text-inactive"}`}
               >
-                Administrator
+                ผู้ดูแลระบบ
               </p>
             </div>
             <ChevronDown
