@@ -456,8 +456,14 @@ const AIPromotionPage = () => {
                       fontFamily: "inherit",
                     }}
                   />
+                  <Legend
+                    formatter={(value) =>
+                      value === "withPromo" ? "มีโปรโมชั่น" : "ไม่มีโปรโมชั่น"
+                    }
+                  />
                   <Bar
                     dataKey="withPromo"
+                    name="มีโปรโมชั่น"
                     fill="#ED7117" // Primary Orange
                     radius={[6, 6, 0, 0]}
                     maxBarSize={50}
@@ -465,6 +471,7 @@ const AIPromotionPage = () => {
                   />
                   <Bar
                     dataKey="noPromo"
+                    name="ไม่มีโปรโมชั่น"
                     fill="#9CA3AF" // Inactive Gray
                     radius={[6, 6, 0, 0]}
                     maxBarSize={50}

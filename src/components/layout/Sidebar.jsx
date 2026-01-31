@@ -125,7 +125,7 @@ const Sidebar = () => {
             strokeWidth={2.5}
             className="group-hover:-translate-x-1 transition-transform duration-300"
           />
-          <span className="tracking-tight">Sign Out</span>
+          <span className="tracking-tight">ออกจากระบบ</span>
         </button>
       </div>
     </aside>
