@@ -29,8 +29,8 @@ const BranchCard = ({
   return (
     <div
       className={`rounded-[40px] overflow-hidden transition-all duration-700 flex flex-col h-full group relative hover:-translate-y-2.5 ${isDark
-          ? "bg-[#1E2022] border-white/10 shadow-2xl shadow-black/60 hover:shadow-black/80"
-          : "bg-white border-gray-100 shadow-premium hover:shadow-float"
+        ? "bg-[#1E2022] border-white/10 shadow-2xl shadow-black/60 hover:shadow-black/80"
+        : "bg-white border-gray-100 shadow-premium hover:shadow-float"
         }`}
     >
       {/* Edge lighting effect - High Dimension */}
@@ -42,10 +42,10 @@ const BranchCard = ({
       <div className="relative h-60 overflow-hidden">
         <div
           className={`absolute top-5 right-5 z-20 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md flex items-center gap-2 transition-all duration-500 border ${isOpen
-              ? isDark
-                ? "bg-white/10 text-emerald-400 border-white/10 shadow-lg"
-                : "bg-white/80 text-emerald-600 border-emerald-100 shadow-sm"
-              : "bg-black/40 text-gray-400 border-white/5"
+            ? isDark
+              ? "bg-white/10 text-emerald-400 border-white/10 shadow-lg"
+              : "bg-white/80 text-emerald-600 border-emerald-100 shadow-sm"
+            : "bg-black/40 text-gray-400 border-white/5"
             }`}
         >
           <div
@@ -76,8 +76,8 @@ const BranchCard = ({
 
         <h3
           className={`text-2xl font-black mb-1 transition-all duration-500 relative z-10 tracking-tighter ${isDark
-              ? "text-white group-hover:text-primary"
-              : "text-gray-900 group-hover:text-primary"
+            ? "text-white group-hover:text-primary"
+            : "text-gray-900 group-hover:text-primary"
             }`}
         >
           {branchName}
@@ -98,15 +98,15 @@ const BranchCard = ({
           {/* Sales Row - Higher Dimension */}
           <div
             className={`flex items-center justify-between p-5 rounded-[24px] transition-all duration-500 border ${isDark
-                ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
-                : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
+              ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
+              : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
               }`}
           >
             <div className="flex items-center gap-4">
               <div
                 className={`w-11 h-11 rounded-[18px] flex items-center justify-center border shadow-sm group-hover:rotate-12 transition-all duration-500 ${isDark
-                    ? "bg-primary/20 text-primary border-primary/30"
-                    : "bg-white text-primary border-gray-100 shadow-inner-light"
+                  ? "bg-primary/20 text-primary border-primary/30"
+                  : "bg-white text-primary border-gray-100 shadow-inner-light"
                   }`}
               >
                 <TrendingUp size={20} strokeWidth={2.5} />
@@ -126,8 +126,8 @@ const BranchCard = ({
             {/* Orders */}
             <div
               className={`flex flex-col p-5 rounded-[24px] transition-all duration-500 border ${isDark
-                  ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
-                  : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
+                ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
+                : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
                 }`}
             >
               <div className="flex items-center gap-3 mb-2">
@@ -150,8 +150,8 @@ const BranchCard = ({
             {/* Staff */}
             <div
               className={`flex flex-col p-5 rounded-[24px] transition-all duration-500 border ${isDark
-                  ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
-                  : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
+                ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
+                : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
                 }`}
             >
               <div className="flex items-center gap-3 mb-2">
@@ -174,8 +174,8 @@ const BranchCard = ({
 
           <div
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full w-max text-[10px] font-black uppercase tracking-widest transition-transform group-hover:scale-105 duration-500 ${isDark
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-                : "bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
+              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              : "bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
               }`}
           >
             <BarChart3 size={14} strokeWidth={3} />
@@ -187,8 +187,8 @@ const BranchCard = ({
         <div className="mt-auto relative z-10">
           <button
             className={`w-full py-5 rounded-[24px] font-black text-[10px] uppercase tracking-[0.25em] shadow-xl hover:-translate-y-1.5 active:scale-95 transition-all duration-500 flex items-center justify-center gap-4 group/btn relative overflow-hidden ${isDark
-                ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
-                : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
+              ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
+              : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
               }`}
             onClick={handleAction}
           >
