@@ -218,7 +218,7 @@ const FinancePage = () => {
   };
 
   return (
-    <div className="relative pb-10 space-y-6 min-h-screen bg-[#F3F4F6]">
+    <div className="relative pb-10 space-y-6 min-h-screen">
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[10%] right-[-5%] w-[35%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
