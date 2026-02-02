@@ -83,7 +83,7 @@ const InventoryPage = () => {
   }
 
   return (
-    <div className="relative space-y-8 pb-10 min-h-screen bg-[#F3F4F6]">
+    <div className="relative space-y-8 pb-10 min-h-screen ">
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
