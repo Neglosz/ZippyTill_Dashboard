@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Heart,
   AlertCircle,
+  Settings2,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -33,6 +34,7 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
     minSpend: "",
     startDate: "",
     endDate: "",
+    prompt: "",
   });
 
   if (!isOpen) return null;
@@ -62,7 +64,7 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
       image:
         "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=200&h=200&fit=crop",
     },
-    
+
     {
       id: "SKU006",
       name: "น้ำส้ม 600 มล.",
@@ -120,11 +122,10 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                   e.stopPropagation();
                   setActiveTab(i);
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${
-                  activeTab === i
-                    ? "bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg shadow-primary/30 scale-[1.02]"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === i
+                  ? "bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg shadow-primary/30 scale-[1.02]"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                  }`}
               >
                 <tab.icon
                   size={16}
@@ -167,11 +168,10 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                   e.stopPropagation();
                   setActiveFilter(i);
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm h-10 font-bold whitespace-nowrap transition-all duration-300 ${
-                  activeFilter === i
-                    ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-lg shadow-gray-900/20 scale-105"
-                    : "bg-white border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:shadow-md"
-                }`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm h-10 font-bold whitespace-nowrap transition-all duration-300 ${activeFilter === i
+                  ? "bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-lg shadow-gray-900/20 scale-105"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:shadow-md"
+                  }`}
               >
                 <cat.icon size={14} />
                 {cat.label}
@@ -255,26 +255,23 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                   e.stopPropagation();
                   toggleProduct(product);
                 }}
-                className={`group relative rounded-2xl cursor-pointer transition-all duration-500 ${
-                  isSelected ? "scale-[1.02]" : "hover:scale-[1.03]"
-                }`}
+                className={`group relative rounded-2xl cursor-pointer transition-all duration-500 ${isSelected ? "scale-[1.02]" : "hover:scale-[1.03]"
+                  }`}
               >
                 {/* Glow Effect */}
                 <div
-                  className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${
-                    isSelected
-                      ? "bg-gradient-to-br from-primary/30 to-orange-400/30 opacity-100"
-                      : "bg-gradient-to-br from-gray-200/50 to-gray-300/50 opacity-0 group-hover:opacity-100"
-                  }`}
+                  className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${isSelected
+                    ? "bg-gradient-to-br from-primary/30 to-orange-400/30 opacity-100"
+                    : "bg-gradient-to-br from-gray-200/50 to-gray-300/50 opacity-0 group-hover:opacity-100"
+                    }`}
                 />
 
                 {/* Card Content */}
                 <div
-                  className={`relative bg-white rounded-2xl border-2 p-3 transition-all duration-300 ${
-                    isSelected
-                      ? "border-primary shadow-xl shadow-primary/20"
-                      : "border-gray-100 group-hover:border-gray-200 shadow-md group-hover:shadow-xl"
-                  }`}
+                  className={`relative bg-white rounded-2xl border-2 p-3 transition-all duration-300 ${isSelected
+                    ? "border-primary shadow-xl shadow-primary/20"
+                    : "border-gray-100 group-hover:border-gray-200 shadow-md group-hover:shadow-xl"
+                    }`}
                 >
                   {/* Selection Badge */}
                   {isSelected && (
@@ -497,32 +494,36 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                 icon: Gift,
                 gradient: "from-purple-500 to-purple-600",
               },
+              {
+                id: "custom",
+                label: "กำหนดเอง",
+                desc: "ตั้งค่าโปรโมชั่นในแบบของคุณ",
+                icon: Settings2,
+                gradient: "from-orange-500 to-orange-600",
+              },
             ].map((type) => (
               <div
                 key={type.id}
                 onClick={() => setPromoData({ ...promoData, type: type.id })}
-                className={`group relative p-4 rounded-2xl border-2 cursor-pointer flex items-center gap-4 transition-all duration-300 ${
-                  promoData.type === type.id
-                    ? "border-primary bg-gradient-to-br from-primary/5 to-orange-400/5 shadow-lg shadow-primary/10 scale-[1.02]"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
-                }`}
+                className={`group relative p-4 rounded-2xl border-2 cursor-pointer flex items-center gap-4 transition-all duration-300 ${promoData.type === type.id
+                  ? "border-primary bg-gradient-to-br from-primary/5 to-orange-400/5 shadow-lg shadow-primary/10 scale-[1.02]"
+                  : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
+                  }`}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                    promoData.type === type.id
-                      ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg`
-                      : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"
-                  }`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${promoData.type === type.id
+                    ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg`
+                    : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"
+                    }`}
                 >
                   <type.icon size={22} />
                 </div>
                 <div className="flex-1">
                   <h4
-                    className={`font-bold text-sm mb-0.5 ${
-                      promoData.type === type.id
-                        ? "text-gray-900"
-                        : "text-gray-700"
-                    }`}
+                    className={`font-bold text-sm mb-0.5 ${promoData.type === type.id
+                      ? "text-gray-900"
+                      : "text-gray-700"
+                      }`}
                   >
                     {type.label}
                   </h4>
@@ -549,72 +550,102 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
           </h3>
 
           <div className="space-y-5">
-            {/* Discount Value */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                {promoData.type === "percent"
-                  ? "ส่วนลด (%)"
-                  : promoData.type === "amount"
-                    ? "ส่วนลด (บาท)"
-                    : "จำนวนที่ต้องซื้อ"}
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={promoData.value}
-                  onChange={(e) =>
-                    setPromoData({ ...promoData, value: e.target.value })
-                  }
-                  className="w-full px-5 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-2xl font-black text-gray-900 transition-all"
-                  placeholder="0"
-                />
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-primary font-black text-lg">
-                  {promoData.type === "percent"
-                    ? "%"
-                    : promoData.type === "amount"
-                      ? "฿"
-                      : "ชิ้น"}
+            {promoData.type === "custom" ? (
+              <div className="animate-fade-in">
+                <label className="block text-xs font-bold text-gray-600 mb-3 uppercase tracking-wide flex items-center gap-2">
+                  <Sparkles size={14} className="text-primary" />
+                  ระบุรายละเอียดโปรโมชั่น (Prompt)
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-orange-400/5 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <textarea
+                    value={promoData.prompt}
+                    onChange={(e) =>
+                      setPromoData({ ...promoData, prompt: e.target.value })
+                    }
+                    placeholder="เช่น ซื้อครบ 500 บาท แถมฟรีน้ำแข็งไสเมนูปกติ 1 ถ้วย หรือ ลดราคา 50% สำหรับสมาชิกใหม่..."
+                    className="relative w-full h-48 px-5 py-4 rounded-2xl border-2 border-gray-200 bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium transition-all resize-none leading-relaxed placeholder:text-gray-300"
+                  />
+                  <div className="absolute bottom-4 right-5 flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                    <AlertCircle size={10} />
+                    สามารถพิมพ์ภาษาไทยได้
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Discount Value */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
+                    {promoData.type === "percent"
+                      ? "ส่วนลด (%)"
+                      : promoData.type === "amount"
+                        ? "ส่วนลด (บาท)"
+                        : promoData.type === "buy_get"
+                          ? "จำนวนที่ต้องซื้อ"
+                          : "ส่วนลดพิเศษ"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={promoData.value}
+                      onChange={(e) =>
+                        setPromoData({ ...promoData, value: e.target.value })
+                      }
+                      className="w-full px-5 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-2xl font-black text-gray-900 transition-all"
+                      placeholder="0"
+                    />
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-primary font-black text-lg">
+                      {promoData.type === "percent"
+                        ? "%"
+                        : promoData.type === "amount"
+                          ? "฿"
+                          : promoData.type === "buy_get"
+                            ? "ชิ้น"
+                            : "OFF"}
+                    </div>
+                  </div>
+                </div>
 
-            {/* Min Spend */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                ยอดซื้อขั้นต่ำ (บาท)
-              </label>
-              <input
-                type="number"
-                value={promoData.minSpend}
-                onChange={(e) =>
-                  setPromoData({ ...promoData, minSpend: e.target.value })
-                }
-                className="w-full px-5 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-semibold transition-all"
-                placeholder="0"
-              />
-            </div>
+                {/* Min Spend */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
+                    ยอดซื้อขั้นต่ำ (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    value={promoData.minSpend}
+                    onChange={(e) =>
+                      setPromoData({ ...promoData, minSpend: e.target.value })
+                    }
+                    className="w-full px-5 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-semibold transition-all"
+                    placeholder="0"
+                  />
+                </div>
 
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                  วันเริ่มต้น
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                  วันสิ้นสุด
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
-                />
-              </div>
-            </div>
+                {/* Date Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
+                      วันเริ่มต้น
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">
+                      วันสิ้นสุด
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -706,7 +737,11 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                 ? `ลด ${promoData.value || 0}%`
                 : promoData.type === "amount"
                   ? `ลด ฿${promoData.value || 0}`
-                  : "ซื้อแถมฟรี"}
+                  : promoData.type === "buy_get"
+                    ? "ซื้อแถมฟรี"
+                    : promoData.type === "custom" && promoData.prompt
+                      ? promoData.prompt
+                      : "โปรโมชั่นพิเศษ"}
             </p>
           </div>
         </div>
@@ -798,9 +833,9 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
 
           {/* Stepper */}
           <div className="py-4 px-12 bg-white flex justify-center shrink-0 relative z-10 border-b border-gray-50">
-            <div className="flex items-center w-full max-w-md relative">
+            <div className="flex items-start w-full max-w-md relative">
               {/* Progress Line */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 -z-10 rounded-full overflow-hidden">
+              <div className="absolute left-[16.66%] top-4 w-[66.66%] h-1 bg-gray-100 -z-10 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary transition-all duration-500 ease-out"
                   style={{ width: `${((step - 1) / 2) * 100}%` }}
@@ -813,11 +848,10 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
                   className="flex-1 flex flex-col items-center gap-1.5"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-[3px] transition-all duration-300 ${
-                      s <= step
-                        ? "bg-primary border-white ring-2 ring-primary text-white shadow-lg shadow-primary/30"
-                        : "bg-white border-gray-200 text-gray-300"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-[3px] transition-all duration-300 ${s <= step
+                      ? "bg-primary border-white ring-2 ring-primary text-white shadow-lg shadow-primary/30"
+                      : "bg-white border-gray-200 text-gray-300"
+                      }`}
                   >
                     {s < step ? <Check size={14} strokeWidth={4} /> : s}
                   </div>
