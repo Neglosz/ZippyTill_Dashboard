@@ -6,6 +6,7 @@ import {
   UserPlus,
   TrendingUp,
   TrendingDown,
+  ShoppingCart,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
 import {
@@ -172,15 +173,25 @@ const SalesPage = () => {
       </div>
 
       <div className="flex flex-col gap-8 pb-10">
-        <div className="flex flex-col gap-1.5 px-4">
-          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
-            Sales Overview
-          </h2>
-          <div className="flex items-center gap-2 opacity-80">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
-            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-              สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ
-            </p>
+        {/* Header Banner */}
+        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
+              <ShoppingCart
+                className="w-10 h-10 text-primary"
+                strokeWidth={2}
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+                Sales Overview
+                <span className="text-primary">.</span>
+              </h1>
+              <p className="text-sm font-medium text-inactive">
+                สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ
+              </p>
+            </div>
           </div>
         </div>
 
