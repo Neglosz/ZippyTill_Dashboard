@@ -5,7 +5,6 @@ const SummaryStats = ({
   totalCount,
   totalAmount,
   recentCount,
-  overdueCount = 5,
 }) => {
   // Mock data for Payment Rate (since it's not in props yet)
   const paymentRate = 87;

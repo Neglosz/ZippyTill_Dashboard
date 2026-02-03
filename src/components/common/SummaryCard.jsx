@@ -15,8 +15,6 @@ const SummaryCard = ({
   title,
   value,
   subtext,
-  iconBgColor,
-  iconColor,
   isDark = false,
 }) => {
   return (

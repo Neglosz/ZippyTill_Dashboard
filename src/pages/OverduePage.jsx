@@ -11,6 +11,8 @@ import {
   CreditCard,
   Clock,
   User,
+  AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import StatusModal from "../components/common/StatusModal";
 import SummaryStats from "../components/features/outstanding/SummaryStats";
@@ -18,11 +20,9 @@ import EditDebtorModal from "../components/features/outstanding/EditDebtorModal"
 import DebtorDetailModal from "../components/features/outstanding/DebtorDetailModal";
 import ExportModal from "../components/features/outstanding/ExportModal";
 import { creditService } from "../services/creditService";
-import { initialPaidItems } from "../data/mockData";
 import { supabase } from "../lib/supabase";
 
 const OverduePage = () => {
-  const [activeTab, setActiveTab] = useState("overdue");
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,10 +35,6 @@ const OverduePage = () => {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const [overdueItems, setOverdueItems] = useState([]);
-  const paidItems = initialPaidItems.map((item) => ({
-    ...item,
-    customerId: `mock-${item.id}`,
-  })); // Add mock customerId
 
   useEffect(() => {
     fetchItems();
@@ -114,7 +110,7 @@ const OverduePage = () => {
   };
 
   // Derived State
-  const currentList = activeTab === "overdue" ? overdueItems : paidItems;
+  const currentList = overdueItems;
   const groupedCustomers = getGroupedItems(currentList);
 
   const totalOverdueAmount = overdueItems.reduce(
@@ -168,203 +164,208 @@ const OverduePage = () => {
     }
   };
 
-  const getStatusBadge = (status, days) => {
-    if (days > 15 || status === "เกินกำหนด") {
-      return (
-        <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100 flex items-center gap-1 w-max">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-          เกินกำหนด
-        </span>
-      );
-    }
-    return (
-      <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold border border-blue-100 flex items-center gap-1 w-max">
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-        ค้างชำระ
-      </span>
-    );
-  };
-
   // --- MAIN VIEW ---
   return (
-    <div className="relative space-y-6 pb-10 min-h-screen ">
+    <>
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-purple-500/5 rounded-full blur-[100px]" />
       </div>
 
-      <SummaryStats
-        totalCount={totalOverdueCount}
-        totalAmount={totalOverdueAmount}
-        recentCount={recentOverdueCount}
-      />
-
-      <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group/container">
-        {/* Edge lighting effect */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-10 relative z-10">
-          <div className="relative w-full lg:w-[450px] group/search">
-            <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-inactive group-focus-within/search:text-primary transition-colors duration-300">
-              <Search size={22} strokeWidth={2.5} />
+      <div className="relative space-y-6 pb-10 min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
+              <AlertCircle className="w-10 h-10 text-primary" strokeWidth={2} />
             </div>
-            <input
-              type="text"
-              placeholder="ค้นหาลูกค้า (ชื่อ, เบอร์โทร, อีเมล)..."
-              className="w-full bg-gray-50/50 border border-gray-100 rounded-[22px] pl-14 pr-6 py-4 text-sm font-black text-gray-900 placeholder-inactive/60 focus:bg-white focus:ring-8 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all duration-300 shadow-inner-light"
-            />
-          </div>
-          <div className="flex gap-4 w-full lg:w-auto">
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-white border border-gray-100 text-gray-900 rounded-[22px] font-black hover:border-primary/30 hover:shadow-premium transition-all duration-300 active:scale-95 group/export"
-            >
-              <Download
-                size={20}
-                className="text-primary group-hover:bounce transition-transform"
-                strokeWidth={2.5}
-              />
-              <span className="text-sm tracking-tight">Export Data</span>
-            </button>
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+                ลูกหนี้ค้างชำระ
+                <span className="text-primary">.</span>
+              </h1>
+              <p className="text-sm font-medium text-inactive">
+                ติดตามและจัดการลูกหนี้ที่ค้างชำระ
+              </p>
+            </div>
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-24">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto"></div>
-            <p className="text-inactive mt-4 font-bold uppercase tracking-widest text-[10px]">
-              กำลังโหลดข้อมูล...
-            </p>
+        <SummaryStats
+          totalCount={totalOverdueCount}
+          totalAmount={totalOverdueAmount}
+          recentCount={recentOverdueCount}
+        />
+
+        <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group/container">
+          {/* Edge lighting effect */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-10 relative z-10">
+            <div className="relative w-full lg:w-[450px] group/search">
+              <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-inactive group-focus-within/search:text-primary transition-colors duration-300">
+                <Search size={22} strokeWidth={2.5} />
+              </div>
+              <input
+                type="text"
+                placeholder="ค้นหาลูกค้า (ชื่อ, เบอร์โทร, อีเมล)..."
+                className="w-full bg-gray-50/50 border border-gray-100 rounded-[22px] pl-14 pr-6 py-4 text-sm font-black text-gray-900 placeholder-inactive/60 focus:bg-white focus:ring-8 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all duration-300 shadow-inner-light"
+              />
+            </div>
+            <div className="flex gap-4 w-full lg:w-auto">
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-white border border-gray-100 text-gray-900 rounded-[22px] font-black hover:border-primary/30 hover:shadow-premium transition-all duration-300 active:scale-95 group/export"
+              >
+                <Download
+                  size={20}
+                  className="text-primary group-hover:bounce transition-transform"
+                  strokeWidth={2.5}
+                />
+                <span className="text-sm tracking-tight">Export Data</span>
+              </button>
+            </div>
           </div>
-        ) : error ? (
-          <div className="text-rose-500 text-center py-20 font-bold">
-            {error}
-          </div>
-        ) : (
-          <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-50">
-                  <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] pl-4">
-                    ลูกค้า
-                  </th>
-                  <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em]">
-                    ติดต่อ
-                  </th>
-                  <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-center">
-                    จำนวนบิล
-                  </th>
-                  <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-right">
-                    ยอดค้างชำระ
-                  </th>
-                  <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-right pr-4">
-                    จัดการ
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {groupedCustomers.map((customer, index) => (
-                  <tr
-                    key={customer.customerId || index}
-                    className="hover:bg-gray-50/50 transition-all cursor-pointer group"
-                    onClick={() => setSelectedCustomer(customer)}
-                  >
-                    <td className="py-5 pl-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm group-hover:scale-105 transition-all">
-                          <img
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.name}&backgroundColor=F9FAFB`}
-                            alt={customer.name}
-                            className="w-full h-full object-cover"
-                          />
+
+          {isLoading ? (
+            <div className="text-center py-24">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto"></div>
+              <p className="text-inactive mt-4 font-bold uppercase tracking-widest text-[10px]">
+                กำลังโหลดข้อมูล...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="text-rose-500 text-center py-20 font-bold">
+              {error}
+            </div>
+          ) : (
+            <div className="overflow-x-auto scrollbar-hide">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left border-b border-gray-50">
+                    <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] pl-4">
+                      ลูกค้า
+                    </th>
+                    <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em]">
+                      ติดต่อ
+                    </th>
+                    <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-center">
+                      จำนวนบิล
+                    </th>
+                    <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-right">
+                      ยอดค้างชำระ
+                    </th>
+                    <th className="pb-6 pt-2 font-black text-inactive text-[10px] uppercase tracking-[0.2em] text-right pr-4">
+                      จัดการ
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {groupedCustomers.map((customer, index) => (
+                    <tr
+                      key={customer.customerId || index}
+                      className="hover:bg-gray-50/50 transition-all cursor-pointer group"
+                      onClick={() => setSelectedCustomer(customer)}
+                    >
+                      <td className="py-5 pl-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm group-hover:scale-105 transition-all">
+                            <img
+                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.name}&backgroundColor=F9FAFB`}
+                              alt={customer.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <p className="font-black text-gray-900 text-base tracking-tight group-hover:text-primary transition-colors">
+                              {customer.name}
+                            </p>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-gray-100 text-inactive uppercase tracking-widest mt-1 border border-gray-200/50">
+                              <User size={10} strokeWidth={3} />
+                              {customer.items.length} รายการ
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-black text-gray-900 text-base tracking-tight group-hover:text-primary transition-colors">
-                            {customer.name}
-                          </p>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-gray-100 text-inactive uppercase tracking-widest mt-1 border border-gray-200/50">
-                            <User size={10} strokeWidth={3} />
-                            {customer.items.length} รายการ
+                      </td>
+                      <td className="py-5">
+                        <div className="flex items-center gap-2 text-inactive">
+                          <Phone
+                            size={14}
+                            strokeWidth={2.5}
+                            className="text-primary/60"
+                          />
+                          <span className="text-sm font-bold tracking-tight">
+                            {customer.phone}
                           </span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-5">
-                      <div className="flex items-center gap-2 text-inactive">
-                        <Phone
-                          size={14}
-                          strokeWidth={2.5}
-                          className="text-primary/60"
-                        />
-                        <span className="text-sm font-bold tracking-tight">
-                          {customer.phone}
+                      </td>
+                      <td className="py-5 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center min-w-[32px] h-[32px] rounded-xl text-xs font-black border ${customer.maxOverdueDays > 15 ? "bg-rose-50 text-rose-500 border-rose-100" : "bg-blue-50 text-blue-500 border-blue-100"}`}
+                        >
+                          {customer.totalCount}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-5 text-center">
-                      <span
-                        className={`inline-flex items-center justify-center min-w-[32px] h-[32px] rounded-xl text-xs font-black border ${customer.maxOverdueDays > 15 ? "bg-rose-50 text-rose-500 border-rose-100" : "bg-blue-50 text-blue-500 border-blue-100"}`}
-                      >
-                        {customer.totalCount}
-                      </span>
-                    </td>
-                    <td className="py-5 text-right">
-                      <div className="font-black text-gray-900 text-xl tracking-tighter">
-                        ฿{customer.totalAmount.toLocaleString()}
-                      </div>
-                      {customer.maxOverdueDays > 15 && (
-                        <div className="text-[10px] text-rose-500 font-black uppercase tracking-wider mt-1">
-                          เกินกำหนด {customer.maxOverdueDays} วัน
+                      </td>
+                      <td className="py-5 text-right">
+                        <div className="font-black text-gray-900 text-xl tracking-tighter">
+                          ฿{customer.totalAmount.toLocaleString()}
                         </div>
-                      )}
-                    </td>
-                    <td className="py-5 text-right pr-4">
-                      <button className="p-3 bg-white border border-gray-100 hover:border-primary/30 hover:bg-primary/5 rounded-2xl text-inactive hover:text-primary transition-all shadow-sm active:scale-95">
-                        <Eye size={18} strokeWidth={2.5} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        {customer.maxOverdueDays > 15 && (
+                          <div className="text-[10px] text-rose-500 font-black uppercase tracking-wider mt-1">
+                            เกินกำหนด {customer.maxOverdueDays} วัน
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-5 text-right pr-4">
+                        <button className="p-3 bg-white border border-gray-100 hover:border-primary/30 hover:bg-primary/5 rounded-2xl text-inactive hover:text-primary transition-all shadow-sm active:scale-95">
+                          <Eye size={18} strokeWidth={2.5} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExportPDF={() => setShowExportModal(false)}
+          onExportExcel={() => setShowExportModal(false)}
+        />
+
+        <DebtorDetailModal
+          item={selectedCustomer}
+          isOpen={!!selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+          onEdit={(item) => {
+            setSelectedCustomer(null);
+            handleEditClick(item);
+          }}
+        />
+
+        <EditDebtorModal
+          key={editingItem ? editingItem.id : "new"}
+          item={editingItem}
+          isOpen={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          onSave={handleSaveEdit}
+        />
+
+        <StatusModal
+          isOpen={showEditSuccess}
+          type="success"
+          title="สำเร็จ"
+          message="แก้ไขข้อมูลเรียบร้อย"
+          confirmText="ตกลง"
+          onConfirm={() => setShowEditSuccess(false)}
+        />
       </div>
-
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        onExportPDF={() => setShowExportModal(false)}
-        onExportExcel={() => setShowExportModal(false)}
-      />
-
-      <DebtorDetailModal
-        item={selectedCustomer}
-        isOpen={!!selectedCustomer}
-        onClose={() => setSelectedCustomer(null)}
-        onEdit={(item) => {
-          setSelectedCustomer(null);
-          handleEditClick(item);
-        }}
-      />
-
-      <EditDebtorModal
-        item={editingItem}
-        isOpen={!!editingItem}
-        onClose={() => setEditingItem(null)}
-        onSave={handleSaveEdit}
-      />
-
-      <StatusModal
-        isOpen={showEditSuccess}
-        type="success"
-        title="สำเร็จ"
-        message="แก้ไขข้อมูลเรียบร้อย"
-        confirmText="ตกลง"
-        onConfirm={() => setShowEditSuccess(false)}
-      />
-    </div>
+    </>
   );
 };
 

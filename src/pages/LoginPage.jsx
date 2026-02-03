@@ -194,10 +194,10 @@ const LoginPage = () => {
 };
 
 // Helper component for features to keep code clean and uniform
-const FeatureItem = ({ icon: Icon, title, desc }) => (
+const FeatureItem = ({ icon, title, desc }) => (
   <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-4 border border-transparent transition-all duration-300">
     <div className="bg-white text-primary p-2.5 rounded-lg shrink-0 border border-gray-100">
-      <Icon size={20} strokeWidth={2} />
+      {React.createElement(icon, { size: 20, strokeWidth: 2 })}
     </div>
     <div>
       <h3 className="font-bold text-sm tracking-tight text-gray-900">
