@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { saleService } from "../services/saleService";
+import { supabase } from "../lib/supabase";
 import { BarChart3, FileText, Tag, UserPlus, TrendingUp, TrendingDown } from "lucide-react";
 import {
   LineChart,
@@ -16,43 +18,66 @@ import {
 
 const SalesPage = () => {
   const [timeRange, setTimeRange] = useState("1D");
+  const [topProducts, setTopProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        setIsLoading(true);
+        const data = await saleService.getTopSellingProducts();
+        setTopProducts(data);
+      } catch (error) {
+        console.error("Failed to fetch top products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTopProducts();
+  }, []);
 
   const stats = [
     {
-      icon: <BarChart3 className="w-6 h-6 text-white" />,
-      bgIcon: "bg-red-400",
-      value: "$1k",
-      label: "ยอดขายรวม",
-      trend: "+8% จาก สัปดาห์ที่แล้ว",
-      trendColor: "text-blue-500",
-      bgColor: "bg-pink-100",
+      id: 1,
+      title: "ยอดขายรวม",
+      amount: "$1k",
+      subtext: "+8% จาก สัปดาห์ที่แล้ว",
+      subtextColor: "text-[#4079ED]",
+      color: "bg-[#FFE2E5]", // Light Pink
+      iconBg: "bg-[#FA5A7D]", // Deep Pink
+      icon: BarChart3,
     },
     {
-      icon: <FileText className="w-6 h-6 text-white" />,
-      bgIcon: "bg-orange-400",
-      value: "300",
-      label: "Total Order",
-      trend: "+5% จาก เมื่อวาน",
-      trendColor: "text-blue-500",
-      bgColor: "bg-orange-100",
+      id: 2,
+      title: "Total Order",
+      amount: "300",
+      subtext: "+5% จาก เมื่อวาน",
+      subtextColor: "text-[#4079ED]",
+      color: "bg-[#FFF4DE]", // Light Orange
+      iconBg: "bg-[#FF947A]", // Deep Orange
+      icon: FileText,
     },
     {
-      icon: <Tag className="w-6 h-6 text-white" />,
-      bgIcon: "bg-green-500",
-      value: "5",
-      label: "Product Sold",
-      trend: "+1.2% จาก สัปดาห์ที่แล้ว",
-      trendColor: "text-blue-500",
-      bgColor: "bg-green-100",
+      id: 3,
+      title: "Product Sold",
+      amount: "5",
+      subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
+      subtextColor: "text-[#4079ED]",
+      color: "bg-[#DCFCE7]", // Light Green
+      iconBg: "bg-[#3CD856]", // Deep Green
+      icon: Tag,
     },
     {
-      icon: <UserPlus className="w-6 h-6 text-white" />,
-      bgIcon: "bg-purple-400",
-      value: "8",
-      label: "New Customers",
-      trend: "0.5% จากเมื่อวาน",
-      trendColor: "text-blue-500",
-      bgColor: "bg-purple-100",
+      id: 4,
+      title: "New Customers",
+      amount: "8",
+      subtext: "0.5% จากเมื่อวาน",
+      subtextColor: "text-[#4079ED]",
+      color: "bg-[#F3E8FF]", // Light Purple
+      iconBg: "bg-[#BF83FF]", // Deep Purple
+      icon: UserPlus,
     },
   ];
 
@@ -129,43 +154,62 @@ const SalesPage = () => {
         <div className="absolute bottom-[-5%] left-[-5%] w-[35%] h-[35%] bg-blue-500/5 rounded-full blur-[110px]" />
       </div>
 
-      {/* Header - Matches the style of other pages */}
-      <div className="bg-white rounded-[32px] p-6 flex flex-col md:flex-row items-center gap-6 shadow-premium relative overflow-hidden border border-gray-100 group">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-        <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-          <BarChart3 className="w-10 h-10 text-primary" strokeWidth={2.5} />
-        </div>
-        <div className="text-center md:text-left">
-          <h1 className="text-2xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-            Sales Overview
-            <span className="text-primary">.</span>
-          </h1>
-          <div className="flex items-center justify-center md:justify-start gap-2 opacity-80">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-              สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ
-            </p>
-          </div>
+      <div className="flex flex-col gap-1.5 px-4 mb-2">
+        <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+          Sales Overview
+        </h2>
+        <div className="flex items-center gap-2 opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+            สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ
+          </p>
         </div>
       </div>
 
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {stats.map((topic) => (
           <div
-            key={index}
-            className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-premium-hover transition-all duration-300"
+            key={topic.id}
+            className="bg-white border border-gray-100 rounded-[32px] p-7 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
           >
-            <div className={`w-14 h-14 rounded-2xl ${stat.bgIcon.replace('bg-', 'bg-').replace('400', '10').replace('500', '10')} bg-opacity-10 flex items-center justify-center shrink-0 mb-6 border border-gray-100`}>
-              {React.cloneElement(stat.icon, { className: "w-7 h-7", style: { color: stat.bgIcon.includes('red') ? '#F87171' : stat.bgIcon.includes('orange') ? '#FB923C' : stat.bgIcon.includes('green') ? '#22C55E' : '#A855F7' } })}
+            {/* Edge lighting */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+            <div
+              className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color}`}
+            />
+
+            <div className="flex justify-between items-start mb-8 relative z-10">
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+              >
+                <topic.icon
+                  size={24}
+                  strokeWidth={2.5}
+                  className={topic.iconBg.replace("bg-", "text-")}
+                />
+              </div>
+              <div
+                className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
+              >
+                Active
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">{stat.label}</span>
-              <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">{stat.value}</h3>
-              <div className="flex items-center gap-2">
-                <div className={`text-[10px] font-black ${stat.trendColor} uppercase tracking-widest bg-gray-50 px-2 py-1 rounded-full border border-gray-100`}>
-                  {stat.trend}
-                </div>
+
+            <div className="relative z-10">
+              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+                {topic.title}
+              </p>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                  {topic.amount}
+                </h3>
+                <p
+                  className={`text-[10px] font-black mt-2 flex items-center gap-1.5 ${topic.subtextColor}`}
+                >
+                  <span className="inline-block w-1 h-1 rounded-full bg-current opacity-50" />
+                  {topic.subtext}
+                </p>
               </div>
             </div>
           </div>
@@ -238,21 +282,21 @@ const SalesPage = () => {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 p-6 bg-gray-50 rounded-[28px] border border-gray-100">
             <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-200"></span>
+              <span className="w-3 h-3 rounded-full bg-[#A855F7] shadow-sm shadow-purple-200"></span>
               <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของใช้ทั่วไป</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-blue-600 shadow-sm shadow-blue-200"></span>
+              <span className="w-3 h-3 rounded-full bg-[#2563EB] shadow-sm shadow-blue-200"></span>
               <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของสด</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-orange-500 shadow-sm shadow-orange-200"></span>
+              <span className="w-3 h-3 rounded-full bg-[#F97316] shadow-sm shadow-orange-200"></span>
               <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ของใช้ในบ้าน</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-200"></span>
+              <span className="w-3 h-3 rounded-full bg-[#22C55E] shadow-sm shadow-green-200"></span>
               <span className="text-[10px] font-black text-inactive uppercase tracking-widest">ขนม</span>
             </div>
           </div>
@@ -313,11 +357,9 @@ const SalesPage = () => {
 
       {/* Top 5 Products Section */}
       <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">สินค้าขายดี Top 5</h2>
+        <div className="flex flex-col gap-1 mb-10">
+          <h2 className="text-2xl font-black text-gray-900 tracking-tighter">รายการสินค้าขายดี Top5</h2>
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">รายการสินค้าและสถิติการขาย</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -331,34 +373,51 @@ const SalesPage = () => {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {[
-                { rank: 1, name: "เลย์ รสออริจินอล", sales: "1250 ชิ้น", revenue: "฿25,000", trend: "12%", trendUp: true },
-                { rank: 2, name: "เบียร์ช้าง", sales: "890 ชิ้น", revenue: "฿44,500", trend: "8%", trendUp: true },
-                { rank: 3, name: "น้ำมะนาว", sales: "750 ชิ้น", revenue: "฿11,250", trend: "3%", trendUp: false },
-                { rank: 4, name: "ข้าวสาร 5 กก.", sales: "420 ชิ้น", revenue: "฿75,600", trend: "15%", trendUp: true },
-                { rank: 5, name: "น้ำดื่ม", sales: "1520 ชิ้น", revenue: "฿15,200", trend: "5%", trendUp: true },
-              ].map((product, index) => (
-                <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-all group">
-                  <td className="py-6 pl-4 font-black">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                      ${product.rank === 1 ? 'bg-amber-400 text-white shadow-amber-200' :
-                        product.rank === 2 ? 'bg-slate-400 text-white shadow-slate-200' :
-                          product.rank === 3 ? 'bg-orange-400 text-white shadow-orange-200' :
-                            'bg-gray-100 text-inactive border border-gray-100'}`}>
-                      {product.rank}
-                    </div>
-                  </td>
-                  <td className="py-6 text-gray-900 font-black tracking-tight">{product.name}</td>
-                  <td className="py-6 text-inactive font-bold">{product.sales}</td>
-                  <td className="py-6 text-gray-900 font-black tracking-tight">{product.revenue}</td>
-                  <td className="py-6">
-                    <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-flex ${product.trendUp ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
-                      {product.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      <span>{product.trend}</span>
-                    </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="5" className="py-20 text-center text-inactive font-bold">
+                    กำลังโหลดข้อมูล...
                   </td>
                 </tr>
-              ))}
+              ) : fetchError ? (
+                <tr>
+                  <td colSpan="5" className="py-20 text-center text-rose-500 font-bold">
+                    {fetchError}
+                  </td>
+                </tr>
+              ) : topProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-20 text-center text-inactive font-bold">
+                    ไม่พบข้อมูลรายการสินค้า
+                  </td>
+                </tr>
+              ) : (
+                topProducts.map((product, index) => {
+                  const rank = index + 1;
+                  return (
+                    <tr key={product.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-all group">
+                      <td className="py-6 pl-4 font-black">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-sm
+                          ${rank === 1 ? 'bg-[#FFD700] text-amber-900 shadow-amber-200' :
+                            rank === 2 ? 'bg-[#E2E8F0] text-slate-700 shadow-slate-100' :
+                              rank === 3 ? 'bg-[#CD7F32] text-orange-950 shadow-orange-100' :
+                                'bg-gray-100 text-inactive border border-gray-100'}`}>
+                          {rank}
+                        </div>
+                      </td>
+                      <td className="py-6 text-gray-900 font-black tracking-tight">{product.name}</td>
+                      <td className="py-6 text-inactive font-bold">{product.sold_qty} ชิ้น</td>
+                      <td className="py-6 text-gray-900 font-black tracking-tight">฿{(product.sold_qty * product.price).toLocaleString()}</td>
+                      <td className="py-6">
+                        <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-flex bg-emerald-50 text-emerald-600 border border-emerald-100`}>
+                          <TrendingUp className="w-3 h-3" />
+                          <span>Stable</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
