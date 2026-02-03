@@ -178,6 +178,52 @@ const TaxCalculationPage = () => {
             </div>
           </div>
 
+          {/* VAT Input Card */}
+          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-8 relative overflow-hidden">
+            <div className="flex items-center gap-3 relative z-10">
+              <ShoppingCart className="w-6 h-6 text-primary" />
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                ข้อมูลภาษีมูลค่าเพิ่ม (VAT 7%)
+              </h2>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+                    ยอดรวมราคาขาย (รวม VAT)
+                  </label>
+                </div>
+                <input
+                  type="number"
+                  value={sellVatAmount}
+                  placeholder="0.00"
+                  onChange={(e) => handleNumberInput(e, setSellVatAmount)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign className="w-4 h-4 text-rose-500" />
+                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+                    ยอดรวมราคาซื้อ (รวม VAT)
+                  </label>
+                </div>
+                <input
+                  type="number"
+                  value={buyVatAmount}
+                  placeholder="0.00"
+                  onChange={(e) => handleNumberInput(e, setBuyVatAmount)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* PIT Results Card */}
           <div className="bg-[#FFF7ED] rounded-[32px] p-8 shadow-premium border border-orange-100 relative flex flex-col gap-8 overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/20 transition-colors"></div>
@@ -246,9 +292,6 @@ const TaxCalculationPage = () => {
               หมายเหตุ: การคำนวณนี้เป็นเพียงการประมาณการเบื้องต้น
               สำหรับข้อมูลที่แน่นอนกรุณาปรึกษากับผู้เชี่ยวชาญด้านภาษี
             </div>
-          </div>
-
-
           </div>
 
           {/* Net VAT Result Card (Spans 2 columns on large screens) */}
