@@ -248,74 +248,7 @@ const TaxCalculationPage = () => {
             </div>
           </div>
 
-          {/* Buy VAT Card */}
-          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-6 relative overflow-hidden group">
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-100 shadow-sm">
-                <ShoppingCart className="w-7 h-7" />
-              </div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                ภาษีซื้อ
-              </h2>
-            </div>
-            <div className="space-y-6 relative z-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] block">
-                  ยอดรวมรวม VAT
-                </label>
-                <input
-                  type="number"
-                  value={buyVatAmount}
-                  placeholder="0.00"
-                  onChange={(e) => handleNumberInput(e, setBuyVatAmount)}
-                  onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 text-2xl font-black text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all tracking-tighter"
-                />
-              </div>
-              <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 group">
-                <div className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">
-                  VAT 7%
-                </div>
-                <div className="text-4xl font-black text-emerald-600 break-all">
-                  ฿{formatCurrency(buyVat)}
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Sell VAT Card */}
-          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-6 relative overflow-hidden group">
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                <ShoppingCart className="w-7 h-7" />
-              </div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                ภาษีขาย
-              </h2>
-            </div>
-            <div className="space-y-6 relative z-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] block">
-                  ยอดรวมรวม VAT
-                </label>
-                <input
-                  type="number"
-                  value={sellVatAmount}
-                  placeholder="0.00"
-                  onChange={(e) => handleNumberInput(e, setSellVatAmount)}
-                  onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 text-2xl font-black text-gray-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all tracking-tighter"
-                />
-              </div>
-              <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10 group">
-                <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">
-                  VAT 7%
-                </div>
-                <div className="text-4xl font-black text-primary break-all">
-                  ฿{formatCurrency(sellVat)}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Net VAT Result Card (Spans 2 columns on large screens) */}
