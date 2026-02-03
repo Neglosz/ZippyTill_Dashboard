@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Phone, Mail, Calendar, CreditCard, Clock, User } from "lucide-react";
 
-const DebtorDetailModal = ({ item, isOpen, onClose, onEdit }) => {
+const DebtorDetailModal = ({ item, isOpen, onClose }) => {
     if (!isOpen || !item) return null;
 
     const getStatusBadge = (status, days) => {

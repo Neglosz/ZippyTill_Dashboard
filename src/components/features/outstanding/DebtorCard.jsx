@@ -12,7 +12,7 @@ const formatDate = (dateString) => {
   });
 };
 
-const DebtorCard = ({ item, type = "overdue", onEdit, onDelete }) => {
+const DebtorCard = ({ item, type = "overdue", onEdit }) => {
   const isOverdue = type === "overdue";
 
   // Matching the existing UI theme (Indigo/Amber/Rose + Clean design)

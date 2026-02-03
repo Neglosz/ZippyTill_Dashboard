@@ -1,27 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
   const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    category: "",
-    qty: "",
-    cost: "",
-    price: "",
-    exp: "",
-    image: "",
+    id: product?.id || "",
+    name: product?.name || "",
+    category: product?.category || "",
+    qty: product?.stock_qty || "",
+    cost: product?.cost_price || "",
+    price: product?.price || "",
+    exp: product?.exp || "",
+    image: product?.image_url || product?.image || "",
   });
-
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        ...product,
-        image: product.image_url || product.image || "",
-      });
-    }
-  }, [product]);
 
   if (!isOpen) return null;
 

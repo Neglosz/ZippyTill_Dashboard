@@ -11,6 +11,8 @@ import {
   Store,
   MoreVertical,
   BarChart3,
+  LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
 
 // Mock Data for the Dashboard
@@ -158,6 +160,28 @@ const DashboardPage = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 space-y-6">
+        {/* Header Banner */}
+        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
+              <LayoutDashboard
+                className="w-10 h-10 text-primary"
+                strokeWidth={2}
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+                แดชบอร์ด
+                <span className="text-primary">.</span>
+              </h1>
+              <p className="text-sm font-medium text-inactive">
+                ภาพรวมธุรกิจและข้อมูลสำคัญทั้งหมดในที่เดียว
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Row 1: Sales Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {SALES_METRICS.map((item, idx) => (

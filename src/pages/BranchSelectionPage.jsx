@@ -2,11 +2,15 @@ import React from "react";
 import SimpleHeader from "../components/layout/SimpleHeader";
 import SummaryCard from "../components/common/SummaryCard";
 import BranchCard from "../components/features/branch/BranchCard";
-import { Store, TrendingUp, ShoppingCart, Users, Search } from "lucide-react";
+import {
+  Store,
+  TrendingUp,
+  ShoppingCart,
+  Users,
+  Search,
+  Sparkles,
+} from "lucide-react";
 
-const handleAction = () => {
-  navigate("/dashboard");
-};
 const BranchSelectionPage = () => {
   // Mock Data based on the screenshot
   const summaryData = [
