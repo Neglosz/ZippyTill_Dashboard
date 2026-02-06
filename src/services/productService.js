@@ -10,8 +10,11 @@ export const productService = {
         *,
         product_categories (
           name
+        ),
+        product_batches (
+          expire_date
         )
-      `
+      `,
       )
       .order("name");
 
@@ -72,5 +75,28 @@ export const productService = {
 
     if (error) throw error;
     return true;
+  },
+
+  // Get all categories
+  async getAllCategories() {
+    const { data, error } = await supabase
+      .from("product_categories")
+      .select("*")
+      .order("name");
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get batches for a product (to get expiry date)
+  async getProductBatches(productId) {
+    const { data, error } = await supabase
+      .from("product_batches")
+      .select("*")
+      .eq("product_id", productId)
+      .order("expire_date", { ascending: false });
+
+    if (error) throw error;
+    return data;
   },
 };
