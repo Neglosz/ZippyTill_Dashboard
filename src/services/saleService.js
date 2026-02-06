@@ -143,19 +143,24 @@ export const saleService = {
         try {
             console.log("Fetching sales summary (Total Products & Total Sold)...");
 
-            // 1. Get Total Products count (handling singular/plural table names)
-            let { count: productCount, error: prodError } = await supabase
+            // 1. Get total stock count (sum of stock_qty)
+            let { data: products, error: prodError } = await supabase
                 .from("product")
-                .select("*", { count: "exact", head: true });
+                .select("stock_qty");
 
-            if (prodError || productCount === null) {
-                const { count: pluralCount, error: pluralError } = await supabase
+            if (prodError || !products) {
+                const { data: pluralData, error: pluralError } = await supabase
                     .from("products")
-                    .select("*", { count: "exact", head: true });
+                    .select("stock_qty");
 
                 if (pluralError) throw pluralError;
-                productCount = pluralCount;
+                products = pluralData;
             }
+
+            const totalStock = (products || []).reduce(
+                (sum, p) => sum + (p.stock_qty || 0),
+                0
+            );
 
             // 2. Get Total Product Sold (sum of qty in order_items)
             const { data: items, error: itemsError } = await supabase
@@ -167,7 +172,7 @@ export const saleService = {
             const totalSold = (items || []).reduce((sum, item) => sum + (item.qty || 0), 0);
 
             return {
-                totalProducts: productCount || 0,
+                totalProducts: totalStock || 0,
                 totalSold: totalSold,
             };
         } catch (error) {

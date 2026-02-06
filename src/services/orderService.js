@@ -35,6 +35,38 @@ export const orderService = {
 
     if (itemsError) throw itemsError;
 
+    // 3. Update Inventory (Decrease stock_qty)
+    const stockUpdates = items.map((item) => {
+      // We use supabase.rpc for atomicity if available, but for now simple update
+      // is what's expected based on current codebase patterns.
+      return supabase.rpc('decrement_stock', {
+        p_id: item.productId,
+        p_qty: item.qty
+      }).then(({ error }) => {
+        if (error) {
+          // If RPC fails (maybe not defined), fallback to standard update
+          // Note: Standard update is not atomic (risk of race conditions)
+          console.warn("RPC decrement_stock failed, falling back to manual update", error);
+          return supabase
+            .from("products")
+            .select("stock_qty")
+            .eq("id", item.productId)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                return supabase
+                  .from("products")
+                  .update({ stock_qty: Math.max(0, data.stock_qty - item.qty) })
+                  .eq("id", item.productId);
+              }
+            });
+        }
+      });
+    });
+
+    // Wait for all inventory updates to complete
+    await Promise.all(stockUpdates);
+
     return order;
   },
 
