@@ -84,14 +84,14 @@ const SalesPage = () => {
   const [fetchError, setFetchError] = useState(null);
 
   const colors = [
-    "#A855F7",
-    "#2563EB",
-    "#F97316",
-    "#22C55E",
-    "#EC4899",
-    "#EAB308",
-    "#14B8A6",
-    "#6366F1",
+    "#F43F5E", // rose-500
+    "#F59E0B", // amber-500
+    "#10B981", // emerald-500
+    "#3B82F6", // blue-500
+    "#8B5CF6", // violet-500
+    "#EC4899", // pink-500
+    "#06B6D4", // cyan-500
+    "#F97316", // orange-500
   ];
 
   useEffect(() => {
@@ -142,8 +142,8 @@ const SalesPage = () => {
       amount: "฿" + categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString(),
       subtext: "+8% จาก สัปดาห์ที่แล้ว",
       subtextColor: "text-[#4079ED]",
-      color: "bg-[#FFE2E5]", // Light Pink
-      iconBg: "bg-[#FA5A7D]", // Deep Pink
+      color: "bg-rose-50",
+      iconBg: "bg-rose-500",
       icon: BarChart3,
     },
     {
@@ -152,8 +152,8 @@ const SalesPage = () => {
       amount: salesSummary.totalProducts.toLocaleString(),
       subtext: "+5% จาก เมื่อวาน",
       subtextColor: "text-[#4079ED]",
-      color: "bg-[#FFF4DE]", // Light Orange
-      iconBg: "bg-[#FF947A]", // Deep Orange
+      color: "bg-amber-50",
+      iconBg: "bg-amber-500",
       icon: FileText,
     },
     {
@@ -162,8 +162,8 @@ const SalesPage = () => {
       amount: salesSummary.totalSold.toLocaleString(),
       subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
       subtextColor: "text-[#4079ED]",
-      color: "bg-[#DCFCE7]", // Light Green
-      iconBg: "bg-[#3CD856]", // Deep Green
+      color: "bg-emerald-50",
+      iconBg: "bg-emerald-500",
       icon: Tag,
     },
   ];
@@ -362,7 +362,7 @@ const SalesPage = () => {
                   <Line
                     type="monotone"
                     dataKey="general"
-                    stroke="#A855F7"
+                    stroke="#F43F5E"
                     strokeWidth={4}
                     dot={false}
                     activeDot={{ r: 6, strokeWidth: 0 }}
@@ -371,7 +371,7 @@ const SalesPage = () => {
                   <Line
                     type="monotone"
                     dataKey="home"
-                    stroke="#F97316"
+                    stroke="#F59E0B"
                     strokeWidth={4}
                     dot={false}
                     activeDot={{ r: 6, strokeWidth: 0 }}
@@ -380,7 +380,7 @@ const SalesPage = () => {
                   <Line
                     type="monotone"
                     dataKey="fresh"
-                    stroke="#2563EB"
+                    stroke="#3B82F6"
                     strokeWidth={4}
                     dot={false}
                     activeDot={{ r: 6, strokeWidth: 0 }}
@@ -389,7 +389,7 @@ const SalesPage = () => {
                   <Line
                     type="monotone"
                     dataKey="snack"
-                    stroke="#22C55E"
+                    stroke="#10B981"
                     strokeWidth={4}
                     dot={false}
                     activeDot={{ r: 6, strokeWidth: 0 }}
@@ -400,25 +400,25 @@ const SalesPage = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 p-6 bg-gray-50 rounded-[28px] border border-gray-100">
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-[#A855F7] shadow-sm shadow-purple-200"></span>
+                <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></span>
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                   ของใช้ทั่วไป
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-[#2563EB] shadow-sm shadow-blue-200"></span>
+                <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-200"></span>
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                   ของสด
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-[#F97316] shadow-sm shadow-orange-200"></span>
+                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-200"></span>
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                   ของใช้ในบ้าน
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-[#22C55E] shadow-sm shadow-green-200"></span>
+                <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></span>
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                   ขนม
                 </span>
@@ -525,6 +525,7 @@ const SalesPage = () => {
               <thead>
                 <tr className="text-left text-inactive text-[10px] font-black uppercase tracking-[0.2em] border-b border-gray-50">
                   <th className="pb-6 pl-4">อันดับ</th>
+                  <th className="pb-6 pl-4">รูปสินค้า</th>
                   <th className="pb-6">ชื่อสินค้า</th>
                   <th className="pb-6">ยอดขาย</th>
                   <th className="pb-6">รายได้</th>
@@ -580,6 +581,18 @@ const SalesPage = () => {
                               }`}
                           >
                             {rank}
+                          </div>
+                        </td>
+                        <td className="py-6 pl-4">
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                              }}
+                            />
                           </div>
                         </td>
                         <td className="py-6 text-gray-900 font-black tracking-tight">
