@@ -1,11 +1,7 @@
 import React from "react";
 import { CreditCard, Calendar, AlertCircle, TrendingUp } from "lucide-react";
 
-const SummaryStats = ({
-  totalCount,
-  totalAmount,
-  recentCount,
-}) => {
+const SummaryStats = ({ totalCount, totalAmount, recentCount }) => {
   // Mock data for Payment Rate (since it's not in props yet)
   const paymentRate = 87;
 
@@ -24,16 +20,16 @@ const SummaryStats = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: Total Amount (Purple/Premium) */}
+        {/* Card 1: Total Amount (Orange/Primary) */}
         <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
           <div className="flex justify-between items-start mb-8 relative z-10">
-            <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 border border-purple-100 shadow-sm group-hover:rotate-6 transition-transform">
+            <div className="h-12 w-12 bg-orange-50 rounded-2xl flex items-center justify-center text-primary border border-orange-100 shadow-sm group-hover:rotate-6 transition-transform">
               <CreditCard size={22} strokeWidth={2.5} />
             </div>
-            <div className="text-[10px] font-black text-purple-600 uppercase tracking-widest bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100/50 shadow-inner-light">
+            <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
               Total Balance
             </div>
           </div>
@@ -48,16 +44,16 @@ const SummaryStats = ({
           </div>
         </div>
 
-        {/* Card 2: Pending Items (Blue/Premium) */}
+        {/* Card 2: Pending Items (Orange/Secondary) */}
         <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
           <div className="flex justify-between items-start mb-8 relative z-10">
-            <div className="h-12 w-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-100 shadow-sm group-hover:rotate-6 transition-transform">
+            <div className="h-12 w-12 bg-orange-50 rounded-2xl flex items-center justify-center text-primary border border-orange-100 shadow-sm group-hover:rotate-6 transition-transform">
               <Calendar size={22} strokeWidth={2.5} />
             </div>
-            <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100/50 shadow-inner-light">
+            <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
               Active Invoices
             </div>
           </div>

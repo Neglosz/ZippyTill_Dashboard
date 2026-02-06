@@ -92,6 +92,7 @@ const OverduePage = () => {
           customerId: item.customerId,
           name: item.name,
           phone: item.phone,
+          imageUrl: item.imageUrl,
           items: [],
           totalAmount: 0,
           totalCount: 0,
@@ -111,6 +112,22 @@ const OverduePage = () => {
 
   // Derived State
   const currentList = overdueItems;
+
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    const cleanPath = path.trim();
+    if (cleanPath.startsWith("http")) return cleanPath;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    // Ensure path starts with the bucket name 'customers'
+    let fullPath = cleanPath;
+    if (!cleanPath.startsWith("customers/")) {
+      fullPath = `customers/${cleanPath}`;
+    }
+
+    return `${supabaseUrl}/storage/v1/object/public/${fullPath}`;
+  };
+
   const groupedCustomers = getGroupedItems(currentList);
 
   const totalOverdueAmount = overdueItems.reduce(
@@ -170,7 +187,7 @@ const OverduePage = () => {
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-purple-500/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative space-y-6 pb-10 min-h-screen">
@@ -224,7 +241,7 @@ const OverduePage = () => {
                   className="text-primary group-hover:bounce transition-transform"
                   strokeWidth={2.5}
                 />
-                <span className="text-sm tracking-tight">Export Data</span>
+                <span className="text-sm tracking-tight">ส่งออกข้อมูล</span>
               </button>
             </div>
           </div>
@@ -273,9 +290,16 @@ const OverduePage = () => {
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm group-hover:scale-105 transition-all">
                             <img
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.name}&backgroundColor=F9FAFB`}
+                              src={
+                                getImageUrl(customer.imageUrl) ||
+                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.name}&backgroundColor=F9FAFB`
+                              }
                               alt={customer.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.name}&backgroundColor=F9FAFB`;
+                              }}
                             />
                           </div>
                           <div>
