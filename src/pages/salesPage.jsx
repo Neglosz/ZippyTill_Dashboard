@@ -79,6 +79,7 @@ const SalesPage = () => {
   const [timeRange, setTimeRange] = useState("1D");
   const [topProducts, setTopProducts] = useState([]);
   const [categorySales, setCategorySales] = useState([]);
+  const [salesSummary, setSalesSummary] = useState({ totalProducts: 0, totalSold: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
@@ -97,31 +98,35 @@ const SalesPage = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [topData, catData] = await Promise.all([
+        const [topData, catData, summaryData] = await Promise.all([
           saleService.getTopSellingProducts(),
           saleService.getSalesByCategory(),
+          saleService.getSalesSummary(),
         ]);
         setTopProducts(topData);
+        setSalesSummary(summaryData);
 
-        // Process category data for Pie Chart
-        const totalRevenue = catData.reduce((sum, c) => sum + c.revenue, 0);
+        const totalRevenue = catData.reduce(
+          (sum, c) => sum + (c.revenue || 0),
+          0
+        );
         const processedCatData = catData
           .filter((c) => c.revenue > 0)
           .map((c, index) => ({
             ...c,
-            // Calculate percentage based on revenue
             percentage:
-              totalRevenue > 0 ? ((c.revenue / totalRevenue) * 100).toFixed(1) : 0,
+              totalRevenue > 0
+                ? ((c.revenue / totalRevenue) * 100).toFixed(0)
+                : 0,
             color: colors[index % colors.length],
-            // Use revenue as the value for the chart data
-            chartValue: c.revenue,
+            value: c.revenue, // Recharts uses 'value'
           }))
           .sort((a, b) => b.revenue - a.revenue);
 
         setCategorySales(processedCatData);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
-        setFetchError("ไม่สามารถดึงข้อมูลสถิติได้");
+        setFetchError("ไม่สามารถดึงข้อมูลได้");
       } finally {
         setIsLoading(false);
       }
@@ -134,7 +139,7 @@ const SalesPage = () => {
     {
       id: 1,
       title: "ยอดขายรวม",
-      amount: "$1k",
+      amount: "฿" + categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString(),
       subtext: "+8% จาก สัปดาห์ที่แล้ว",
       subtextColor: "text-[#4079ED]",
       color: "bg-[#FFE2E5]", // Light Pink
@@ -143,8 +148,8 @@ const SalesPage = () => {
     },
     {
       id: 2,
-      title: "Total Order",
-      amount: "300",
+      title: "จำนวนสินค้าทั้งหมด",
+      amount: salesSummary.totalProducts.toLocaleString(),
       subtext: "+5% จาก เมื่อวาน",
       subtextColor: "text-[#4079ED]",
       color: "bg-[#FFF4DE]", // Light Orange
@@ -153,23 +158,13 @@ const SalesPage = () => {
     },
     {
       id: 3,
-      title: "Product Sold",
-      amount: "5",
+      title: "จำนวนสินค้าที่ขายไปแล้ว",
+      amount: salesSummary.totalSold.toLocaleString(),
       subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
       subtextColor: "text-[#4079ED]",
       color: "bg-[#DCFCE7]", // Light Green
       iconBg: "bg-[#3CD856]", // Deep Green
       icon: Tag,
-    },
-    {
-      id: 4,
-      title: "New Customers",
-      amount: "8",
-      subtext: "0.5% จากเมื่อวาน",
-      subtextColor: "text-[#4079ED]",
-      color: "bg-[#F3E8FF]", // Light Purple
-      iconBg: "bg-[#BF83FF]", // Deep Purple
-      icon: UserPlus,
     },
   ];
 
@@ -191,16 +186,8 @@ const SalesPage = () => {
   // Pie Chart Data
   const pieData =
     categorySales.length > 0
-      ? categorySales.map((item) => ({ ...item, value: item.chartValue }))
-      : [
-        {
-          name: "ไม่มีข้อมูล",
-          value: 1,
-          color: "#F1F5F9",
-          revenue: 0,
-          percentage: 0,
-        },
-      ];
+      ? categorySales
+      : [{ name: "ไม่มีข้อมูล", value: 1, color: "#F1F5F9", percentage: 0 }];
 
   return (
     <>
@@ -234,7 +221,7 @@ const SalesPage = () => {
         </div>
 
         {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((topic) => (
             <div
               key={topic.id}
@@ -296,7 +283,7 @@ const SalesPage = () => {
                   </span>
                 </div>
                 <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                  ฿294,420
+                  ฿{categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString()}
                 </p>
               </div>
               <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
@@ -449,7 +436,7 @@ const SalesPage = () => {
                 </span>
               </div>
               <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                ฿{categorySales.reduce((sum, c) => sum + c.revenue, 0).toLocaleString()}
+                ฿{categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString()}
               </p>
             </div>
 
@@ -486,20 +473,15 @@ const SalesPage = () => {
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                     }}
-                    formatter={(value) => `฿${value.toLocaleString()}`}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  {categorySales.length > 0 ? "Total Revenue" : "No Data"}
+                  Total
                 </span>
                 <span className="text-2xl font-black text-gray-900 tracking-tighter">
-                  {categorySales.length > 0
-                    ? `฿${categorySales
-                      .reduce((sum, c) => sum + c.revenue, 0)
-                      .toLocaleString()}`
-                    : "0"}
+                  100%
                 </span>
               </div>
             </div>
@@ -520,10 +502,7 @@ const SalesPage = () => {
                     </span>
                   </div>
                   <span className="text-sm font-black text-gray-900 tracking-tighter">
-                    ฿{(item.revenue || 0).toLocaleString()}
-                    <span className="text-[10px] text-inactive ml-1">
-                      ({item.percentage || 0}%)
-                    </span>
+                    {item.percentage}%
                   </span>
                 </div>
               ))}
@@ -610,7 +589,7 @@ const SalesPage = () => {
                           {product.sold_qty} ชิ้น
                         </td>
                         <td className="py-6 text-gray-900 font-black tracking-tight">
-                          ฿{(product.sold_qty * product.price).toLocaleString()}
+                          ฿{(product.revenue || product.sold_qty * product.price).toLocaleString()}
                         </td>
                         <td className="py-6">
                           <div

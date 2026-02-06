@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+
 export const saleService = {
     // Get top selling products with real sales data from order_items
     getTopSellingProducts: async () => {
@@ -6,9 +7,7 @@ export const saleService = {
             console.log("Fetching top selling products...");
 
             // Try 'product' table first (as requested by user)
-            let { data: products, error: prodError } = await supabase
-                .from("product")
-                .select(`
+            let { data: products, error: prodError } = await supabase.from("product").select(`
                     *,
                     product_categories (name),
                     order_items (qty, subtotal)
@@ -16,7 +15,8 @@ export const saleService = {
 
             // If 'product' fails OR is empty, try 'products' (plural) as fallback
             if (prodError || !products || products.length === 0) {
-                if (prodError) console.log("Singular 'product' fetch error:", prodError.message);
+                if (prodError)
+                    console.log("Singular 'product' fetch error:", prodError.message);
                 console.log("Trying 'products' table as fallback...");
                 const { data: pluralData, error: pluralError } = await supabase
                     .from("products")
@@ -40,13 +40,19 @@ export const saleService = {
             }
 
             // Process data to calculate totals from joined order_items
-            const processedProducts = products.map(p => {
-                const totalSold = (p.order_items || []).reduce((sum, item) => sum + (item.qty || 0), 0);
-                const totalRevenue = (p.order_items || []).reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            const processedProducts = products.map((p) => {
+                const totalSold = (p.order_items || []).reduce(
+                    (sum, item) => sum + (item.qty || 0),
+                    0
+                );
+                const totalRevenue = (p.order_items || []).reduce(
+                    (sum, item) => sum + (item.subtotal || 0),
+                    0
+                );
                 return {
                     ...p,
                     sold_qty: totalSold,
-                    revenue: totalRevenue
+                    revenue: totalRevenue,
                 };
             });
 
@@ -112,21 +118,20 @@ export const saleService = {
 
             const categoryMap = {};
 
-            products.forEach(p => {
+            products.forEach((p) => {
                 const cat = p.product_categories;
                 const catName = cat ? cat.name : "อื่นๆ";
-                const items = p.order_items || [];
-                const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
-                const totalRevenue = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+                const totalRevenue = (p.order_items || []).reduce(
+                    (sum, item) => sum + (item.subtotal || 0),
+                    0
+                );
 
                 if (!categoryMap[catName]) {
-                    categoryMap[catName] = { name: catName, value: 0, revenue: 0 };
+                    categoryMap[catName] = { name: catName, revenue: 0 };
                 }
-                categoryMap[catName].value += totalQty;
                 categoryMap[catName].revenue += totalRevenue;
             });
 
-            // Convert to array and filter out zero values if needed, or just return all
             return Object.values(categoryMap);
         } catch (error) {
             console.error("saleService getSalesByCategory error:", error);
@@ -134,79 +139,40 @@ export const saleService = {
         }
     },
 
-    getSalesHistoryByCategory: async (range) => {
+    getSalesSummary: async () => {
         try {
-            console.log("Fetching sales history for range:", range);
+            console.log("Fetching sales summary (Total Products & Total Sold)...");
 
-            // Fetch order items with their category and timestamp
-            // We use products table to get the category
-            const { data: rawItems, error } = await supabase
-                .from("order_items")
-                .select(`
-                    subtotal,
-                    created_at,
-                    product:product (
-                        product_categories (name)
-                    )
-                `);
+            // 1. Get Total Products count (handling singular/plural table names)
+            let { count: productCount, error: prodError } = await supabase
+                .from("product")
+                .select("*", { count: "exact", head: true });
 
-            // Fallback for plural table name if singular fails
-            let items = rawItems;
-            if (error || !items) {
-                const { data: pluralData, error: pluralError } = await supabase
-                    .from("order_items")
-                    .select(`
-                        subtotal,
-                        created_at,
-                        product:products (
-                            product_categories (name)
-                        )
-                    `);
+            if (prodError || productCount === null) {
+                const { count: pluralCount, error: pluralError } = await supabase
+                    .from("products")
+                    .select("*", { count: "exact", head: true });
+
                 if (pluralError) throw pluralError;
-                items = pluralData;
+                productCount = pluralCount;
             }
 
-            if (!items) return [];
+            // 2. Get Total Product Sold (sum of qty in order_items)
+            const { data: items, error: itemsError } = await supabase
+                .from("order_items")
+                .select("qty");
 
-            // Process items into time buckets based on range
-            const now = new Date();
-            const result = [];
+            if (itemsError) throw itemsError;
 
-            // Define bucketing logic
-            const formatBucket = (date) => {
-                if (range === "1D") return date.getHours().toString().padStart(2, "0") + ":00";
-                if (range === "1M") return date.getDate().toString();
-                if (range === "1Y") return date.toLocaleString("th-TH", { month: "short" });
-                return date.getFullYear().toString();
+            const totalSold = (items || []).reduce((sum, item) => sum + (item.qty || 0), 0);
+
+            return {
+                totalProducts: productCount || 0,
+                totalSold: totalSold,
             };
-
-            // Filter items by range
-            const filteredItems = items.filter(item => {
-                const itemDate = new Date(item.created_at);
-                if (range === "1D") return itemDate.toDateString() === now.toDateString();
-                if (range === "1M") return (now - itemDate) <= 30 * 24 * 60 * 60 * 1000;
-                if (range === "1Y") return (now - itemDate) <= 365 * 24 * 60 * 60 * 1000;
-                return true; // MAX
-            });
-
-            // Bucket the data
-            const buckets = {};
-            filteredItems.forEach(item => {
-                const bucket = formatBucket(new Date(item.created_at));
-                const catName = item.product?.product_categories?.name || "อื่นๆ";
-
-                if (!buckets[bucket]) buckets[bucket] = { name: bucket };
-                if (!buckets[bucket][catName]) buckets[bucket][catName] = 0;
-                buckets[bucket][catName] += item.subtotal || 0;
-            });
-
-            // Ensure buckets are sorted and filled (optional, but good for charts)
-            return Object.values(buckets).sort((a, b) => a.name.localeCompare(b.name));
         } catch (error) {
-            console.error("saleService getSalesHistoryByCategory error:", error);
+            console.error("saleService getSalesSummary error:", error);
             throw error;
         }
     },
 };
-
-
