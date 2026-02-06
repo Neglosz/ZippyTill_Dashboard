@@ -10,9 +10,13 @@ export const creditService = {
         *,
         customers_info (
           name,
-          phone
+          phone,
+          image_url
+        ),
+        orders (
+          order_no
         )
-      `
+      `,
       )
       .gt("remaining_amount", 0); // Only items with debt remaining
 
@@ -24,12 +28,14 @@ export const creditService = {
       customerId: item.customer_id, // Add customerId for grouping
       name: item.customers_info?.name || "Unknown",
       phone: item.customers_info?.phone || "-",
+      imageUrl: item.customers_info?.image_url, // Map image_url
       amount: item.remaining_amount, // Show remaining debt
       totalAmount: item.total_debt, // Keep track of original total
       dueDate: item.due_date,
       createdAt: item.created_at, // Add creation date
       status: item.status || "ค้างชำระ",
       overdueDays: calculateOverdueDays(item.due_date),
+      orderNo: item.orders?.order_no || item.order_id, // Map order_no
     }));
   },
 
@@ -74,7 +80,7 @@ export const creditService = {
           name,
           phone
         )
-      `
+      `,
       )
       .single();
 
