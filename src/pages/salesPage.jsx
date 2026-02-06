@@ -78,24 +78,56 @@ const data1Y = [
 const SalesPage = () => {
   const [timeRange, setTimeRange] = useState("1D");
   const [topProducts, setTopProducts] = useState([]);
+  const [categorySales, setCategorySales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
+  const colors = [
+    "#A855F7",
+    "#2563EB",
+    "#F97316",
+    "#22C55E",
+    "#EC4899",
+    "#EAB308",
+    "#14B8A6",
+    "#6366F1",
+  ];
+
   useEffect(() => {
-    const fetchTopProducts = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const data = await saleService.getTopSellingProducts();
-        setTopProducts(data);
+        const [topData, catData] = await Promise.all([
+          saleService.getTopSellingProducts(),
+          saleService.getSalesByCategory(),
+        ]);
+        setTopProducts(topData);
+
+        // Process category data for Pie Chart
+        const totalRevenue = catData.reduce((sum, c) => sum + c.revenue, 0);
+        const processedCatData = catData
+          .filter((c) => c.revenue > 0)
+          .map((c, index) => ({
+            ...c,
+            // Calculate percentage based on revenue
+            percentage:
+              totalRevenue > 0 ? ((c.revenue / totalRevenue) * 100).toFixed(1) : 0,
+            color: colors[index % colors.length],
+            // Use revenue as the value for the chart data
+            chartValue: c.revenue,
+          }))
+          .sort((a, b) => b.revenue - a.revenue);
+
+        setCategorySales(processedCatData);
       } catch (error) {
-        console.error("Failed to fetch top products:", error);
-        setFetchError("ไม่สามารถดึงข้อมูลสินค้าขายดีได้");
+        console.error("Failed to fetch dashboard data:", error);
+        setFetchError("ไม่สามารถดึงข้อมูลสถิติได้");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTopProducts();
+    fetchData();
   }, []);
 
   const stats = [
@@ -157,12 +189,18 @@ const SalesPage = () => {
   };
 
   // Pie Chart Data
-  const pieData = [
-    { name: "ของใช้ทั่วไป", value: 30, color: "#C084FC" }, // Purple
-    { name: "ของสด", value: 40, color: "#2563EB" }, // Blue
-    { name: "ของใช้ในบ้าน", value: 20, color: "#F97316" }, // Orange
-    { name: "ขนม", value: 10, color: "#22C55E" }, // Green
-  ];
+  const pieData =
+    categorySales.length > 0
+      ? categorySales.map((item) => ({ ...item, value: item.chartValue }))
+      : [
+        {
+          name: "ไม่มีข้อมูล",
+          value: 1,
+          color: "#F1F5F9",
+          revenue: 0,
+          percentage: 0,
+        },
+      ];
 
   return (
     <>
@@ -266,11 +304,10 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      timeRange === range
-                        ? "bg-white shadow-sm text-primary border border-gray-100"
-                        : "text-inactive hover:text-gray-900"
-                    }`}
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
+                      ? "bg-white shadow-sm text-primary border border-gray-100"
+                      : "text-inactive hover:text-gray-900"
+                      }`}
                   >
                     {range}
                   </button>
@@ -412,7 +449,7 @@ const SalesPage = () => {
                 </span>
               </div>
               <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                294,420
+                ฿{categorySales.reduce((sum, c) => sum + c.revenue, 0).toLocaleString()}
               </p>
             </div>
 
@@ -449,15 +486,20 @@ const SalesPage = () => {
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                     }}
+                    formatter={(value) => `฿${value.toLocaleString()}`}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  Total
+                  {categorySales.length > 0 ? "Total Revenue" : "No Data"}
                 </span>
                 <span className="text-2xl font-black text-gray-900 tracking-tighter">
-                  100%
+                  {categorySales.length > 0
+                    ? `฿${categorySales
+                      .reduce((sum, c) => sum + c.revenue, 0)
+                      .toLocaleString()}`
+                    : "0"}
                 </span>
               </div>
             </div>
@@ -478,7 +520,10 @@ const SalesPage = () => {
                     </span>
                   </div>
                   <span className="text-sm font-black text-gray-900 tracking-tighter">
-                    {item.value}%
+                    ฿{(item.revenue || 0).toLocaleString()}
+                    <span className="text-[10px] text-inactive ml-1">
+                      ({item.percentage || 0}%)
+                    </span>
                   </span>
                 </div>
               ))}
@@ -546,15 +591,14 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${
-                              rank === 1
+                            ${rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                            }`}
+                              }`}
                           >
                             {rank}
                           </div>
