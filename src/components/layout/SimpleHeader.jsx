@@ -1,11 +1,26 @@
 import React from "react";
 import { LogOut, Store } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../../services/authService";
 
 /**
  * SimpleHeader Component
  * Displays the App Logo/Title and a Logout button.
  */
 const SimpleHeader = ({ isDark = false }) => {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await authService.logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      console.error("Logout Error:", err);
+      // Even if logout fails, navigate to login page for safety
+      navigate("/", { replace: true });
+    }
+  };
+
   return (
     <header
       className={`h-20 shrink-0 px-8 flex items-center justify-between sticky top-0 z-50 transition-all duration-500 ${
@@ -45,6 +60,7 @@ const SimpleHeader = ({ isDark = false }) => {
 
       {/* Actions Area */}
       <button
+        onClick={handleSignOut}
         className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all duration-300 font-bold text-sm border group ${
           isDark
             ? "text-gray-300 hover:text-white border-white/10 hover:bg-white/5"

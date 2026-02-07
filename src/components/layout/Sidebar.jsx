@@ -52,11 +52,11 @@ const Sidebar = () => {
   const handleSignOut = async () => {
     try {
       await authService.logout();
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (err) {
       console.error("Logout Error:", err);
       // Even if logout fails, navigate to login page for safety
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 

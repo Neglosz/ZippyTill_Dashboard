@@ -8,9 +8,12 @@ import {
   ReceiptText,
   ChevronDown,
 } from "lucide-react";
+import { useBranch } from "../contexts/BranchContext";
 
 const TaxCalculationPage = () => {
+  const { activeBranchName } = useBranch();
   // --- PIT State ---
+
   const [income, setIncome] = useState("");
   const [expenses, setExpenses] = useState("");
   const [deductions, setDeductions] = useState("");
@@ -92,11 +95,11 @@ const TaxCalculationPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                คำนวณภาษี
+                {activeBranchName || "คำนวณภาษี"}
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
-                คำนวณและจัดการภาษีมูลค่าเพิ่มและภาษีอื่นๆ
+                คำนวณและจัดการภาษีมูลค่าเพิ่มสำหรับสาขา
               </p>
             </div>
           </div>

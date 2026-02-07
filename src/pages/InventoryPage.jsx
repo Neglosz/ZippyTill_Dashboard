@@ -17,10 +17,12 @@ import EditProductModal from "../components/features/inventory/EditProductModal"
 import AddProductModal from "../components/features/inventory/AddProductModal";
 import StockReport from "../components/features/inventory/StockReport";
 import { productService } from "../services/productService";
+import { useBranch } from "../contexts/BranchContext";
 
 const CATEGORY_TAGS = ["ทั้งหมด", "ทั่วไป", "สินค้า 1", "สินค้า 2", "สินค้า 3"];
 
 const InventoryPage = () => {
+  const { activeBranchId } = useBranch();
   const [activeTab, setActiveTab] = useState("products"); // 'products' or 'report'
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,14 +35,16 @@ const InventoryPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (activeBranchId) {
+      fetchProducts();
+    }
+  }, [activeBranchId]);
 
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await productService.getAllProducts();
+      const data = await productService.getAllProducts(activeBranchId);
       setProducts(data);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -63,6 +67,7 @@ const InventoryPage = () => {
   const handleSaveProduct = async (updatedFormData) => {
     try {
       console.log("Saving product:", updatedFormData);
+      if (!activeBranchId) throw new Error("Branch ID is required");
 
       if (updatedFormData.dbId) {
         // Update existing product
@@ -75,7 +80,11 @@ const InventoryPage = () => {
           price: parseFloat(updatedFormData.price),
           image_url: updatedFormData.image,
         };
-        await productService.updateProduct(updatedFormData.dbId, payload);
+        await productService.updateProduct(
+          updatedFormData.dbId,
+          payload,
+          activeBranchId,
+        );
       } else {
         // Create new product
         const payload = {
@@ -85,28 +94,22 @@ const InventoryPage = () => {
           stockQty: parseFloat(updatedFormData.qty),
           costPrice: parseFloat(updatedFormData.cost),
           price: parseFloat(updatedFormData.price),
-          // image_url is not in the createProduct args in service, let's check service again or just assume it needs update
-          // Wait, productService.createProduct doesn't seem to map image_url. I might need to fix service or payload.
-          // Let's pass it anyway, maybe I need to update service too.
-          // Actually, looking at previous read of service...
+          image_url: updatedFormData.image, // Pass image directly if service supports it now
         };
 
-        // Wait, I need to check if createProduct handles image.
-        // Based on my read, it DOES NOT map image_url.
-        // I should probably update calling code to handle image too/
-
-        // Let's call createProduct first.
-        const newProduct = await productService.createProduct(payload);
-
-        // If image exists, we might need a separate update or fix the service.
-        // For now let's modify the service to accept image_url if possible,
-        // OR just do a second update if needed.
-        // But for this step, I'll just follow the current service contract.
+        const newProduct = await productService.createProduct(
+          payload,
+          activeBranchId,
+        );
 
         if (updatedFormData.image && newProduct?.id) {
-          await productService.updateProduct(newProduct.id, {
-            image_url: updatedFormData.image,
-          });
+          await productService.updateProduct(
+            newProduct.id,
+            {
+              image_url: updatedFormData.image,
+            },
+            activeBranchId,
+          );
         }
       }
 

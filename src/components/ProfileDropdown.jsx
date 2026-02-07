@@ -1,10 +1,24 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield } from "lucide-react";
+import { authService } from "../services/authService";
 
 const ProfileDropdown = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   if (!isOpen) return null;
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate("/", { replace: true });
+      onClose();
+    } catch (err) {
+      console.error("Logout error:", err);
+      // Fallback navigate
+      navigate("/", { replace: true });
+      onClose();
+    }
+  };
 
   return (
     <>
@@ -40,11 +54,7 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
         <div className="p-2 border-t border-gray-50">
           <button
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all group"
-            onClick={() => {
-              console.log("Signing out...");
-              navigate("/" ,{replace: true});
-              onClose();
-            }}
+            onClick={handleLogout}
           >
             <LogOut
               size={18}

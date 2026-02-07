@@ -1,183 +1,154 @@
 import { supabase } from "../lib/supabase";
 
 export const saleService = {
-    // Get top selling products with real sales data from order_items
-    getTopSellingProducts: async () => {
-        try {
-            console.log("Fetching top selling products...");
+  // Get top selling products with real sales data from order_items
+  getTopSellingProducts: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      console.log(`Fetching top selling products for store_id: ${branchId}`);
 
-            // Try 'product' table first (as requested by user)
-            let { data: products, error: prodError } = await supabase.from("product").select(`
+      // Fetch from 'products' (using the pluralized/standard table name)
+      const { data: products, error: prodError } = await supabase
+        .from("products")
+        .select(
+          `
                     *,
                     product_categories (name),
                     order_items (qty, subtotal)
-                `);
+                `,
+        )
+        .eq("store_id", branchId);
 
-            // If 'product' fails OR is empty, try 'products' (plural) as fallback
-            if (prodError || !products || products.length === 0) {
-                if (prodError)
-                    console.log("Singular 'product' fetch error:", prodError.message);
-                console.log("Trying 'products' table as fallback...");
-                const { data: pluralData, error: pluralError } = await supabase
-                    .from("products")
-                    .select(`
-                        *,
-                        product_categories (name),
-                        order_items (qty, subtotal)
-                    `);
+      if (prodError) throw prodError;
 
-                if (!pluralError && pluralData) {
-                    products = pluralData;
-                } else if (pluralError && prodError) {
-                    // If both fail, throw the first error
-                    throw prodError;
-                }
-            }
+      if (!products || products.length === 0) return [];
 
-            if (!products || products.length === 0) {
-                console.log("No products found in either table.");
-                return [];
-            }
+      // Process data to calculate totals
+      const processedProducts = products.map((p) => {
+        const totalSold = (p.order_items || []).reduce(
+          (sum, item) => sum + (item.qty || 0),
+          0,
+        );
+        const totalRevenue = (p.order_items || []).reduce(
+          (sum, item) => sum + (item.subtotal || 0),
+          0,
+        );
+        return {
+          ...p,
+          sold_qty: totalSold,
+          revenue: totalRevenue,
+        };
+      });
 
-            // Process data to calculate totals from joined order_items
-            const processedProducts = products.map((p) => {
-                const totalSold = (p.order_items || []).reduce(
-                    (sum, item) => sum + (item.qty || 0),
-                    0
-                );
-                const totalRevenue = (p.order_items || []).reduce(
-                    (sum, item) => sum + (item.subtotal || 0),
-                    0
-                );
-                return {
-                    ...p,
-                    sold_qty: totalSold,
-                    revenue: totalRevenue,
-                };
-            });
+      // Sort by sold quantity and take top 5
+      return processedProducts
+        .sort((a, b) => b.sold_qty - a.sold_qty)
+        .slice(0, 5);
+    } catch (error) {
+      console.error("saleService getTopSellingProducts error:", error);
+      throw error;
+    }
+  },
 
-            // Sort by sold quantity and take top 5
-            const top5 = processedProducts
-                .sort((a, b) => b.sold_qty - a.sold_qty)
-                .slice(0, 5);
+  getProducts: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`*, product_categories (name)`)
+        .eq("store_id", branchId)
+        .order("name", { ascending: true });
 
-            console.log("Successfully processed Top 5 products:", top5.length);
-            return top5;
-        } catch (error) {
-            console.error("saleService getTopSellingProducts error:", error);
-            throw error;
-        }
-    },
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("saleService getProducts error:", error);
+      throw error;
+    }
+  },
 
-    getProducts: async () => {
-        try {
-            console.log("Fetching all products...");
-            let { data, error } = await supabase
-                .from("product")
-                .select(`*, product_categories (name)`)
-                .order("name", { ascending: true });
-
-            if (error || !data) {
-                const { data: pluralData, error: pluralError } = await supabase
-                    .from("products")
-                    .select(`*, product_categories (name)`)
-                    .order("name", { ascending: true });
-                if (pluralError) throw pluralError;
-                data = pluralData;
-            }
-            return data;
-        } catch (error) {
-            console.error("saleService getProducts error:", error);
-            throw error;
-        }
-    },
-
-    getSalesByCategory: async () => {
-        try {
-            console.log("Fetching sales by category...");
-
-            let { data: products, error: prodError } = await supabase
-                .from("product")
-                .select(`
+  getSalesByCategory: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      const { data: products, error: prodError } = await supabase
+        .from("products")
+        .select(
+          `
                     id,
                     product_categories (id, name),
                     order_items (qty, subtotal)
-                `);
+                `,
+        )
+        .eq("store_id", branchId);
 
-            if (prodError || !products || products.length === 0) {
-                const { data: pluralData, error: pluralError } = await supabase
-                    .from("products")
-                    .select(`
-                        id,
-                        product_categories (id, name),
-                        order_items (qty, subtotal)
-                    `);
-                if (pluralError) throw pluralError;
-                products = pluralData;
-            }
+      if (prodError) throw prodError;
 
-            const categoryMap = {};
+      const categoryMap = {};
 
-            products.forEach((p) => {
-                const cat = p.product_categories;
-                const catName = cat ? cat.name : "อื่นๆ";
-                const totalRevenue = (p.order_items || []).reduce(
-                    (sum, item) => sum + (item.subtotal || 0),
-                    0
-                );
+      products.forEach((p) => {
+        const cat = p.product_categories;
+        const catName = cat ? cat.name : "อื่นๆ";
+        const totalRevenue = (p.order_items || []).reduce(
+          (sum, item) => sum + (item.subtotal || 0),
+          0,
+        );
 
-                if (!categoryMap[catName]) {
-                    categoryMap[catName] = { name: catName, revenue: 0 };
-                }
-                categoryMap[catName].revenue += totalRevenue;
-            });
-
-            return Object.values(categoryMap);
-        } catch (error) {
-            console.error("saleService getSalesByCategory error:", error);
-            throw error;
+        if (!categoryMap[catName]) {
+          categoryMap[catName] = { name: catName, revenue: 0 };
         }
-    },
+        categoryMap[catName].revenue += totalRevenue;
+      });
 
-    getSalesSummary: async () => {
-        try {
-            console.log("Fetching sales summary (Total Products & Total Sold)...");
+      return Object.values(categoryMap);
+    } catch (error) {
+      console.error("saleService getSalesByCategory error:", error);
+      throw error;
+    }
+  },
 
-            // 1. Get total stock count (sum of stock_qty)
-            let { data: products, error: prodError } = await supabase
-                .from("product")
-                .select("stock_qty");
+  getSalesSummary: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      // 1. Get total stock count for this branch
+      const { data: products, error: prodError } = await supabase
+        .from("products")
+        .select("stock_qty")
+        .eq("store_id", branchId);
 
-            if (prodError || !products) {
-                const { data: pluralData, error: pluralError } = await supabase
-                    .from("products")
-                    .select("stock_qty");
+      if (prodError) throw prodError;
 
-                if (pluralError) throw pluralError;
-                products = pluralData;
-            }
+      const totalStock = (products || []).reduce(
+        (sum, p) => sum + (p.stock_qty || 0),
+        0,
+      );
 
-            const totalStock = (products || []).reduce(
-                (sum, p) => sum + (p.stock_qty || 0),
-                0
-            );
+      // 2. Get Total Product Sold (sum of qty in order_items) - Filtered by branch via orders/order_items association
+      // Note: In a real app, order_items belongs to an order which belongs to a branch.
+      // Let's assume order_items table has branch_id if not we join orders.
+      const { data: items, error: itemsError } = await supabase
+        .from("order_items")
+        .select(
+          `
+                    qty,
+                    orders!inner(store_id)
+                `,
+        )
+        .eq("orders.store_id", branchId);
 
-            // 2. Get Total Product Sold (sum of qty in order_items)
-            const { data: items, error: itemsError } = await supabase
-                .from("order_items")
-                .select("qty");
+      if (itemsError) throw itemsError;
 
-            if (itemsError) throw itemsError;
+      const totalSold = (items || []).reduce(
+        (sum, item) => sum + (item.qty || 0),
+        0,
+      );
 
-            const totalSold = (items || []).reduce((sum, item) => sum + (item.qty || 0), 0);
-
-            return {
-                totalProducts: totalStock || 0,
-                totalSold: totalSold,
-            };
-        } catch (error) {
-            console.error("saleService getSalesSummary error:", error);
-            throw error;
-        }
-    },
+      return {
+        totalProducts: totalStock || 0,
+        totalSold: totalSold,
+      };
+    } catch (error) {
+      console.error("saleService getSalesSummary error:", error);
+      throw error;
+    }
+  },
 };
