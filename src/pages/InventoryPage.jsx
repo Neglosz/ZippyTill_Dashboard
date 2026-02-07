@@ -266,7 +266,11 @@ const InventoryPage = () => {
                   สินค้าใกล้หมด
                 </p>
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
-                  12{" "}
+                  {
+                    products.filter(
+                      (p) => p.stock_qty <= (p.low_stock_threshold || 10),
+                    ).length
+                  }{" "}
                   <span className="text-lg font-black text-inactive">
                     รายการ
                   </span>
@@ -285,7 +289,13 @@ const InventoryPage = () => {
                   สินค้าหมดอายุ
                 </p>
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-rose-600">
-                  0{" "}
+                  {
+                    products.filter((p) =>
+                      p.product_batches?.some(
+                        (b) => new Date(b.expire_date) < new Date(),
+                      ),
+                    ).length
+                  }{" "}
                   <span className="text-lg font-black text-inactive">
                     รายการ
                   </span>

@@ -123,8 +123,6 @@ export const saleService = {
       );
 
       // 2. Get Total Product Sold (sum of qty in order_items) - Filtered by branch via orders/order_items association
-      // Note: In a real app, order_items belongs to an order which belongs to a branch.
-      // Let's assume order_items table has branch_id if not we join orders.
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
         .select(
@@ -148,6 +146,123 @@ export const saleService = {
       };
     } catch (error) {
       console.error("saleService getSalesSummary error:", error);
+      throw error;
+    }
+  },
+
+  // New function for Dashboard Metrics
+  getDashboardMetrics: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      // 1. Total Revenue and Total Orders
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("store_id", branchId);
+
+      if (ordersError) throw ordersError;
+
+      const totalRevenue = (orders || []).reduce(
+        (sum, o) => sum + (o.total_amount || 0),
+        0,
+      );
+      const totalOrders = (orders || []).length;
+
+      // 2. Total Products Sold
+      const { data: items, error: itemsError } = await supabase
+        .from("order_items")
+        .select("qty, orders!inner(store_id)")
+        .eq("orders.store_id", branchId);
+
+      if (itemsError) throw itemsError;
+
+      const totalSold = (items || []).reduce(
+        (sum, item) => sum + (item.qty || 0),
+        0,
+      );
+
+      return {
+        totalRevenue,
+        totalOrders,
+        totalSold,
+      };
+    } catch (error) {
+      console.error("saleService getDashboardMetrics error:", error);
+      throw error;
+    }
+  },
+
+  getWeeklyAnalytics: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      const now = new Date();
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(now.getDate() - 14);
+
+      const { data: orders, error } = await supabase
+        .from("orders")
+        .select("total_amount, created_at")
+        .eq("store_id", branchId)
+        .gte("created_at", fourteenDaysAgo.toISOString());
+
+      if (error) throw error;
+
+      // Initialize daily sales for the last 14 days
+      const dailyData = {};
+      for (let i = 0; i < 14; i++) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
+        dailyData[dateStr] = 0;
+      }
+
+      // Group orders by date
+      (orders || []).forEach((o) => {
+        const dateStr = new Date(o.created_at).toISOString().split("T")[0];
+        if (dailyData[dateStr] !== undefined) {
+          dailyData[dateStr] += o.total_amount || 0;
+        }
+      });
+
+      // Calculate Current Week (0-6 days ago) and Previous Week (7-13 days ago)
+      const days = Object.keys(dailyData).sort().reverse();
+      const currentWeekSales = [];
+      let currentWeekTotal = 0;
+      let previousWeekTotal = 0;
+
+      for (let i = 0; i < 7; i++) {
+        const dateStr = days[i];
+        const sales = dailyData[dateStr] || 0;
+        currentWeekSales.push({
+          day: new Date(dateStr).toLocaleDateString("en-US", {
+            weekday: "short",
+          })[0],
+          value: sales,
+        });
+        currentWeekTotal += sales;
+      }
+
+      for (let i = 7; i < 14; i++) {
+        const dateStr = days[i];
+        previousWeekTotal += dailyData[dateStr] || 0;
+      }
+
+      // Calculate growth percentage
+      let growth = 0;
+      if (previousWeekTotal > 0) {
+        growth =
+          ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100;
+      } else if (currentWeekTotal > 0) {
+        growth = 100;
+      }
+
+      return {
+        chartData: currentWeekSales.reverse(), // Mon to Sun order
+        growth: Math.round(growth * 10) / 10,
+        totalWeekRevenue: currentWeekTotal,
+      };
+    } catch (error) {
+      console.error("saleService getWeeklyAnalytics error:", error);
       throw error;
     }
   },
