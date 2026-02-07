@@ -10,16 +10,6 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      const session = await authService.getSession();
-      if (session) {
-        navigate("/select-branch", { replace: true });
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);

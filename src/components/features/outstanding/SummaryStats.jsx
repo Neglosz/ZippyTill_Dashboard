@@ -7,18 +7,7 @@ const SummaryStats = ({ totalCount, totalAmount, recentCount }) => {
 
   return (
     <div className="mb-8">
-      <div className="mb-10 flex flex-col gap-1.5 px-4">
-        <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
-          ค้างชำระ
-        </h2>
-        <div className="flex items-center gap-2 opacity-80">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(237,113,23,0.4)]" />
-          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-            จัดการและติดตามลูกค้าที่ค้างชำระทั้งหมดในระบบ
-          </p>
-        </div>
-      </div>
-
+  
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: Total Amount (Orange/Primary) */}
         <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
