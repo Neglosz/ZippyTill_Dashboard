@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, Settings, Shield } from "lucide-react";
+import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
 import { authService } from "../services/authService";
 
 const ProfileDropdown = ({ isOpen, onClose }) => {
@@ -20,6 +20,11 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleSwitchStore = () => {
+    navigate("/select-branch");
+    onClose();
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
@@ -35,17 +40,27 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
         </div>
 
         <div className="p-2">
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#6d28d9] transition-all group">
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group">
             <User
               size={18}
-              className="text-gray-400 group-hover:text-[#6d28d9]"
+              className="text-gray-400 group-hover:text-primary"
             />
             Profile Info
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#6d28d9] transition-all group">
+          <button
+            onClick={handleSwitchStore}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group"
+          >
+            <LayoutGrid
+              size={18}
+              className="text-gray-400 group-hover:text-primary"
+            />
+            สลับสาขา
+          </button>
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group">
             <Settings
               size={18}
-              className="text-gray-400 group-hover:text-[#6d28d9]"
+              className="text-gray-400 group-hover:text-primary"
             />
             Settings
           </button>

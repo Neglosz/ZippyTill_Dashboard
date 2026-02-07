@@ -223,7 +223,7 @@ const SalesPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                Sales Overview
+                ยอดขาย
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
