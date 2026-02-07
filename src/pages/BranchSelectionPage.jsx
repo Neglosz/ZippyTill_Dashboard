@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SimpleHeader from "../components/layout/SimpleHeader";
 import SummaryCard from "../components/common/SummaryCard";
 import BranchCard from "../components/features/branch/BranchCard";
+import { storeService } from "../services/storeService";
+import { authService } from "../services/authService";
+import { useBranch } from "../contexts/BranchContext";
 import {
   Store,
   TrendingUp,
@@ -9,69 +13,72 @@ import {
   Users,
   Search,
   Sparkles,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 const BranchSelectionPage = () => {
-  // Mock Data based on the screenshot
+  const { selectBranch } = useBranch();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stores, setStores] = useState([]);
+  const [summary, setSummary] = useState({
+    totalSales: 0,
+    totalOrders: 0,
+    totalStaff: 0,
+  });
+
+  const handleSelect = (branch) => {
+    selectBranch(branch);
+    navigate("/dashboard", { replace: true });
+  };
+
+  useEffect(() => {
+    const fetchStoresData = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          const userStores = await storeService.getUserStores(user.id);
+          setStores(userStores);
+
+          // Fetch aggregate summary if any stores exist
+          if (userStores.length > 0) {
+            const stats = await storeService.getStoresSummary(
+              userStores.map((s) => s.id),
+            );
+            if (stats) setSummary(stats);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStoresData();
+  }, []);
+
   const summaryData = [
     {
       icon: <Store size={24} />,
       title: "สาขาทั้งหมด",
-      value: "3 สาขา",
+      value: `${stores.length} สาขา`,
     },
     {
       icon: <TrendingUp size={24} />,
       title: "ยอดขายรวมวันนี้",
-      value: "฿757,010",
+      value: `฿${summary.totalSales.toLocaleString()}`,
     },
     {
       icon: <ShoppingCart size={24} />,
       title: "คำสั่งซื้อทั้งหมด",
-      value: "473 รายการ",
+      value: `${summary.totalOrders} รายการ`,
     },
     {
       icon: <Users size={24} />,
       title: "พนักงานทั้งหมด",
-      value: "37 คน",
-    },
-  ];
-
-  const branchData = [
-    {
-      id: 1,
-      name: "ZIPPY TILL สาขาสุขุมวิท",
-      address: "สุขุมวิท ซอย 21, กรุงเทพฯ",
-      salesToday: 245890,
-      ordersToday: 156,
-      staffCount: 12,
-      growth: 18.5,
-      imageUrl:
-        "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop",
-      isOpen: true,
-    },
-    {
-      id: 2,
-      name: "ZIPPY TILL สาขาสีลม",
-      address: "สีลม, บางรัก, กรุงเทพฯ",
-      salesToday: 198450,
-      ordersToday: 128,
-      staffCount: 10,
-      growth: 12.3,
-      imageUrl:
-        "https://images.unsplash.com/photo-1604719312563-8912e9223c6a?q=80&w=2574&auto=format&fit=crop",
-      isOpen: true,
-    },
-    {
-      id: 3,
-      name: "ZIPPY TILL สาขาพระราม 9",
-      address: "พระราม 9, ห้วยขวาง, กรุงเทพฯ",
-      salesToday: 312670,
-      ordersToday: 189,
-      staffCount: 15,
-      growth: 22.7,
-      imageUrl:
-        "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2574&auto=format&fit=crop",
-      isOpen: true,
+      value: `${summary.totalStaff} คน`,
     },
   ];
 
@@ -87,9 +94,9 @@ const BranchSelectionPage = () => {
         <SimpleHeader isDark={false} />
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12 lg:p-14 flex flex-col items-center relative z-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-6 lg:px-14 lg:py-8 flex flex-col items-center relative z-10">
         {/* Page Title Section */}
-        <div className="text-center mb-16 w-full max-w-2xl">
+        <div className="text-center mb-8 w-full max-w-2xl">
           <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6 tracking-tighter leading-tight">
             เลือกสาขาที่จัดการ
           </h2>
@@ -99,32 +106,75 @@ const BranchSelectionPage = () => {
           </p>
         </div>
 
-        {/* Summary Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-16">
-          {summaryData.map((item, index) => (
-            <SummaryCard key={index} {...item} isDark={false} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+            <p className="text-sm font-bold text-inactive uppercase tracking-widest">
+              กำลังโหลดข้อมูลสาขา...
+            </p>
+          </div>
+        ) : stores.length > 0 ? (
+          <>
+            {/* Summary Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
+              {summaryData.map((item, index) => (
+                <SummaryCard key={index} {...item} isDark={false} />
+              ))}
+            </div>
 
-        {/* Branch Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-          {branchData.map((branch) => (
-            <BranchCard
-              key={branch.id}
-              branchName={branch.name}
-              {...branch}
-              isDark={false}
-            />
-          ))}
-        </div>
+            {/* Branch Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+              {stores.map((branch) => (
+                <BranchCard
+                  key={branch.id}
+                  branchName={branch.name}
+                  address={branch.address}
+                  salesToday={0} // These would ideally come from another service or sub-query
+                  ordersToday={0}
+                  staffCount={0}
+                  growth={0}
+                  imageUrl={
+                    branch.image_url ||
+                    "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
+                  }
+                  onSelect={() => handleSelect(branch)}
+                  isOpen={branch.is_active}
+                  isDark={false}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="bg-white rounded-[40px] p-12 shadow-premium border border-gray-100 text-center max-w-md w-full">
+            <div className="inline-flex p-5 bg-rose-50 text-rose-500 rounded-2xl mb-6">
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-4">
+              ไม่พบข้อมูลสาขา
+            </h3>
+            <p className="text-inactive font-bold text-sm leading-relaxed mb-8">
+              คุณยังไม่มีสาขาที่ได้รับสิทธิ์เข้าถึง <br />
+              โปรดติดต่อเจ้าของร้านเพื่อขอสิทธิ์เข้าร่วม
+            </p>
+          </div>
+        )}
       </main>
 
-      <footer className="py-12 text-center relative z-10">
+      <footer className="py-6 text-center relative z-10">
         <div className="inline-flex items-center gap-4 bg-white px-8 py-4 rounded-3xl shadow-premium border border-gray-100 text-[10px] font-black uppercase tracking-widest text-inactive">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
-          <span className="text-gray-900">ทุกสาขาพร้อมให้บริการ</span>
+          <span className="text-gray-900">
+            {stores.length > 0 ? "ทุกสาขาพร้อมให้บริการ" : "กรุณาเพิ่มสาขาใหม่"}
+          </span>
           <span className="text-gray-200">|</span>
-          <span>อัพเดทล่าสุด: วันนี้ 14:35 น.</span>
+          <span>
+            อัพเดทล่าสุด:{" "}
+            {new Date().toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            น.
+          </span>
         </div>
       </footer>
     </div>

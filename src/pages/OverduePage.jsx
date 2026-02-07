@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Download,
@@ -21,8 +21,10 @@ import DebtorDetailModal from "../components/features/outstanding/DebtorDetailMo
 import ExportModal from "../components/features/outstanding/ExportModal";
 import { creditService } from "../services/creditService";
 import { supabase } from "../lib/supabase";
+import { useBranch } from "../contexts/BranchContext";
 
 const OverduePage = () => {
+  const { activeBranchId } = useBranch();
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,41 +39,38 @@ const OverduePage = () => {
   const [overdueItems, setOverdueItems] = useState([]);
 
   useEffect(() => {
+    if (!activeBranchId) return;
+
     fetchItems();
 
-    // Setup Realtime Subscription
+    // Setup Realtime Subscription - Isolated by branch_id
     const channel = supabase
-      .channel("credit_accounts_realtime")
+      .channel(`credit_accounts_realtime_${activeBranchId}`)
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to INSERT, UPDATE, and DELETE
+          event: "*",
           schema: "public",
           table: "credit_accounts",
+          filter: `store_id=eq.${activeBranchId}`,
         },
         (payload) => {
           console.log("Database change detected:", payload);
           fetchItems(true); // Background refresh
         },
       )
-      .subscribe((status) => {
-        console.log("Supabase Realtime status:", status);
-        if (status === "CHANNEL_ERROR") {
-          console.error(
-            'Failed to connect to Realtime. Please check if Realtime is enabled for "credit_accounts" table in Supabase Dashboard.',
-          );
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [activeBranchId]);
 
   const fetchItems = async (isBackground = false) => {
+    if (!activeBranchId) return;
     try {
       if (!isBackground) setIsLoading(true);
-      const data = await creditService.getOverdueItems();
+      const data = await creditService.getOverdueItems(activeBranchId);
       setOverdueItems(data);
     } catch (err) {
       console.error("Error fetching items:", err);
@@ -81,37 +80,9 @@ const OverduePage = () => {
     }
   };
 
-  // Group items by customer
-  const getGroupedItems = (items) => {
-    const groups = {};
-    items.forEach((item) => {
-      // Use customerId if available, otherwise fallback to name or a unique key
-      const key = item.customerId || item.name;
-      if (!groups[key]) {
-        groups[key] = {
-          customerId: item.customerId,
-          name: item.name,
-          phone: item.phone,
-          imageUrl: item.imageUrl,
-          items: [],
-          totalAmount: 0,
-          totalCount: 0,
-          maxOverdueDays: 0,
-        };
-      }
-      groups[key].items.push(item);
-      groups[key].totalAmount += Number(item.amount);
-      groups[key].totalCount += 1;
-      groups[key].maxOverdueDays = Math.max(
-        groups[key].maxOverdueDays,
-        item.overdueDays || 0,
-      );
-    });
-    return Object.values(groups);
+  const handleEditClick = (item) => {
+    setEditingItem(item);
   };
-
-  // Derived State
-  const currentList = overdueItems;
 
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -119,7 +90,6 @@ const OverduePage = () => {
     if (cleanPath.startsWith("http")) return cleanPath;
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-    // Ensure path starts with the bucket name 'customers'
     let fullPath = cleanPath;
     if (!cleanPath.startsWith("customers/")) {
       fullPath = `customers/${cleanPath}`;
@@ -128,26 +98,52 @@ const OverduePage = () => {
     return `${supabaseUrl}/storage/v1/object/public/${fullPath}`;
   };
 
-  const groupedCustomers = getGroupedItems(currentList);
+  const groupedCustomers = useMemo(() => {
+    const groups = {};
+    overdueItems.forEach((item) => {
+      const cid = item.customerId || item.name;
+      if (!groups[cid]) {
+        groups[cid] = {
+          customerId: item.customerId,
+          name: item.name,
+          phone: item.phone,
+          imageUrl: item.imageUrl,
+          totalAmount: 0,
+          totalCount: 0,
+          maxOverdueDays: 0,
+          items: [],
+        };
+      }
+      groups[cid].totalAmount += Number(item.amount);
+      groups[cid].totalCount += 1;
+      groups[cid].items.push(item);
+      groups[cid].maxOverdueDays = Math.max(
+        groups[cid].maxOverdueDays,
+        item.overdueDays || 0,
+      );
+    });
+    return Object.values(groups).sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [overdueItems]);
 
   const totalOverdueAmount = overdueItems.reduce(
     (sum, item) => sum + Number(item.amount),
     0,
   );
-  const totalOverdueCount = overdueItems.length;
-  const recentOverdueCount = overdueItems.filter(
-    (item) => item.overdueDays > 7,
-  ).length;
-
-  const handleEditClick = (item) => {
-    setEditingItem({ ...item });
-  };
+  const totalOverdueCount = groupedCustomers.length;
+  const recentOverdueCount = overdueItems.filter((item) => {
+    const createdDate = new Date(item.createdAt);
+    const today = new Date();
+    const diffTime = Math.abs(today - createdDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  }).length;
 
   const handleSaveEdit = async (updatedItem) => {
     try {
       const result = await creditService.updateDebtor(
         updatedItem.id,
         updatedItem,
+        activeBranchId,
       );
       setOverdueItems(
         overdueItems.map((item) => (item.id === result.id ? result : item)),
@@ -256,6 +252,16 @@ const OverduePage = () => {
           ) : error ? (
             <div className="text-rose-500 text-center py-20 font-bold">
               {error}
+            </div>
+          ) : groupedCustomers.length === 0 ? (
+            <div className="text-center py-32 opacity-60">
+              <div className="w-24 h-24 bg-gray-50 rounded-[32px] flex items-center justify-center mx-auto mb-6 border border-gray-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                <User size={48} className="text-inactive opacity-20" />
+              </div>
+              <h3 className="text-lg font-black text-gray-900 tracking-tight mb-1">
+                ไม่พบลูกหนี้ค้างชำระ
+              </h3>
+             
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-hide">

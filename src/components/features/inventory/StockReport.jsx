@@ -5,10 +5,13 @@ import {
   ArrowDownLeft,
   AlertCircle,
 } from "lucide-react";
+import { useBranch } from "./../../../contexts/BranchContext";
 
 // Placeholder for data fetching - will integrate with productService later
 const StockReportPage = () => {
+  const { activeBranchId } = useBranch();
   const [transactions, setTransactions] = useState([]);
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Mock data for initial UI build

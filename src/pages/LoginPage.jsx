@@ -10,6 +10,16 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const session = await authService.getSession();
+      if (session) {
+        navigate("/select-branch", { replace: true });
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
@@ -17,8 +27,8 @@ const LoginPage = () => {
 
     try {
       await authService.login(email, password);
-      // Navigate to select-branch on success
-      navigate("/select-branch");
+      // Navigate to select-branch on success with history replacement
+      navigate("/select-branch", { replace: true });
     } catch (err) {
       console.error("Login Error:", err);
       // Supabase typically returns an error object with a message property

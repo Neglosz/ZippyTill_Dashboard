@@ -23,25 +23,35 @@ import {
   Bar,
   Legend,
 } from "recharts";
+import { useBranch } from "../contexts/BranchContext";
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-xl shadow-lg border border-gray-100">
-        <p className="text-gray-500 text-sm mb-1">08/01/67</p>
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-orange-400">
-            เงินเข้า <br />{" "}
-            <span className="text-black text-lg">
-              {payload[0].value.toLocaleString()}
-            </span>
-          </p>
-          <p className="text-sm font-medium text-purple-400">
-            เงินออก <br />{" "}
-            <span className="text-black text-lg">
-              {payload[1].value.toLocaleString()}
-            </span>
-          </p>
+      <div className="bg-white p-4 rounded-2xl shadow-premium border border-gray-100">
+        <p className="font-black text-gray-900 border-b border-gray-50 pb-2 mb-2 uppercase text-[10px] tracking-widest">
+          {payload[0].payload.name}
+        </p>
+        <div className="space-y-1">
+          {payload.map((entry, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-8"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs font-bold text-inactive">
+                  {entry.name}
+                </span>
+              </div>
+              <span className="text-sm font-black text-gray-900">
+                ฿{entry.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -50,6 +60,7 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const FinancePage = () => {
+  const { activeBranchName } = useBranch();
   const financeTopics = [
     {
       id: 1,
@@ -237,11 +248,11 @@ const FinancePage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                การเงิน
+                {activeBranchName || "การเงิน"}
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
-                รายงานการเงิน กำไรขาดทุน และการวิเคราะห์ทางการเงิน
+                รายงานการเงินของสาขา กำไรขาดทุน และการวิเคราะห์ทางการเงิน
               </p>
             </div>
           </div>

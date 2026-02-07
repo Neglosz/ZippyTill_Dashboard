@@ -14,6 +14,9 @@ import {
   LayoutDashboard,
   Sparkles,
 } from "lucide-react";
+import SystemNotificationModal from "../components/modals/SystemNotificationModal";
+import { productService } from "../services/productService";
+import { useBranch } from "../contexts/BranchContext";
 
 // Mock Data for the Dashboard
 const SALES_METRICS = [
@@ -140,7 +143,40 @@ const EXPIRING_PRODUCTS = [
 ];
 
 const DashboardPage = () => {
+  const { activeBranchId, activeBranchName } = useBranch();
   const scrollRef = React.useRef(null);
+  const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
+  const [notificationData, setNotificationData] = React.useState({
+    expired: [],
+    expiringSoon: [],
+    lowStock: [],
+  });
+
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!activeBranchId) return;
+      try {
+        const data =
+          await productService.getDashboardNotifications(activeBranchId);
+        setNotificationData(data);
+
+        const hasShownNotification = sessionStorage.getItem(
+          `hasShownDashboardNotification_${activeBranchId}`,
+        );
+        if (!hasShownNotification) {
+          setIsNotificationOpen(true);
+          sessionStorage.setItem(
+            `hasShownDashboardNotification_${activeBranchId}`,
+            "true",
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, [activeBranchId]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -172,11 +208,11 @@ const DashboardPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                แดชบอร์ด
+                {activeBranchName || "แดชบอร์ด"}
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
-                ภาพรวมธุรกิจและข้อมูลสำคัญทั้งหมดในที่เดียว
+                ภาพรวมธุกิจของสาขาและข้อมูลสำคัญทั้งหมดในที่เดียว
               </p>
             </div>
           </div>
@@ -544,6 +580,12 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      <SystemNotificationModal
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        data={notificationData}
+      />
     </div>
   );
 };

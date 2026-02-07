@@ -14,6 +14,8 @@ export const authService = {
   // Logout
   async logout() {
     const { error } = await supabase.auth.signOut();
+    // Clear all session storage to reset UI states (like the dashboard notification)
+    sessionStorage.clear();
     if (error) throw error;
   },
 

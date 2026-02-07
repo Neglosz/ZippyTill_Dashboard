@@ -1,8 +1,10 @@
 import { supabase } from "../lib/supabase";
 
 export const orderService = {
-  // Create a full order transaction
-  async createOrder(orderData, items) {
+  // Create a full order transaction with branchId
+  async createOrder(orderData, items, branchId) {
+    if (!branchId) throw new Error("Branch ID is required");
+
     // 1. Create Order Record
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -13,6 +15,7 @@ export const orderService = {
           payment_status: orderData.paymentStatus || "pending",
           user_id: orderData.userId, // Employee who made the sale
           customer_id: orderData.customerId,
+          store_id: branchId,
         },
       ])
       .select()
@@ -35,33 +38,39 @@ export const orderService = {
 
     if (itemsError) throw itemsError;
 
-    // 3. Update Inventory (Decrease stock_qty)
+    // 3. Update Inventory (Decrease stock_qty) - Scoped to branch for safety
     const stockUpdates = items.map((item) => {
-      // We use supabase.rpc for atomicity if available, but for now simple update
-      // is what's expected based on current codebase patterns.
-      return supabase.rpc('decrement_stock', {
-        p_id: item.productId,
-        p_qty: item.qty
-      }).then(({ error }) => {
-        if (error) {
-          // If RPC fails (maybe not defined), fallback to standard update
-          // Note: Standard update is not atomic (risk of race conditions)
-          console.warn("RPC decrement_stock failed, falling back to manual update", error);
-          return supabase
-            .from("products")
-            .select("stock_qty")
-            .eq("id", item.productId)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                return supabase
-                  .from("products")
-                  .update({ stock_qty: Math.max(0, data.stock_qty - item.qty) })
-                  .eq("id", item.productId);
-              }
-            });
-        }
-      });
+      return supabase
+        .rpc("decrement_stock", {
+          p_id: item.productId,
+          p_qty: item.qty,
+          p_store_id: branchId, // Assuming RPC is updated or used in context
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.warn(
+              "RPC decrement_stock failed, falling back to manual update",
+              error,
+            );
+            return supabase
+              .from("products")
+              .select("stock_qty")
+              .eq("id", item.productId)
+              .eq("store_id", branchId)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  return supabase
+                    .from("products")
+                    .update({
+                      stock_qty: Math.max(0, data.stock_qty - item.qty),
+                    })
+                    .eq("id", item.productId)
+                    .eq("store_id", branchId);
+                }
+              });
+          }
+        });
     });
 
     // Wait for all inventory updates to complete
@@ -70,16 +79,19 @@ export const orderService = {
     return order;
   },
 
-  // Get recent orders
-  async getRecentOrders() {
+  // Get recent orders for a specific branch
+  async getRecentOrders(storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+
     const { data, error } = await supabase
       .from("orders")
       .select(
         `
         *,
         customers (name)
-      `
+      `,
       )
+      .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -87,8 +99,10 @@ export const orderService = {
     return data;
   },
 
-  // Get single order details
-  async getOrderDetails(orderId) {
+  // Get single order details (scoped to branch for safety)
+  async getOrderDetails(orderId, branchId) {
+    if (!branchId) throw new Error("Branch ID is required");
+
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -99,9 +113,10 @@ export const orderService = {
           products (name, barcode)
         ),
         customers (name, phone)
-      `
+      `,
       )
       .eq("id", orderId)
+      .eq("store_id", branchId)
       .single();
 
     if (error) throw error;

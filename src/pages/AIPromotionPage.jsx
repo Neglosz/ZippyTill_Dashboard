@@ -24,6 +24,7 @@ import {
   Legend,
 } from "recharts";
 import CreatePromotionModal from "../components/modals/CreatePromotionModal";
+import { useBranch } from "../contexts/BranchContext";
 
 const AIPromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -167,12 +168,11 @@ const AIPromotionPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                AI โปรโมชั่น
+                {activeBranchName || "AI โปรโมชั่น"}
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
-                ใช้ AI
-                ช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมที่สุดสำหรับร้านคุณ
+                ใช้ AI ของสาขาช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมที่สุด
               </p>
             </div>
           </div>

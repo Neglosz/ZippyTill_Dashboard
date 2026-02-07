@@ -9,6 +9,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
+import { useBranch } from "../contexts/BranchContext";
 import {
   LineChart,
   Line,
@@ -21,6 +22,10 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
 } from "recharts";
 
 const data1D = [
@@ -76,10 +81,14 @@ const data1Y = [
 ];
 
 const SalesPage = () => {
+  const { activeBranchId } = useBranch();
   const [timeRange, setTimeRange] = useState("1D");
   const [topProducts, setTopProducts] = useState([]);
   const [categorySales, setCategorySales] = useState([]);
-  const [salesSummary, setSalesSummary] = useState({ totalProducts: 0, totalSold: 0 });
+  const [salesSummary, setSalesSummary] = useState({
+    totalProducts: 0,
+    totalSold: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
@@ -93,22 +102,22 @@ const SalesPage = () => {
     "#06B6D4", // cyan-500
     "#F97316", // orange-500
   ];
-
   useEffect(() => {
     const fetchData = async () => {
+      if (!activeBranchId) return;
       try {
         setIsLoading(true);
         const [topData, catData, summaryData] = await Promise.all([
-          saleService.getTopSellingProducts(),
-          saleService.getSalesByCategory(),
-          saleService.getSalesSummary(),
+          saleService.getTopSellingProducts(activeBranchId),
+          saleService.getSalesByCategory(activeBranchId),
+          saleService.getSalesSummary(activeBranchId),
         ]);
         setTopProducts(topData);
         setSalesSummary(summaryData);
 
         const totalRevenue = catData.reduce(
           (sum, c) => sum + (c.revenue || 0),
-          0
+          0,
         );
         const processedCatData = catData
           .filter((c) => c.revenue > 0)
@@ -133,13 +142,17 @@ const SalesPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   const stats = [
     {
       id: 1,
       title: "ยอดขายรวม",
-      amount: "฿" + categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString(),
+      amount:
+        "฿" +
+        categorySales
+          .reduce((sum, c) => sum + (c.revenue || 0), 0)
+          .toLocaleString(),
       subtext: "+8% จาก สัปดาห์ที่แล้ว",
       subtextColor: "text-[#4079ED]",
       color: "bg-rose-50",
@@ -283,7 +296,10 @@ const SalesPage = () => {
                   </span>
                 </div>
                 <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                  ฿{categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString()}
+                  ฿
+                  {categorySales
+                    .reduce((sum, c) => sum + (c.revenue || 0), 0)
+                    .toLocaleString()}
                 </p>
               </div>
               <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
@@ -291,10 +307,11 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
-                      ? "bg-white shadow-sm text-primary border border-gray-100"
-                      : "text-inactive hover:text-gray-900"
-                      }`}
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                      timeRange === range
+                        ? "bg-white shadow-sm text-primary border border-gray-100"
+                        : "text-inactive hover:text-gray-900"
+                    }`}
                   >
                     {range}
                   </button>
@@ -436,7 +453,10 @@ const SalesPage = () => {
                 </span>
               </div>
               <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                ฿{categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString()}
+                ฿
+                {categorySales
+                  .reduce((sum, c) => sum + (c.revenue || 0), 0)
+                  .toLocaleString()}
               </p>
             </div>
 
@@ -571,14 +591,15 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${rank === 1
+                            ${
+                              rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                              }`}
+                            }`}
                           >
                             {rank}
                           </div>
@@ -590,7 +611,8 @@ const SalesPage = () => {
                               alt={product.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                e.target.src =
+                                  "https://via.placeholder.com/150?text=No+Image";
                               }}
                             />
                           </div>
@@ -602,7 +624,10 @@ const SalesPage = () => {
                           {product.sold_qty} ชิ้น
                         </td>
                         <td className="py-6 text-gray-900 font-black tracking-tight">
-                          ฿{(product.revenue || product.sold_qty * product.price).toLocaleString()}
+                          ฿
+                          {(
+                            product.revenue || product.sold_qty * product.price
+                          ).toLocaleString()}
                         </td>
                         <td className="py-6">
                           <div
