@@ -134,10 +134,10 @@ export const productService = {
     // 1. Expired Products
     const { data: expiredData, error: expiredError } = await supabase
       .from("product_batches")
-      .select("*, products(name, store_id)")
+      .select("*, products(name, store_id, image_url)")
       .lt("expire_date", today)
       .gt("remaining_qty", 0)
-      .returns(); // This is a bit tricky with joins, better use inner join filter if possible or filter locally
+      .returns();
 
     if (expiredError) throw expiredError;
 
@@ -149,7 +149,7 @@ export const productService = {
     // 2. Expiring Soon (within 7 days)
     const { data: soonData, error: soonError } = await supabase
       .from("product_batches")
-      .select("*, products(name, store_id)")
+      .select("*, products(name, store_id, image_url)")
       .gte("expire_date", today)
       .lte("expire_date", sevenDaysStr)
       .gt("remaining_qty", 0);
@@ -179,6 +179,7 @@ export const productService = {
 
       return {
         name: batch.products?.name || "Unknown Product",
+        imageUrl: batch.products?.image_url,
         expiryDate: new Date(batch.expire_date).toLocaleDateString("th-TH"),
         days: diffDays,
       };
@@ -189,10 +190,53 @@ export const productService = {
       expiringSoon: filteredSoon.map(formatBatch),
       lowStock: filteredLowStock.map((p) => ({
         name: p.name,
+        imageUrl: p.image_url,
         expiryDate: "N/A",
         days: 0,
         qty: p.stock_qty,
       })),
     };
+  },
+
+  // Fetch stock movements (Sales as OUT, and potentially others if added)
+  async getStockMovements(branchId) {
+    if (!branchId) throw new Error("Branch ID is required");
+
+    try {
+      const { data: sales, error: salesError } = await supabase
+        .from("order_items")
+        .select(
+          `
+          id,
+          qty,
+          products (name),
+          orders!inner(created_at, store_id, order_no)
+        `,
+        )
+        .eq("orders.store_id", branchId)
+        .order("orders(created_at)", { ascending: false });
+
+      if (salesError) throw salesError;
+
+      // Transform into a unified movement format
+      const movements = (sales || []).map((item) => ({
+        id: `SALE-${item.id}`,
+        created_at: item.orders?.created_at,
+        product: item.products?.name || "ไม่ทราบชื่อสินค้า",
+        type: "OUT",
+        qty: item.qty,
+        note: `ออเดอร์ #${item.orders?.order_no || "N/A"}`,
+      }));
+
+      // In the future, we could also fetch from a 'stock_adjustments' or 'stock_in' table
+      // and merge them here, then sort by date.
+
+      return movements.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
+      );
+    } catch (error) {
+      console.error("Error in getStockMovements:", error);
+      throw error;
+    }
   },
 };

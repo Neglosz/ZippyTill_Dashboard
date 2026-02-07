@@ -88,7 +88,11 @@ export const orderService = {
       .select(
         `
         *,
-        customers (name)
+        customers_info (name),
+        order_items (
+          *,
+          products (name, image_url)
+        )
       `,
       )
       .eq("store_id", storeId)
