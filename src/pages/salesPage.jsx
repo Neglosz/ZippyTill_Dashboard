@@ -238,45 +238,55 @@ const SalesPage = () => {
           {stats.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white border border-gray-100 rounded-[24px] p-5 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
+              className="bg-white border border-gray-100 rounded-[28px] p-6 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group min-h-[140px] flex items-center"
             >
               {/* Edge lighting */}
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+
+              {/* Background Glow */}
               <div
                 className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color}`}
               />
 
-              <div className="flex justify-between items-start mb-5 relative z-10">
+              {/* Decorative Background Icon */}
+              <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none transform rotate-12 group-hover:rotate-0">
+                <topic.icon size={120} strokeWidth={1} className={topic.iconBg.replace("bg-", "text-")} />
+              </div>
+
+              <div className="flex w-full justify-between items-center relative z-10 gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+                      {topic.title}
+                    </p>
+                    <div
+                      className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
+                    >
+                      Active
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                      {topic.amount}
+                    </h3>
+                    <p
+                      className={`text-[11px] font-black mt-1 flex items-center gap-1.5 ${topic.subtextColor}`}
+                    >
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                      {topic.subtext}
+                    </p>
+                  </div>
+                </div>
+
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-premium group-hover:rotate-6 transition-all duration-500 ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
                 >
                   <topic.icon
-                    size={20}
+                    size={28}
                     strokeWidth={2.5}
                     className={topic.iconBg.replace("bg-", "text-")}
                   />
-                </div>
-                <div
-                  className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
-                >
-                  Active
-                </div>
-              </div>
-
-              <div className="relative z-10">
-                <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2">
-                  {topic.title}
-                </p>
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-2xl font-black tracking-tighter text-gray-900 leading-none">
-                    {topic.amount}
-                  </h3>
-                  <p
-                    className={`text-[10px] font-black mt-1.5 flex items-center gap-1.5 ${topic.subtextColor}`}
-                  >
-                    <span className="inline-block w-1 h-1 rounded-full bg-current opacity-50" />
-                    {topic.subtext}
-                  </p>
                 </div>
               </div>
             </div>
@@ -307,11 +317,10 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      timeRange === range
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
                         ? "bg-white shadow-sm text-primary border border-gray-100"
                         : "text-inactive hover:text-gray-900"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -591,15 +600,14 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${
-                              rank === 1
+                            ${rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                            }`}
+                              }`}
                           >
                             {rank}
                           </div>

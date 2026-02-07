@@ -67,9 +67,9 @@ const FinancePage = () => {
       title: "รายรับทั้งหมด",
       amount: "200,403",
       subtext: "+8% จาก สัปดาห์ที่แล้ว",
-      subtextColor: "text-[#4079ED]",
-      color: "bg-[#FFE2E5]", // Light Pink
-      iconBg: "bg-[#FA5A7D]", // Deep Pink
+      subtextColor: "text-primary",
+      color: "bg-orange-50",
+      iconBg: "bg-primary",
       icon: TrendingUp,
     },
     {
@@ -77,9 +77,9 @@ const FinancePage = () => {
       title: "รายจ่ายทั้งหมด",
       amount: "300",
       subtext: "+5% จาก เมื่อวาน",
-      subtextColor: "text-[#4079ED]",
-      color: "bg-[#FFF4DE]", // Light Orange
-      iconBg: "bg-[#FF947A]", // Deep Orange
+      subtextColor: "text-inactive",
+      color: "bg-gray-50",
+      iconBg: "bg-slate-400",
       icon: TrendingDown,
     },
     {
@@ -87,9 +87,9 @@ const FinancePage = () => {
       title: "กำไรสุทธิ",
       amount: "5,503,900",
       subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
-      subtextColor: "text-[#4079ED]",
-      color: "bg-[#DCFCE7]", // Light Green
-      iconBg: "bg-[#3CD856]", // Deep Green
+      subtextColor: "text-primary",
+      color: "bg-primary/10",
+      iconBg: "bg-primary-dark",
       icon: Coins,
     },
     {
@@ -97,9 +97,9 @@ const FinancePage = () => {
       title: "ยอดเงินทั้งหมด",
       amount: "8,950,402",
       subtext: "0.5% จากเมื่อวาน",
-      subtextColor: "text-[#4079ED]",
-      color: "bg-[#F3E8FF]", // Light Purple
-      iconBg: "bg-[#BF83FF]", // Deep Purple
+      subtextColor: "text-primary",
+      color: "bg-orange-50",
+      iconBg: "bg-primary",
       icon: Wallet,
     },
   ];
@@ -138,27 +138,27 @@ const FinancePage = () => {
       name: "เงินสด",
       amount: "45,430",
       percent: 77,
-      color: "bg-orange-500",
+      color: "bg-primary",
       icon: Banknote,
-      iconBg: "bg-teal-700",
+      iconBg: "bg-primary/10 text-primary",
     },
     {
       id: 2,
       name: "PromtPay",
       amount: "32,031",
       percent: 20,
-      color: "bg-blue-500",
+      color: "bg-primary",
       icon: QrCode,
-      iconBg: "bg-white border text-blue-500", // Special case for PromptPay logo look
+      iconBg: "bg-primary/10 text-primary",
     },
     {
       id: 3,
       name: "ค้างชำระ",
       amount: "5,510",
       percent: 13,
-      color: "bg-red-500",
+      color: "bg-rose-500",
       icon: HandCoins,
-      iconBg: "bg-orange-100 text-orange-600",
+      iconBg: "bg-rose-100 text-rose-600",
     },
   ];
 
@@ -234,8 +234,8 @@ const FinancePage = () => {
     <>
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[10%] right-[-5%] w-[35%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[40%] bg-purple-500/5 rounded-full blur-[100px]" />
+        <div className="absolute top-[5%] right-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
       </div>
 
       <div className="relative pb-10 space-y-6 min-h-screen">
@@ -247,7 +247,7 @@ const FinancePage = () => {
               <DollarSign className="w-10 h-10 text-primary" strokeWidth={2} />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight flex items-center gap-2">
                 การเงิน
                 <span className="text-primary">.</span>
               </h1>
@@ -263,46 +263,56 @@ const FinancePage = () => {
           {financeTopics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white border border-gray-100 rounded-[32px] p-7 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
+              className="bg-white border border-gray-100 rounded-[28px] p-6 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group min-h-[140px] flex items-center"
             >
               {/* Edge lighting */}
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+
+              {/* Background Glow */}
               <div
-                className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color.replace("bg-", "bg-")}`}
+                className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color}`}
               />
 
-              <div className="flex justify-between items-start mb-8 relative z-10">
+              {/* Decorative Background Icon */}
+              <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none transform rotate-12 group-hover:rotate-0">
+                <topic.icon size={120} strokeWidth={1} className={topic.iconBg.replace("bg-", "text-")} />
+              </div>
+
+              <div className="flex w-full justify-between items-center relative z-10 gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+                      {topic.title}
+                    </p>
+                    <div
+                      className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
+                    >
+                      Active
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                      <span className="text-lg mr-1 opacity-40 italic">฿</span>
+                      {topic.amount}
+                    </h3>
+                    <p
+                      className={`text-[11px] font-black mt-1 flex items-center gap-1.5 ${topic.subtextColor}`}
+                    >
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                      {topic.subtext}
+                    </p>
+                  </div>
+                </div>
+
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-premium group-hover:rotate-6 transition-all duration-500 ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
                 >
                   <topic.icon
-                    size={24}
+                    size={28}
                     strokeWidth={2.5}
                     className={topic.iconBg.replace("bg-", "text-")}
                   />
-                </div>
-                <div
-                  className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-inner-light ${topic.color} ${topic.iconBg.replace("bg-", "text-")}/60 border-current/10`}
-                >
-                  Metric Active
-                </div>
-              </div>
-
-              <div className="relative z-10">
-                <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
-                  {topic.title}
-                </p>
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-                    <span className="text-xl mr-1 opacity-40 italic">฿</span>
-                    {topic.amount}
-                  </h3>
-                  <p
-                    className={`text-[10px] font-black mt-2 flex items-center gap-1.5 ${topic.subtextColor}`}
-                  >
-                    <span className="inline-block w-1 h-1 rounded-full bg-current opacity-50" />
-                    {topic.subtext}
-                  </p>
                 </div>
               </div>
             </div>
@@ -322,12 +332,12 @@ const FinancePage = () => {
             </div>
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-primary"></span>
-                <span className="text-sm text-inactive">เงินเข้า</span>
+                <span className="w-3 h-3 rounded-full bg-primary shadow-sm shadow-primary/20"></span>
+                <span className="text-sm text-inactive font-bold">เงินเข้า</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-purple-400"></span>
-                <span className="text-sm text-inactive">เงินออก</span>
+                <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-200"></span>
+                <span className="text-sm text-inactive font-bold">เงินออก</span>
               </div>
             </div>
           </div>
@@ -368,27 +378,19 @@ const FinancePage = () => {
                   type="monotone"
                   dataKey="income"
                   stroke="#ED7117"
-                  strokeWidth={3}
-                  dot={{
-                    r: 4,
-                    strokeWidth: 2,
-                    fill: "#fff",
-                    stroke: "#ED7117",
-                  }}
-                  activeDot={{ r: 8 }}
+                  strokeWidth={4}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  name="เงินเข้า"
                 />
                 <Line
                   type="monotone"
                   dataKey="expense"
-                  stroke="#A78BFA"
-                  strokeWidth={3}
-                  dot={{
-                    r: 4,
-                    strokeWidth: 2,
-                    fill: "#fff",
-                    stroke: "#A78BFA",
-                  }}
-                  activeDot={{ r: 8 }}
+                  stroke="#94A3B8"
+                  strokeWidth={4}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  name="เงินออก"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -405,7 +407,7 @@ const FinancePage = () => {
               {paymentChannels.map((channel) => (
                 <div key={channel.id} className="flex items-center gap-4">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg.includes("text") ? "bg-gray-50 text-primary" : "bg-primary text-white"}`}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg}`}
                   >
                     <channel.icon size={22} strokeWidth={2.5} />
                   </div>
@@ -423,7 +425,7 @@ const FinancePage = () => {
                     </div>
                     <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden">
                       <div
-                        className={`h-full rounded-full bg-primary`}
+                        className={`h-full rounded-full ${channel.color}`}
                         style={{ width: `${channel.percent}%` }}
                       ></div>
                     </div>
@@ -439,7 +441,7 @@ const FinancePage = () => {
               <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 รายการล่าสุด
               </h2>
-              <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#d66515] transition-all shadow-sm">
+              <button className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20">
                 <LogOut size={16} strokeWidth={2.5} />
                 Export
               </button>
@@ -481,13 +483,13 @@ const FinancePage = () => {
                         {tx.type}
                       </td>
                       <td
-                        className={`py-4 px-4 text-sm font-black ${tx.type === "รายรับ" ? "text-emerald-500" : "text-rose-500"}`}
+                        className={`py-4 px-4 text-sm font-black ${tx.type === "รายรับ" ? "text-primary" : "text-inactive"}`}
                       >
                         {tx.amount}
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.status === "สำเร็จ" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.status === "สำเร็จ" ? "bg-emerald-50 text-emerald-600" : "bg-primary/10 text-primary border border-primary/10"}`}
                         >
                           {tx.status}
                         </span>
