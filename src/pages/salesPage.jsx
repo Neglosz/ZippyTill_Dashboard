@@ -225,7 +225,7 @@ const SalesPage = () => {
           {stats.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white border border-gray-100 rounded-[32px] p-7 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
+              className="bg-white border border-gray-100 rounded-[24px] p-5 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group flex flex-col justify-between"
             >
               {/* Edge lighting */}
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
@@ -233,12 +233,12 @@ const SalesPage = () => {
                 className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 ${topic.color}`}
               />
 
-              <div className="flex justify-between items-start mb-8 relative z-10">
+              <div className="flex justify-between items-start mb-5 relative z-10">
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm group-hover:rotate-6 transition-transform ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
                 >
                   <topic.icon
-                    size={24}
+                    size={20}
                     strokeWidth={2.5}
                     className={topic.iconBg.replace("bg-", "text-")}
                   />
@@ -251,15 +251,15 @@ const SalesPage = () => {
               </div>
 
               <div className="relative z-10">
-                <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+                <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2">
                   {topic.title}
                 </p>
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                  <h3 className="text-2xl font-black tracking-tighter text-gray-900 leading-none">
                     {topic.amount}
                   </h3>
                   <p
-                    className={`text-[10px] font-black mt-2 flex items-center gap-1.5 ${topic.subtextColor}`}
+                    className={`text-[10px] font-black mt-1.5 flex items-center gap-1.5 ${topic.subtextColor}`}
                   >
                     <span className="inline-block w-1 h-1 rounded-full bg-current opacity-50" />
                     {topic.subtext}
