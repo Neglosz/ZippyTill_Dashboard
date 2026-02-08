@@ -221,85 +221,88 @@ const DashboardPage = () => {
         {/* Row 1: Sales Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Revenue Metric */}
-          <div className="relative bg-white rounded-[28px] p-6 border border-gray-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-1 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-orange-50 via-white to-white rounded-[32px] p-8 border border-orange-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-2 overflow-hidden">
             {/* Background Accent Glow */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-rose-100/40 transition-colors duration-500" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-orange-300/30 transition-colors duration-500" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-100/10 rounded-full blur-2xl -ml-12 -mb-12" />
 
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-rose-50 text-rose-500 shadow-sm border border-rose-100/50 group-hover:scale-110 transition-transform duration-500">
-                  <FileText size={24} strokeWidth={1.5} />
+              <div className="flex justify-between items-start mb-8">
+                <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <FileText size={32} strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-emerald-50/50 text-emerald-600 border-emerald-100/50 shadow-sm">
-                  <TrendingUp size={12} strokeWidth={2.5} />{" "}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
+                  <TrendingUp size={14} strokeWidth={3} />{" "}
                   {weeklyAnalytics.growth > 0 ? "+" : ""}
                   {weeklyAnalytics.growth}%
                 </div>
               </div>
 
-              <div className="space-y-0.5 text-right">
-                <p className="text-3xl font-black text-gray-900 tracking-tighter group-hover:text-primary transition-colors duration-300">
-                  <span className="text-xl font-bold opacity-40 mr-1">฿</span>
-                  {metrics.totalRevenue.toLocaleString()}
-                </p>
-                <p className="text-[10px] font-bold text-inactive uppercase tracking-[0.1em] opacity-70">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-primary uppercase tracking-[0.15em]">
                   ยอดขายทั้งหมด
+                </p>
+                <p className="text-4xl font-black text-gray-900 tracking-tighter group-hover:text-primary transition-colors duration-300">
+                  <span className="text-2xl font-bold opacity-50 mr-1">฿</span>
+                  {metrics.totalRevenue.toLocaleString()}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Orders Metric */}
-          <div className="relative bg-white rounded-[28px] p-6 border border-gray-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-1 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-orange-50 via-white to-white rounded-[32px] p-8 border border-orange-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-2 overflow-hidden">
             {/* Background Accent Glow */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-amber-100/40 transition-colors duration-500" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-orange-300/30 transition-colors duration-500" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-100/10 rounded-full blur-2xl -ml-12 -mb-12" />
 
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-amber-50 text-amber-500 shadow-sm border border-amber-100/50 group-hover:scale-110 transition-transform duration-500">
-                  <ShoppingCart size={24} strokeWidth={1.5} />
+              <div className="flex justify-between items-start mb-8">
+                <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <ShoppingCart size={32} strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-amber-50/50 text-amber-600 border-amber-100/50 shadow-sm">
-                  <TrendingUp size={12} strokeWidth={2.5} />{" "}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
+                  <TrendingUp size={14} strokeWidth={3} />{" "}
                   {weeklyAnalytics.growth > 0 ? "+" : ""}
                   {(weeklyAnalytics.growth * 0.8).toFixed(1)}%
                 </div>
               </div>
 
-              <div className="space-y-0.5 text-right">
-                <p className="text-3xl font-black text-gray-900 tracking-tighter group-hover:text-amber-500 transition-colors duration-300">
-                  {metrics.totalOrders.toLocaleString()}
-                </p>
-                <p className="text-[10px] font-bold text-inactive uppercase tracking-[0.1em] opacity-70">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-primary uppercase tracking-[0.15em]">
                   ออเดอร์ทั้งหมด
+                </p>
+                <p className="text-4xl font-black text-gray-900 tracking-tighter group-hover:text-primary transition-colors duration-300">
+                  {metrics.totalOrders.toLocaleString()}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Sold Items Metric */}
-          <div className="relative bg-white rounded-[28px] p-6 border border-gray-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-1 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-orange-50 via-white to-white rounded-[32px] p-8 border border-orange-100/50 shadow-elevation transition-all duration-500 group cursor-default hover:shadow-elevation-hover hover:-translate-y-2 overflow-hidden">
             {/* Background Accent Glow */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-emerald-100/40 transition-colors duration-500" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-orange-300/30 transition-colors duration-500" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-100/10 rounded-full blur-2xl -ml-12 -mb-12" />
 
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-500 shadow-sm border border-emerald-100/50 group-hover:scale-110 transition-transform duration-500">
-                  <Package size={24} strokeWidth={1.5} />
+              <div className="flex justify-between items-start mb-8">
+                <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <Package size={32} strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-emerald-50/50 text-emerald-600 border-emerald-100/50 shadow-sm">
-                  <TrendingUp size={12} strokeWidth={2.5} />{" "}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
+                  <TrendingUp size={14} strokeWidth={3} />{" "}
                   {weeklyAnalytics.growth > 0 ? "+" : ""}
                   {(weeklyAnalytics.growth * 0.1).toFixed(1)}%
                 </div>
               </div>
 
-              <div className="space-y-0.5 text-right">
-                <p className="text-3xl font-black text-gray-900 tracking-tighter group-hover:text-emerald-500 transition-colors duration-300">
-                  {metrics.totalSold.toLocaleString()}
-                </p>
-                <p className="text-[10px] font-bold text-inactive uppercase tracking-[0.1em] opacity-70">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-primary uppercase tracking-[0.15em]">
                   สินค้าขายออก
+                </p>
+                <p className="text-4xl font-black text-gray-900 tracking-tighter group-hover:text-primary transition-colors duration-300">
+                  {metrics.totalSold.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -560,41 +563,40 @@ const DashboardPage = () => {
             >
               {notificationData.expiringSoon.length > 0 ||
               notificationData.expired.length > 0 ? (
-                [
-                  ...notificationData.expired,
-                  ...notificationData.expiringSoon,
-                ].map((prod, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-none w-[200px] bg-white rounded-2xl p-6 border border-gray-100/50 shadow-soft hover:shadow-elevation hover:-translate-y-1 transition-all duration-300 cursor-pointer snap-start flex flex-col items-center text-center group/item relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 h-1 w-full bg-rose-500/10 group-hover/item:bg-rose-500/20" />
-                    <div className="relative mb-6 h-32 w-full flex items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-100/50 overflow-hidden group-hover/item:scale-105 transition-transform duration-500">
-                      <img
-                        src={
-                          prod.imageUrl ||
-                          `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`
-                        }
-                        alt={prod.name}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          e.target.src = `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`;
-                        }}
-                      />
+                [...notificationData.expired, ...notificationData.expiringSoon]
+                  .sort((a, b) => a.days - b.days) // Sort by days remaining (ascending)
+                  .map((prod, idx) => (
+                    <div
+                      key={idx}
+                      className="flex-none w-[200px] bg-white rounded-2xl p-6 border border-gray-100/50 shadow-soft hover:shadow-elevation hover:-translate-y-1 transition-all duration-300 cursor-pointer snap-start flex flex-col items-center text-center group/item relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 h-1 w-full bg-rose-500/10 group-hover/item:bg-rose-500/20" />
+                      <div className="relative mb-6 h-32 w-full flex items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-100/50 overflow-hidden group-hover/item:scale-105 transition-transform duration-500">
+                        <img
+                          src={
+                            prod.imageUrl ||
+                            `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`
+                          }
+                          alt={prod.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`;
+                          }}
+                        />
+                      </div>
+                      <h4 className="text-sm font-black text-gray-900 mb-3 truncate w-full tracking-tight">
+                        {prod.name}
+                      </h4>
+                      <div className="flex flex-col items-center gap-2 mt-auto">
+                        <p className="text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-lg border border-rose-100 uppercase tracking-tighter">
+                          {prod.days} วันที่เหลือ
+                        </p>
+                        <p className="text-[10px] font-bold text-inactive uppercase tracking-widest opacity-60">
+                          {prod.expiryDate}
+                        </p>
+                      </div>
                     </div>
-                    <h4 className="text-sm font-black text-gray-900 mb-3 truncate w-full tracking-tight">
-                      {prod.name}
-                    </h4>
-                    <div className="flex flex-col items-center gap-2 mt-auto">
-                      <p className="text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-lg border border-rose-100 uppercase tracking-tighter">
-                        {prod.days} วันที่เหลือ
-                      </p>
-                      <p className="text-[10px] font-bold text-inactive uppercase tracking-widest opacity-60">
-                        {prod.expiryDate}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="w-full flex flex-col items-center justify-center py-16 gap-4 bg-gray-50/50 rounded-[32px] border-2 border-dashed border-gray-100">
                   <div className="p-5 bg-white rounded-2xl shadow-sm text-emerald-400">
