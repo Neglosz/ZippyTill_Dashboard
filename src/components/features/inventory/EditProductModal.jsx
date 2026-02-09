@@ -3,7 +3,13 @@ import { X, Calendar, Upload } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 
-const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
+const EditProductModal = ({
+  isOpen,
+  onClose,
+  product,
+  onSave,
+  activeBranchId,
+}) => {
   const fileInputRef = React.useRef(null);
   const [formData, setFormData] = useState({
     id: "",
@@ -23,13 +29,13 @@ const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
     if (isOpen) {
       fetchInitialData();
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, activeBranchId]);
 
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
       // 1. Fetch Categories
-      const cats = await productService.getAllCategories();
+      const cats = await productService.getAllCategories(activeBranchId);
       setCategories(cats);
 
       // 2. Map Product Data
@@ -56,18 +62,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
           exp: expDate,
           image: product.image_url || product.image || "",
           unit: product.unit_type || "ชิ้น",
-        });
-      } else {
-        setFormData({
-          id: "",
-          name: "",
-          category: "",
-          qty: "",
-          cost: "",
-          price: "",
-          exp: "",
-          image: "",
-          unit: "ชิ้น",
         });
       }
     } catch (err) {
@@ -149,6 +143,10 @@ const EditProductModal = ({ isOpen, onClose, product, onSave }) => {
                   }
                   alt={formData.name}
                   className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
+                  onError={(e) => {
+                    e.target.src =
+                      "https://via.placeholder.com/300x400?text=No+Image";
+                  }}
                 />
 
                 {/* Shiny Corner Effect */}

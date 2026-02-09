@@ -42,9 +42,12 @@ const EditProductModal = ({
             <div className="basis-[50%] flex flex-col items-center justify-center">
               <div className="w-72 h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200">
                 <img
-                  src={product.image}
+                  src={product.image_url || "https://via.placeholder.com/300"}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/300";
+                  }}
                 />
               </div>
               <div className="mt-3 text-center">

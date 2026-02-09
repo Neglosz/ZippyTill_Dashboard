@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
 import { authService } from "../services/authService";
 
-const ProfileDropdown = ({ isOpen, onClose }) => {
+const ProfileDropdown = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();
   if (!isOpen) return null;
+
+  const displayName =
+    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
 
   const handleLogout = async () => {
     try {
@@ -14,7 +17,6 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
       onClose();
     } catch (err) {
       console.error("Logout error:", err);
-      // Fallback navigate
       navigate("/", { replace: true });
       onClose();
     }
@@ -33,9 +35,11 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
             Account
           </p>
-          <p className="text-sm font-bold text-[#1B2559]">Admin User</p>
+          <p className="text-sm font-bold text-[#1B2559] truncate">
+            {displayName}
+          </p>
           <p className="text-[10px] text-gray-500 truncate">
-            admin@zippytill.com
+            {user?.email || "No email available"}
           </p>
         </div>
 
