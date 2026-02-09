@@ -261,7 +261,6 @@ const OverduePage = () => {
               <h3 className="text-lg font-black text-gray-900 tracking-tight mb-1">
                 ไม่พบลูกหนี้ค้างชำระ
               </h3>
-             
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-hide">

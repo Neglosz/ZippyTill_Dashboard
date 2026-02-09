@@ -112,9 +112,9 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
 
   return (
     <div
-      className={`${theme.bg} rounded-[32px] p-6 border ${theme.border} flex flex-col h-full`}
+      className={`${theme.bg} rounded-[32px] p-6 border ${theme.border} flex flex-col h-full overflow-hidden`}
     >
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6 shrink-0">
         <div
           className={`${theme.iconBg} text-white p-2.5 rounded-2xl shadow-sm`}
         >
@@ -125,7 +125,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
         </h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
         {items.length > 0 ? (
           items.map((item, idx) => (
             <div
