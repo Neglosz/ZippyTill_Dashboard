@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SimpleHeader from "../components/layout/SimpleHeader";
 import SummaryCard from "../components/common/SummaryCard";
@@ -15,23 +15,74 @@ import {
   Sparkles,
   Loader2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const BranchSelectionPage = () => {
   const { selectBranch } = useBranch();
   const navigate = useNavigate();
+  const scrollRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState([]);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Dragging state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLS, setScrollLS] = useState(0);
+  const [dragMoved, setDragMoved] = useState(false);
+
+  const startDragging = (e) => {
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLS(scrollRef.current.scrollLeft);
+    setDragMoved(false);
+  };
+
+  const stopDragging = (e) => {
+    setIsDragging(false);
+  };
+
+  const onDragging = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    scrollRef.current.scrollLeft = scrollLS - walk;
+
+    if (Math.abs(walk) > 5) {
+      setDragMoved(true);
+    }
+  };
+
+  const handleSelect = (branch) => {
+    if (dragMoved) return; // Prevent click if we were dragging
+    selectBranch(branch);
+    navigate("/dashboard", { replace: true });
+  };
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current;
+      const scrollTo =
+        direction === "left"
+          ? scrollLeft - clientWidth
+          : scrollLeft + clientWidth;
+      scrollRef.current.scrollTo({ left: scrollTo, behavior: "smooth" });
+    }
+  };
+
+  const onScroll = () => {
+    if (scrollRef.current) {
+      setScrollPosition(scrollRef.current.scrollLeft);
+    }
+  };
   const [summary, setSummary] = useState({
     totalSales: 0,
     totalOrders: 0,
     totalStaff: 0,
   });
-
-  const handleSelect = (branch) => {
-    selectBranch(branch);
-    navigate("/dashboard", { replace: true });
-  };
 
   useEffect(() => {
     const fetchStoresData = async () => {
@@ -122,26 +173,94 @@ const BranchSelectionPage = () => {
               ))}
             </div>
 
-            {/* Branch Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {stores.map((branch) => (
-                <BranchCard
-                  key={branch.id}
-                  branchName={branch.name}
-                  address={branch.address}
-                  salesToday={0} // These would ideally come from another service or sub-query
-                  ordersToday={0}
-                  staffCount={0}
-                  growth={0}
-                  imageUrl={
-                    branch.image_url ||
-                    "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
-                  }
-                  onSelect={() => handleSelect(branch)}
-                  isOpen={branch.is_active}
-                  isDark={false}
-                />
-              ))}
+            {/* Branch Cards Slider */}
+            <div className="w-full relative px-20">
+              {/* Navigation Arrows - Perfectly Symmetric */}
+              {stores.length > 3 && (
+                <>
+                  <button
+                    onClick={() => handleScroll("left")}
+                    className="absolute left-4 top-[45%] -translate-y-1/2 z-30 w-14 h-14 bg-white/60 backdrop-blur-2xl rounded-[22px] shadow-2xl shadow-primary/5 border border-white/80 flex items-center justify-center text-gray-500 hover:text-white hover:bg-primary hover:scale-110 active:scale-95 transition-all duration-500 group/nav"
+                  >
+                    <ChevronLeft
+                      size={28}
+                      strokeWidth={3}
+                      className="group-hover/nav:-translate-x-1 transition-transform duration-500"
+                    />
+                  </button>
+                  <button
+                    onClick={() => handleScroll("right")}
+                    className="absolute right-4 top-[45%] -translate-y-1/2 z-30 w-14 h-14 bg-white/60 backdrop-blur-2xl rounded-[22px] shadow-2xl shadow-primary/5 border border-white/80 flex items-center justify-center text-gray-500 hover:text-white hover:bg-primary hover:scale-110 active:scale-95 transition-all duration-500 group/nav"
+                  >
+                    <ChevronRight
+                      size={28}
+                      strokeWidth={3}
+                      className="group-hover/nav:translate-x-1 transition-transform duration-500"
+                    />
+                  </button>
+                </>
+              )}
+
+              <div
+                ref={scrollRef}
+                onScroll={onScroll}
+                onMouseDown={startDragging}
+                onMouseLeave={stopDragging}
+                onMouseUp={stopDragging}
+                onMouseMove={onDragging}
+                className={`flex overflow-x-auto gap-10 w-full pb-14 pt-4 px-4 scroll-smooth custom-scrollbar no-scrollbar ${
+                  isDragging
+                    ? "cursor-grabbing select-none"
+                    : "cursor-grab snap-x snap-mandatory"
+                }`}
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                }}
+              >
+                {stores.map((branch) => (
+                  <div
+                    key={branch.id}
+                    className="flex-shrink-0 w-full md:w-[calc((100%-5rem)/3)] snap-center"
+                  >
+                    <BranchCard
+                      branchName={branch.name}
+                      address={branch.address}
+                      salesToday={0}
+                      ordersToday={0}
+                      staffCount={0}
+                      growth={0}
+                      imageUrl={
+                        branch.image_url ||
+                        "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
+                      }
+                      onSelect={() => handleSelect(branch)}
+                      isOpen={branch.is_active}
+                      isDark={false}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Dots - Dynamic & Centered */}
+              {stores.length > 3 && (
+                <div className="flex justify-center gap-3 mt-2">
+                  {[...Array(Math.ceil(stores.length / 3))].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 rounded-full transition-all duration-700 ${
+                        Math.round(
+                          scrollPosition /
+                            (scrollRef.current?.scrollWidth /
+                              (stores.length / 3)),
+                        ) === i
+                          ? "w-10 bg-primary shadow-lg shadow-primary/20"
+                          : "w-2 bg-gray-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </>
         ) : (

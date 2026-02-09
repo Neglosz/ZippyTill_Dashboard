@@ -105,15 +105,13 @@ const AIPromotionPage = () => {
 
   useEffect(() => {
     const fetchRecs = async () => {
+      if (!activeBranchId) return;
       try {
         setIsRecLoading(true);
-        const contextData = {
-          branchName: activeBranchName,
-          topSellingItems: ["กาแฟอาราบิก้า", "ชาไทยพรีเมียม", "ครัวซองต์เนยสด"],
-          stockIssues: ["เค้กส้ม (ใกล้หมดอายุ)", "คุกกี้เนย (สต็อกเยอะ)"],
-          currentSeason: "ฤดูหนาว/ตรุษจีน",
-        };
-        const aiRecs = await getPromotionRecommendations(contextData);
+        const aiRecs = await getPromotionRecommendations(
+          activeBranchId,
+          activeBranchName,
+        );
         setRecommendations(aiRecs);
       } catch (error) {
         console.error("Failed to fetch AI recs:", error);
@@ -145,7 +143,7 @@ const AIPromotionPage = () => {
     };
 
     fetchRecs();
-  }, [activeBranchName]);
+  }, [activeBranchId, activeBranchName]);
 
   useEffect(() => {
     const fetchPromos = async () => {
