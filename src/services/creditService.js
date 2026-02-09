@@ -14,7 +14,8 @@ export const creditService = {
           name,
           phone,
           image_url,
-          store_id
+          store_id,
+          due_date
         ),
         orders (
           order_no,
@@ -37,6 +38,7 @@ export const creditService = {
       amount: item.remaining_amount, // Show remaining debt
       totalAmount: item.total_debt, // Keep track of original total
       dueDate: item.due_date,
+      customerDueDate: item.customers_info?.due_date, // Due date from customer info
       createdAt: item.created_at, // Add creation date
       status: item.status || "ค้างชำระ",
       overdueDays: calculateOverdueDays(item.due_date),

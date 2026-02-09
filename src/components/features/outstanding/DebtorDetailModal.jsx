@@ -61,8 +61,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
   const bills = item.items || [];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-50 p-4 animate-in fade-in duration-500">
-      <div className="bg-gradient-to-br from-white via-white to-gray-50/80 rounded-[48px] w-full max-w-4xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/80 relative backdrop-blur-xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-50 p-4 animate-in fade-in duration-500 overflow-y-auto">
+      <div className="bg-gradient-to-br from-white via-white to-gray-50/80 rounded-[48px] w-full max-w-4xl max-h-[80vh] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/80 relative backdrop-blur-xl">
         {/* Enhanced Background Decor */}
         <div
           className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/10 via-orange-400/5 to-transparent rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse"
@@ -83,7 +83,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
             <X size={22} strokeWidth={2.5} />
           </button>
 
-          <div className="flex max-h-[85vh]">
+          <div className="flex max-h-[75vh]">
             {/* Section 1 - Left: Profile Image (Full Height) */}
             <div className="w-1/2 bg-gradient-to-br from-gray-50 via-white to-gray-100/50 flex items-center justify-center p-8 relative overflow-hidden">
               {/* Enhanced decorative elements with animation */}
@@ -156,8 +156,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Tab Content - Fixed Height */}
-              <div className="h-[500px] overflow-y-auto custom-scrollbar bg-white">
+              {/* Tab Content - Adjusted Height */}
+              <div className="max-h-[500px] overflow-y-auto custom-scrollbar bg-white">
                 {activeTab === "info" ? (
                   /* Customer Information Tab */
                   <div className="bg-white p-6 h-full">
@@ -250,7 +250,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                               strokeWidth={2.5}
                             />
                           </div>
-                          {formatDate(item.items?.[0]?.dueDate || item.dueDate)}
+                          {formatDate(item.customerDueDate)}
                         </div>
                       </div>
                     </div>
