@@ -26,6 +26,7 @@ import {
   Bar,
   AreaChart,
   Area,
+  ComposedChart,
 } from "recharts";
 
 const data1D = [
@@ -182,18 +183,32 @@ const SalesPage = () => {
   ];
 
   const getChartData = () => {
+    let rawData = [];
     switch (timeRange) {
       case "1D":
-        return data1D;
+        rawData = data1D;
+        break;
       case "1M":
-        return data1M;
+        rawData = data1M;
+        break;
       case "1Y":
-        return data1Y;
+        rawData = data1Y;
+        break;
       case "Max":
-        return data1Y;
+        rawData = data1Y;
+        break;
       default:
-        return data1D;
+        rawData = data1D;
     }
+
+    return rawData.map((item) => ({
+      ...item,
+      totalSales:
+        (item.general || 0) +
+        (item.home || 0) +
+        (item.fresh || 0) +
+        (item.snack || 0),
+    }));
   };
 
   // Pie Chart Data
@@ -250,7 +265,11 @@ const SalesPage = () => {
 
               {/* Decorative Background Icon */}
               <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none transform rotate-12 group-hover:rotate-0">
-                <topic.icon size={120} strokeWidth={1} className={topic.iconBg.replace("bg-", "text-")} />
+                <topic.icon
+                  size={120}
+                  strokeWidth={1}
+                  className={topic.iconBg.replace("bg-", "text-")}
+                />
               </div>
 
               <div className="flex w-full justify-between items-center relative z-10 gap-4">
@@ -317,10 +336,11 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                      timeRange === range
                         ? "bg-white shadow-sm text-primary border border-gray-100"
                         : "text-inactive hover:text-gray-900"
-                      }`}
+                    }`}
                   >
                     {range}
                   </button>
@@ -330,10 +350,73 @@ const SalesPage = () => {
 
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
+                <ComposedChart
                   data={getChartData()}
                   margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                 >
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
+                      <stop
+                        offset="100%"
+                        stopColor="#F97316"
+                        stopOpacity={0.8}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="areaGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="#ED7117"
+                        stopOpacity={0.15}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="#ED7117"
+                        stopOpacity={0.01}
+                      />
+                    </linearGradient>
+                    <filter
+                      id="barShadow"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feGaussianBlur
+                        in="SourceAlpha"
+                        stdDeviation="4"
+                        result="blur"
+                      />
+                      <feOffset dx="0" dy="8" in="blur" result="offsetBlur" />
+                      <feFlood
+                        floodColor="#ED7117"
+                        floodOpacity="0.3"
+                        result="offsetColor"
+                      />
+                      <feComposite
+                        in="offsetColor"
+                        in2="offsetBlur"
+                        operator="in"
+                        result="shadow"
+                      />
+                      <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="5 5"
                     vertical={false}
@@ -362,93 +445,55 @@ const SalesPage = () => {
                     }
                   />
                   <Tooltip
+                    cursor={{ fill: "rgba(237, 113, 23, 0.05)", radius: 10 }}
                     contentStyle={{
-                      borderRadius: "20px",
-                      border: "1px solid #F1F5F9",
-                      boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.05)",
-                      padding: "12px 16px",
+                      borderRadius: "24px",
+                      border: "none",
+                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
+                      padding: "16px 20px",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      backdropFilter: "blur(10px)",
+                      zIndex: 1000,
                     }}
                     labelStyle={{
                       fontWeight: 900,
                       color: "#1E293B",
-                      marginBottom: "8px",
+                      marginBottom: "6px",
                       fontSize: "12px",
                       textTransform: "uppercase",
                       letterSpacing: "0.1em",
                     }}
                     itemStyle={{
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      padding: "2px 0",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: "#ED7117",
+                      padding: "0",
                     }}
                     labelFormatter={(value) =>
                       timeRange === "1M" ? `วันที่ ${value}` : value
                     }
                   />
-                  <Line
+                  <Area
                     type="monotone"
-                    dataKey="general"
-                    stroke="#F43F5E"
-                    strokeWidth={4}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    name="ของใช้ทั่วไป"
+                    dataKey="totalSales"
+                    fill="url(#areaGradient)"
+                    stroke="none"
+                    animationDuration={1500}
+                    animationBegin={400}
+                    animationEasing="ease-in-out"
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="home"
-                    stroke="#F59E0B"
-                    strokeWidth={4}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    name="ของใช้ในบ้าน"
+                  <Bar
+                    dataKey="totalSales"
+                    fill="url(#barGradient)"
+                    radius={[10, 10, 2, 2]}
+                    name="ยอดขายรวม"
+                    barSize={timeRange === "1M" ? 12 : 36}
+                    animationDuration={1200}
+                    animationEasing="ease-in-out"
+                    filter="url(#barShadow)"
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="fresh"
-                    stroke="#3B82F6"
-                    strokeWidth={4}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    name="ของสด"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="snack"
-                    stroke="#10B981"
-                    strokeWidth={4}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    name="ขนม"
-                  />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 p-6 bg-gray-50 rounded-[28px] border border-gray-100">
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></span>
-                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  ของใช้ทั่วไป
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-200"></span>
-                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  ของสด
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-200"></span>
-                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  ของใช้ในบ้าน
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></span>
-                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                  ขนม
-                </span>
-              </div>
             </div>
           </div>
 
@@ -472,15 +517,48 @@ const SalesPage = () => {
             <div className="flex-1 min-h-[280px] relative flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <defs>
+                    <filter
+                      id="pieShadow"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feGaussianBlur
+                        in="SourceAlpha"
+                        stdDeviation="5"
+                        result="blur"
+                      />
+                      <feOffset dx="0" dy="6" in="blur" result="offsetBlur" />
+                      <feFlood
+                        floodColor="#000"
+                        floodOpacity="0.1"
+                        result="offsetColor"
+                      />
+                      <feComposite
+                        in="offsetColor"
+                        in2="offsetBlur"
+                        operator="in"
+                        result="shadow"
+                      />
+                      <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={95}
-                    paddingAngle={8}
+                    innerRadius={85}
+                    outerRadius={115}
+                    paddingAngle={10}
                     dataKey="value"
-                    cornerRadius={10}
+                    cornerRadius={12}
+                    filter="url(#pieShadow)"
+                    animationDuration={1500}
                   >
                     {pieData.map((entry, index) => (
                       <Cell
@@ -492,9 +570,9 @@ const SalesPage = () => {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      borderRadius: "20px",
-                      border: "1px solid #F1F5F9",
-                      boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.05)",
+                      borderRadius: "24px",
+                      border: "none",
+                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
                     }}
                     itemStyle={{
                       fontSize: "12px",
@@ -506,10 +584,10 @@ const SalesPage = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
+                <span className="text-[10px] font-black text-inactive uppercase tracking widest">
                   Total
                 </span>
-                <span className="text-2xl font-black text-gray-900 tracking-tighter">
+                <span className="text-3xl font-black text-gray-900 tracking-tighter">
                   100%
                 </span>
               </div>
@@ -600,14 +678,15 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${rank === 1
+                            ${
+                              rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                              }`}
+                            }`}
                           >
                             {rank}
                           </div>
