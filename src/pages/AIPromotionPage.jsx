@@ -35,6 +35,17 @@ const AIPromotionPage = () => {
   const [isRecLoading, setIsRecLoading] = useState(true);
   const [activePromotions, setActivePromotions] = useState([]);
   const [isPromosLoading, setIsPromosLoading] = useState(true);
+  const [aiPromoData, setAiPromoData] = useState(null);
+
+  const handleCreateFromAI = (rec) => {
+    setAiPromoData(rec);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setAiPromoData(null);
+  };
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -232,7 +243,8 @@ const AIPromotionPage = () => {
 
         <CreatePromotionModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleModalClose}
+          initialData={aiPromoData}
         />
 
         {/* Stats Grid */}
@@ -326,7 +338,10 @@ const AIPromotionPage = () => {
                               {rec.benefit}
                             </span>
                           </div>
-                          <button className="w-[80px] py-2 bg-primary text-white text-[10px] font-bold rounded-xl hover:bg-orange-600 transition-all active:scale-95 shadow-sm shadow-primary/20">
+                          <button
+                            onClick={() => handleCreateFromAI(rec)}
+                            className="w-[80px] py-2 bg-primary text-white text-[10px] font-bold rounded-xl hover:bg-orange-600 transition-all active:scale-95 shadow-sm shadow-primary/20"
+                          >
                             สร้างเลย
                           </button>
                         </div>
