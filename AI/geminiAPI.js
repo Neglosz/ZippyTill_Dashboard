@@ -45,26 +45,71 @@ export const generateAIContent = async (
   }
 };
 
-export const getPromotionRecommendations = async (contextData) => {
+import { saleService } from "../src/services/saleService";
+import { productService } from "../src/services/productService";
+
+export const getPromotionRecommendations = async (branchId, branchName) => {
+  if (!branchId) throw new Error("Branch ID is required for AI analysis");
+
+  // Fetch real data for context
+  let salesData = null;
+  let topProducts = [];
+  let notifications = null;
+
+  try {
+    [topProducts, salesData, notifications] = await Promise.all([
+      saleService.getTopSellingProducts(branchId),
+      saleService.getWeeklyAnalytics(branchId),
+      productService.getDashboardNotifications(branchId),
+    ]);
+  } catch (error) {
+    console.error("Error fetching context for AI:", error);
+  }
+
+  const contextData = {
+    branchName: branchName || "Unknown Branch",
+    topSellingItems: topProducts.slice(0, 5).map((p) => ({
+      name: p.name,
+      sold_qty: p.sold_qty,
+      revenue: p.revenue,
+    })),
+    salesGrowth: salesData?.growth || 0,
+    inventoryStats: {
+      lowStock: notifications?.lowStock?.length || 0,
+      expiringSoon: notifications?.expiringSoon?.length || 0,
+      expired: notifications?.expired?.length || 0,
+    },
+    // Extract problematic items for AI to focus on
+    stockIssues: [
+      ...(notifications?.expiringSoon || []).map(
+        (p) => `${p.name} (ใกล้หมดอายุ)`,
+      ),
+      ...(notifications?.lowStock || []).map((p) => `${p.name} (สต็อกต่ำ)`),
+    ].slice(0, 5),
+  };
+
   const prompt = `
-    Based on the following store data:
-    ${JSON.stringify(contextData)}
+    Based on the following REAL store data from Supabase for branch "${contextData.branchName}":
+    ${JSON.stringify(contextData, null, 2)}
     
-    Recommend 3 promotions that would help increase sales.
-    Provide the response in EXPLICIT JSON format (no markdown code blocks) with the following structure:
+    Recommend 3 promotions that would help increase sales or solve stock issues.
+    Rules:
+    1. Focus on top selling items to boost revenue further.
+    2. Focus on expiring or low stock items if they exist to clear or restock them.
+    3. Use Thai for titles and descriptions.
+    4. Provide the response in EXPLICIT JSON format (no markdown code blocks) with this structure:
     [
       {
-        "id": 1,
-        "title": "string",
-        "desc": "string",
-        "match": "percentage string",
-        "benefit": "benefit string",
-        "icon": "string (TrendingUp, Package, or Users)",
-        "color": "tailwind text classes",
-        "bg": "tailwind bg classes"
+        "id": number,
+        "title": "Thai title",
+        "desc": "Thai explanation of why this is recommended and what it is",
+        "match": "XX%",
+        "benefit": "benefit in Thai (e.g., +25% ยอดขาย)",
+        "icon": "TrendingUp | Package | Users",
+        "color": "tailwind text color class",
+        "bg": "tailwind bg color class"
       }
     ]
-    Use Thai for titles and descriptions.
   `;
 
   try {
