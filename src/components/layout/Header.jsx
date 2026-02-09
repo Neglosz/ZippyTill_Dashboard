@@ -5,6 +5,8 @@ import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "../ProfileDropdown";
 import { supabase } from "../../lib/supabase";
 import { useBranch } from "../../contexts/BranchContext";
+import { productService } from "../../services/productService";
+import { creditService } from "../../services/creditService";
 
 const Header = () => {
   const location = useLocation();
@@ -19,14 +21,63 @@ const Header = () => {
     if (!activeBranchId) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // 1. Fetch system notifications (Overdue & Expiring)
+      const [overdueItems, dashboardNotifs] = await Promise.all([
+        creditService.getOverdueItems(activeBranchId),
+        productService.getDashboardNotifications(activeBranchId),
+      ]);
+
+      // Transform Overdue Items
+      const overdueNotifications = overdueItems.map((item) => ({
+        id: `overdue-${item.id}`,
+        type: "overdue",
+        title: `Overdue Payment: ${item.name}`,
+        message: `${item.amount.toLocaleString()} THB due on ${new Date(
+          item.dueDate,
+        ).toLocaleDateString("th-TH")}`,
+        time: `${item.overdueDays} days overdue`,
+        created_at: item.dueDate, // Sort by due date
+        link: "/finance/overdue", // Potential future use
+      }));
+
+      // Transform Expiring Items
+      const expiringNotifications = [
+        ...dashboardNotifs.expired.map((item) => ({
+          id: `expired-${item.name}-${Math.random()}`, // Ensure unique ID
+          type: "alert", // Use alert for expired
+          title: `Expired: ${item.name}`,
+          message: `Product expired on ${item.expiryDate}`,
+          time: "Expired",
+          created_at: new Date().toISOString(),
+        })),
+        ...dashboardNotifs.expiringSoon.map((item) => ({
+          id: `expiring-${item.name}-${Math.random()}`,
+          type: "expiring",
+          title: `Expiring Soon: ${item.name}`,
+          message: `Expires in ${item.days} days (${item.expiryDate})`,
+          time: `${item.days} days left`,
+          created_at: new Date().toISOString(),
+        })),
+      ];
+
+      // 2. Fetch manual notifications from Supabase
+      const { data: manualNotifications, error } = await supabase
         .from("notifications")
         .select("*")
         .eq("store_id", activeBranchId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setNotifications(data || []);
+
+      // 3. Merge and Sort
+      const allNotifications = [
+        ...overdueNotifications,
+        ...expiringNotifications,
+        ...(manualNotifications || []),
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setNotifications(allNotifications);
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
     } finally {
