@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
+import AIChatBot from "../components/features/ai/AIChatBot";
 
 const DashboardLayout = () => {
   return (
@@ -22,6 +23,9 @@ const DashboardLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global AI Chatbot */}
+      <AIChatBot />
     </div>
   );
 };

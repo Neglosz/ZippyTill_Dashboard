@@ -25,10 +25,73 @@ import {
 } from "recharts";
 import CreatePromotionModal from "../components/modals/CreatePromotionModal";
 import { useBranch } from "../contexts/BranchContext";
+import { getPromotionRecommendations } from "../../AI/geminiAPI";
+import { useEffect } from "react";
 
 const AIPromotionPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [isRecLoading, setIsRecLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecs = async () => {
+      try {
+        setIsRecLoading(true);
+        // Mock context data for AI analysis
+        const contextData = {
+          branchName: activeBranchName,
+          topSellingItems: ["กาแฟอาราบิก้า", "ชาไทยพรีเมียม", "ครัวซองต์เนยสด"],
+          stockIssues: ["เค้กส้ม (ใกล้หมดอายุ)", "คุกกี้เนย (สต็อกเยอะ)"],
+          currentSeason: "ฤดูหนาว/ตรุษจีน",
+        };
+        const aiRecs = await getPromotionRecommendations(contextData);
+        setRecommendations(aiRecs);
+      } catch (error) {
+        console.error("Failed to fetch AI recs:", error);
+        // Fallback to initial mock if API fails
+        setRecommendations([
+          {
+            id: 1,
+            title: "โปรโมชั่นสินค้าขายดี",
+            desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
+            match: "92%",
+            benefit: "+25% ยอดขาย",
+            icon: "TrendingUp",
+            color: "text-purple-500",
+            bg: "bg-purple-50",
+          },
+          {
+            id: 2,
+            title: "ซื้อ 2 แถม 1",
+            desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
+            match: "88%",
+            benefit: "+40% ยอดขาย",
+            icon: "Package",
+            color: "text-blue-500",
+            bg: "bg-blue-50",
+          },
+        ]);
+      } finally {
+        setIsRecLoading(false);
+      }
+    };
+
+    fetchRecs();
+  }, [activeBranchName]);
+
+  const getIcon = (iconName) => {
+    switch (iconName) {
+      case "TrendingUp":
+        return TrendingUp;
+      case "Package":
+        return Package;
+      case "Users":
+        return Users;
+      default:
+        return Sparkles;
+    }
+  };
   // Mock Data for Top Stats
   const topStats = [
     {
@@ -232,56 +295,6 @@ const AIPromotionPage = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column (AI Assistant & Recs) */}
           <div className="xl:col-span-1 flex flex-col gap-6">
-            {/* AI Assistant Banner */}
-            <div className="bg-gradient-to-br from-primary via-orange-500 to-orange-600 rounded-[32px] p-1 shadow-lg shadow-primary/25 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-[30px] p-6 relative z-10">
-                <div className="flex items-center gap-3 mb-4 text-white">
-                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
-                    <Sparkles size={20} className="text-white" />
-                  </div>
-                  <h3 className="font-bold tracking-tight">AI Assistant</h3>
-                </div>
-                <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 shadow-inner-light">
-                  <div className="flex gap-3 mb-2">
-                    <Sparkles
-                      size={16}
-                      className="text-primary mt-1 shrink-0 animate-pulse"
-                    />
-                    <p className="text-sm font-medium text-gray-700 leading-relaxed">
-                      สวัสดีค่ะ! ฉันคือ AI Assistant ของคุณ
-                      พร้อมช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมกับธุรกิจของคุณ
-                      มีอะไรให้ช่วยไหมคะ?
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {[
-                    "สร้างโปรโมชั่นสินค้าหมดอายุ",
-                    "แนะนำโปรโมชั่นเดือนนี้",
-                    "สินค้าที่ควรทำโปรโมชั่น",
-                  ].map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors backdrop-blur-sm border border-white/10"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-4 bg-white/95 rounded-2xl p-1.5 flex items-center shadow-lg">
-                  <input
-                    type="text"
-                    placeholder="พิมพ์คำถามหรือคำสั่ง..."
-                    className="flex-1 bg-transparent border-none outline-none px-4 text-sm font-medium text-gray-800 placeholder-gray-400"
-                  />
-                  <button className="p-2.5 bg-primary text-white rounded-xl shadow-md hover:scale-105 transition-transform">
-                    <ArrowRight size={16} strokeWidth={3} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* AI Recommendations List */}
             <div className="bg-white rounded-[32px] p-6 shadow-premium border border-gray-100 flex-1 flex flex-col">
               <div className="flex items-center gap-2 mb-6">
@@ -291,44 +304,56 @@ const AIPromotionPage = () => {
                 </h3>
               </div>
               <div className="space-y-4 flex-1">
-                {aiRecommendations.map((rec) => (
-                  <div
-                    key={rec.id}
-                    className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`mt-1 w-10 h-10 rounded-xl flex items-center justify-center ${rec.bg} ${rec.color}`}
-                        >
-                          <rec.icon size={20} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm group-hover:text-primary transition-colors">
-                            {rec.title}
-                          </h4>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                            {rec.desc}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex gap-3 text-[10px] font-bold">
-                        <span className="text-inactive">
-                          Match{" "}
-                          <span className="text-gray-900">{rec.match}</span>
-                        </span>
-                        <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          {rec.benefit}
-                        </span>
-                      </div>
-                      <button className="px-3 py-1.5 bg-gray-900 text-white text-[10px] font-bold rounded-lg group-hover:bg-primary transition-colors">
-                        สร้างเลย
-                      </button>
-                    </div>
+                {isRecLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 py-10">
+                    <Sparkles className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm font-bold text-inactive">
+                      กำลังวิเคราะห์ข้อมูล...
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  recommendations.map((rec) => {
+                    const IconComponent = getIcon(rec.icon);
+                    return (
+                      <div
+                        key={rec.id}
+                        className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300 group cursor-pointer"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`mt-1 w-10 h-10 rounded-xl flex items-center justify-center ${rec.bg} ${rec.color}`}
+                            >
+                              <IconComponent size={20} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 text-sm group-hover:text-primary transition-colors">
+                                {rec.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                {rec.desc}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="flex gap-3 text-[10px] font-bold">
+                            <span className="text-inactive">
+                              Match{" "}
+                              <span className="text-gray-900">{rec.match}</span>
+                            </span>
+                            <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                              {rec.benefit}
+                            </span>
+                          </div>
+                          <button className="w-[80px] py-2 bg-primary text-white text-[10px] font-bold rounded-xl hover:bg-orange-600 transition-all active:scale-95 shadow-sm shadow-primary/20">
+                            สร้างเลย
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

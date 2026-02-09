@@ -1,13 +1,92 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Users, Bell, ChevronDown } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "../ProfileDropdown";
+import { supabase } from "../../lib/supabase";
+import { useBranch } from "../../contexts/BranchContext";
 
 const Header = () => {
   const location = useLocation();
+  const { activeBranchId } = useBranch();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!activeBranchId) return;
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("store_id", activeBranchId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (error) {
+      console.error("Error fetching notifications:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel(`notifications_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        () => {
+          fetchNotifications();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeBranchId]);
+
+  const clearAllNotifications = async () => {
+    if (!activeBranchId) return;
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("store_id", activeBranchId);
+
+      if (error) throw error;
+      setNotifications([]);
+    } catch (error) {
+      console.error("Error clearing notifications:", error.message);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      setNotifications(notifications.filter((n) => n.id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error.message);
+    }
+  };
 
   // Dynamic title mapping
   const getTitle = () => {
@@ -51,11 +130,17 @@ const Header = () => {
             }`}
           >
             <Bell size={20} className={showNotifications ? "rotate-0" : ""} />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+            {notifications.length > 0 && (
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+            )}
           </button>
           <NotificationDropdown
             isOpen={showNotifications}
+            notifications={notifications}
+            loading={loading}
             onClose={() => setShowNotifications(false)}
+            onClearAll={clearAllNotifications}
+            onDelete={deleteNotification}
           />
         </div>
 
