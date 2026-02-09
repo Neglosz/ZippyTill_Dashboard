@@ -25,7 +25,7 @@ import { createPortal } from "react-dom";
 import EditProductModal from "./EditProductModal";
 import { productService } from "../../services/productService";
 
-const CreatePromotionModal = ({ isOpen, onClose }) => {
+const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
   const [step, setStep] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -39,6 +39,33 @@ const CreatePromotionModal = ({ isOpen, onClose }) => {
     endDate: "",
     prompt: "",
   });
+
+  // Handle AI Initial Data
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setPromoData({
+        ...promoData,
+        name: initialData.title || "",
+        type: "custom",
+        prompt: initialData.desc || "",
+      });
+      setStep(2); // Jump to setup step
+    } else if (!isOpen) {
+      // Reset state when modal closes
+      setStep(1);
+      setPromoData({
+        name: "",
+        type: "percent",
+        value: "",
+        minSpend: "",
+        startDate: "",
+        endDate: "",
+        prompt: "",
+      });
+      setSelectedProducts([]);
+    }
+  }, [isOpen, initialData]);
+
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
