@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -10,6 +10,7 @@ import {
   LogOut,
   DollarSign,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 import {
   LineChart,
@@ -24,6 +25,8 @@ import {
   Legend,
 } from "recharts";
 import { useBranch } from "../contexts/BranchContext";
+import { saleService } from "../services/saleService";
+import { orderService } from "../services/orderService";
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -60,13 +63,53 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const FinancePage = () => {
-  const { activeBranchName } = useBranch();
+  const { activeBranchId } = useBranch();
+  const [loading, setLoading] = useState(true);
+  
+  // Data States
+  const [metrics, setMetrics] = useState({
+    totalRevenue: 0,
+    totalExpense: 0,
+    netProfit: 0,
+    paymentChannels: []
+  });
+  const [dailyGraphData, setDailyGraphData] = useState([]);
+  const [monthlyChartData, setMonthlyChartData] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    if (activeBranchId) {
+      fetchFinanceData();
+    }
+  }, [activeBranchId]);
+
+  const fetchFinanceData = async () => {
+    setLoading(true);
+    try {
+      const [stats, daily, monthly, recentOrders] = await Promise.all([
+        saleService.getFinanceStats(activeBranchId),
+        saleService.getDailyFinance(activeBranchId),
+        saleService.getMonthlyFinance(activeBranchId),
+        orderService.getRecentOrders(activeBranchId)
+      ]);
+
+      setMetrics(stats);
+      setDailyGraphData(daily);
+      setMonthlyChartData(monthly);
+      setTransactions(recentOrders || []);
+    } catch (error) {
+      console.error("Failed to fetch finance data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const financeTopics = [
     {
       id: 1,
       title: "รายรับทั้งหมด",
-      amount: "200,403",
-      subtext: "+8% จาก สัปดาห์ที่แล้ว",
+      amount: metrics.totalRevenue.toLocaleString(),
+      subtext: "ยอดขายรวมทั้งหมด",
       subtextColor: "text-primary",
       color: "bg-orange-50",
       iconBg: "bg-primary",
@@ -74,9 +117,9 @@ const FinancePage = () => {
     },
     {
       id: 2,
-      title: "รายจ่ายทั้งหมด",
-      amount: "300",
-      subtext: "+5% จาก เมื่อวาน",
+      title: "ต้นทุนขาย (COGS)",
+      amount: metrics.totalExpense.toLocaleString(),
+      subtext: "คิดจากต้นทุนสินค้า",
       subtextColor: "text-inactive",
       color: "bg-gray-50",
       iconBg: "bg-slate-400",
@@ -84,9 +127,9 @@ const FinancePage = () => {
     },
     {
       id: 3,
-      title: "กำไรสุทธิ",
-      amount: "5,503,900",
-      subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
+      title: "กำไรขั้นต้น",
+      amount: metrics.netProfit.toLocaleString(),
+      subtext: "รายรับ - ต้นทุนขาย",
       subtextColor: "text-primary",
       color: "bg-primary/10",
       iconBg: "bg-primary-dark",
@@ -94,9 +137,9 @@ const FinancePage = () => {
     },
     {
       id: 4,
-      title: "ยอดเงินทั้งหมด",
-      amount: "8,950,402",
-      subtext: "0.5% จากเมื่อวาน",
+      title: "ยอดเงินสุทธิ",
+      amount: metrics.netProfit.toLocaleString(), // Using Net Profit as substitute for now
+      subtext: "Balance",
       subtextColor: "text-primary",
       color: "bg-orange-50",
       iconBg: "bg-primary",
@@ -104,131 +147,54 @@ const FinancePage = () => {
     },
   ];
 
-  // Mock Data for Graph (00:00 - 23:00)
-  const data = [
-    { name: "00", income: 12000, expense: 8000 },
-    { name: "01", income: 15000, expense: 12000 },
-    { name: "02", income: 22000, expense: 18000 },
-    { name: "03", income: 35000, expense: 28000 },
-    { name: "04", income: 55000, expense: 45000 },
-    { name: "05", income: 75000, expense: 68000 },
-    { name: "06", income: 85000, expense: 72000 },
-    { name: "07", income: 80000, expense: 65000 },
-    { name: "08", income: 72000, expense: 60000 },
-    { name: "09", income: 65000, expense: 55000 },
-    { name: "10", income: 55000, expense: 48000 },
-    { name: "11", income: 48000, expense: 42000 },
-    { name: "12", income: 45000, expense: 40000 },
-    { name: "13", income: 42000, expense: 38000 },
-    { name: "14", income: 38000, expense: 32000 },
-    { name: "15", income: 32000, expense: 30000 },
-    { name: "16", income: 38000, expense: 35000 },
-    { name: "17", income: 32000, expense: 30000 },
-    { name: "18", income: 28000, expense: 28000 },
-    { name: "19", income: 25000, expense: 20000 },
-    { name: "20", income: 18000, expense: 15000 },
-    { name: "21", income: 12000, expense: 8000 },
-    { name: "22", income: 10000, expense: 7000 },
-    { name: "23", income: 8000, expense: 5000 },
-  ];
 
-  const paymentChannels = [
+  // Process Payment Channels for display
+  const processedChannels = [
     {
-      id: 1,
+      id: "cash",
       name: "เงินสด",
-      amount: "45,430",
-      percent: 77,
-      color: "bg-primary",
       icon: Banknote,
-      iconBg: "bg-primary/10 text-primary",
-    },
-    {
-      id: 2,
-      name: "PromtPay",
-      amount: "32,031",
-      percent: 20,
       color: "bg-primary",
+      iconBg: "bg-primary/10 text-primary"
+    },
+    {
+      id: "transfer",
+      name: "โอนเงิน",
       icon: QrCode,
-      iconBg: "bg-primary/10 text-primary",
+      color: "bg-blue-500",
+      iconBg: "bg-blue-50 text-blue-600"
     },
     {
-      id: 3,
-      name: "ค้างชำระ",
-      amount: "5,510",
-      percent: 13,
-      color: "bg-rose-500",
+      id: "credit",
+      name: "บัตรเครดิต",
+      icon: CreditCard,
+      color: "bg-purple-500",
+      iconBg: "bg-purple-50 text-purple-600"
+    },
+    {
+      id: "other",
+      name: "อื่นๆ",
       icon: HandCoins,
-      iconBg: "bg-rose-100 text-rose-600",
-    },
+      color: "bg-gray-500",
+      iconBg: "bg-gray-100 text-gray-600"
+    }
   ];
 
-  const recentTransactions = [
-    {
-      id: "TXN-001",
-      date: "20-12-2025",
-      detail: "ขายสินค้า - คุณสมชาย",
-      type: "รายรับ",
-      amount: "฿1,250",
-      status: "สำเร็จ",
-    },
-    {
-      id: "TXN-002",
-      date: "20-12-2025",
-      detail: "ซื้อสินค้าเข้า - บริษัท ABC",
-      type: "รายจ่าย",
-      amount: "฿8,500",
-      status: "สำเร็จ",
-    },
-    {
-      id: "TXN-003",
-      date: "19-12-2025",
-      detail: "ขายสินค้า - ร้านค้าส่ง XYZ",
-      type: "รายรับ",
-      amount: "฿5,600",
-      status: "สำเร็จ",
-    },
-    {
-      id: "TXN-004",
-      date: "19-12-2025",
-      detail: "ค่าไฟฟ้า",
-      type: "รายจ่าย",
-      amount: "฿2,300",
-      status: "รอดำเนินการ",
-    },
-    {
-      id: "TXN-005",
-      date: "18-12-2025",
-      detail: "ขายสินค้า - คุณสมหญิง",
-      type: "รายรับ",
-      amount: "฿890",
-      status: "สำเร็จ",
-    },
-    {
-      id: "TXN-006",
-      date: "18-12-2025",
-      detail: "ค่าเช่า",
-      type: "รายจ่าย",
-      amount: "฿15,000",
-      status: "สำเร็จ",
-    },
-    {
-      id: "TXN-007",
-      date: "17-12-2025",
-      detail: "ขายสินค้า - บริษัท DEF",
-      type: "รายรับ",
-      amount: "฿12,500",
-      status: "สำเร็จ",
-    },
-  ];
+  const paymentChannelDisplay = metrics.paymentChannels.map((pc, index) => {
+    // Basic mapping based on name or fallback
+    let template = processedChannels.find(c => c.name === pc.method || c.id === pc.method) || processedChannels[3];
+    // If exact match not found but we have method name, we can still show it
+    return {
+      id: index,
+      name: pc.method || "ไม่ระบุ",
+      amount: pc.amount.toLocaleString(),
+      percent: pc.percent,
+      color: template.color,
+      icon: template.icon,
+      iconBg: template.iconBg
+    };
+  });
 
-  const monthlyData = [
-    { name: "Jan", รายรับ: 45000, รายจ่าย: 32000 },
-    { name: "Feb", รายรับ: 52000, รายจ่าย: 35000 },
-    { name: "Mar", รายรับ: 48000, รายจ่าย: 30000 },
-    { name: "Apr", รายรับ: 61000, รายจ่าย: 42000 },
-    { name: "May", รายรับ: 55000, รายจ่าย: 38000 },
-    { name: "Jun", รายรับ: 67000, รายจ่าย: 45000 },
-  ];
 
   return (
     <>
@@ -345,7 +311,7 @@ const FinancePage = () => {
           <div className="h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={data}
+                data={dailyGraphData}
                 margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
               >
                 <CartesianGrid
@@ -404,34 +370,38 @@ const FinancePage = () => {
               ช่องทางการชำระเงิน
             </h2>
             <div className="flex flex-col gap-6">
-              {paymentChannels.map((channel) => (
-                <div key={channel.id} className="flex items-center gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg}`}
-                  >
-                    <channel.icon size={22} strokeWidth={2.5} />
-                  </div>
+              {paymentChannelDisplay.length > 0 ? (
+                paymentChannelDisplay.map((channel) => (
+                  <div key={channel.id} className="flex items-center gap-4">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg}`}
+                    >
+                      <channel.icon size={22} strokeWidth={2.5} />
+                    </div>
 
-                  <div className="flex-1">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-900 font-bold tracking-tight">
-                        {channel.name}
-                      </span>
-                      <div className="text-right">
-                        <p className="text-gray-900 font-black tracking-tighter">
-                          ฿{channel.amount}
-                        </p>
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-900 font-bold tracking-tight">
+                          {channel.name}
+                        </span>
+                        <div className="text-right">
+                          <p className="text-gray-900 font-black tracking-tighter">
+                            ฿{channel.amount}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${channel.color}`}
+                          style={{ width: `${channel.percent}%` }}
+                        ></div>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${channel.color}`}
-                        style={{ width: `${channel.percent}%` }}
-                      ></div>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center text-inactive py-8">ไม่มีข้อมูลการชำระเงิน</div>
+              )}
             </div>
           </div>
 
@@ -468,34 +438,39 @@ const FinancePage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {recentTransactions.map((tx, index) => (
+                  {transactions.map((tx, index) => (
                     <tr
                       key={index}
                       className="hover:bg-gray-50/50 transition-colors"
                     >
-                      <td className="py-4 px-4 text-xs font-bold text-inactive">
-                        {tx.id}
+                      <td className="py-4 px-4 text-xs font-bold text-gray-900">
+                        {tx.order_no || tx.id}
                       </td>
                       <td className="py-4 px-4 text-xs font-bold text-inactive">
-                        {tx.date}
+                        {new Date(tx.created_at).toLocaleDateString("th-TH")}
                       </td>
                       <td className="py-4 px-4 text-sm font-bold text-gray-900">
-                        {tx.type}
+                        รายรับ
                       </td>
                       <td
-                        className={`py-4 px-4 text-sm font-black ${tx.type === "รายรับ" ? "text-primary" : "text-inactive"}`}
+                        className={`py-4 px-4 text-sm font-black text-primary`}
                       >
-                        {tx.amount}
+                        ฿{tx.total_amount?.toLocaleString()}
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.status === "สำเร็จ" ? "bg-emerald-50 text-emerald-600" : "bg-primary/10 text-primary border border-primary/10"}`}
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.payment_status === "paid" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}
                         >
-                          {tx.status}
+                          {tx.payment_status || "สำเร็จ"}
                         </span>
                       </td>
                     </tr>
                   ))}
+                  {transactions.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="text-center py-8 text-inactive">ไม่มีรายการล่าสุด</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -512,7 +487,7 @@ const FinancePage = () => {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={monthlyData}
+                data={monthlyChartData}
                 margin={{ top: 5, right: 0, bottom: 5, left: 0 }}
               >
                 <CartesianGrid
