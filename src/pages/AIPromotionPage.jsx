@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -26,19 +26,76 @@ import {
 import CreatePromotionModal from "../components/modals/CreatePromotionModal";
 import { useBranch } from "../contexts/BranchContext";
 import { getPromotionRecommendations } from "../../AI/geminiAPI";
-import { useEffect } from "react";
+import { promotionService } from "../services/promotionService";
 
 const AIPromotionPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [isRecLoading, setIsRecLoading] = useState(true);
+  const [activePromotions, setActivePromotions] = useState([]);
+  const [isPromosLoading, setIsPromosLoading] = useState(true);
+
+  const getIcon = (iconName) => {
+    switch (iconName) {
+      case "TrendingUp":
+        return TrendingUp;
+      case "Package":
+        return Package;
+      case "Users":
+        return Users;
+      default:
+        return Sparkles;
+    }
+  };
+
+  const topStats = [
+    {
+      id: 1,
+      label: "โปรโมชั่นที่ใช้งาน",
+      value: `${activePromotions.filter((p) => p.is_active).length} รายการ`,
+      trend: "+15%",
+      icon: Zap,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      border: "border-primary/20",
+    },
+    {
+      id: 2,
+      label: "ยอดขายจากโปรโมชั่น",
+      value: "฿245,600",
+      trend: "+28%",
+      icon: TrendingUp,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/20",
+    },
+    {
+      id: 3,
+      label: "ลูกค้าที่ใช้โปรโมชั่น",
+      value: "1,847 คน",
+      trend: "+42%",
+      icon: Users,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+    },
+    {
+      id: 4,
+      label: "คำแนะนำจาก AI",
+      value: `${recommendations.length} รายการ`,
+      isAi: true,
+      icon: Sparkles,
+      color: "text-orange-600",
+      bg: "bg-orange-500/10",
+      border: "border-orange-500/20",
+    },
+  ];
 
   useEffect(() => {
     const fetchRecs = async () => {
       try {
         setIsRecLoading(true);
-        // Mock context data for AI analysis
         const contextData = {
           branchName: activeBranchName,
           topSellingItems: ["กาแฟอาราบิก้า", "ชาไทยพรีเมียม", "ครัวซองต์เนยสด"],
@@ -49,7 +106,6 @@ const AIPromotionPage = () => {
         setRecommendations(aiRecs);
       } catch (error) {
         console.error("Failed to fetch AI recs:", error);
-        // Fallback to initial mock if API fails
         setRecommendations([
           {
             id: 1,
@@ -80,129 +136,53 @@ const AIPromotionPage = () => {
     fetchRecs();
   }, [activeBranchName]);
 
-  const getIcon = (iconName) => {
-    switch (iconName) {
-      case "TrendingUp":
-        return TrendingUp;
-      case "Package":
-        return Package;
-      case "Users":
-        return Users;
+  useEffect(() => {
+    const fetchPromos = async () => {
+      if (!activeBranchId) return;
+      try {
+        setIsPromosLoading(true);
+        const data = await promotionService.getPromotions(activeBranchId);
+        setActivePromotions(data);
+      } catch (error) {
+        console.error("Failed to fetch promotions:", error);
+      } finally {
+        setIsPromosLoading(false);
+      }
+    };
+
+    fetchPromos();
+  }, [activeBranchId]);
+
+  const getPromotionLabel = (promo) => {
+    switch (promo.type) {
+      case "discount_percent":
+        return `ลด ${promo.discount_value}%`;
+      case "discount_amount":
+        return `ลด ฿${promo.discount_value}`;
+      case "buy_x_get_y":
+        return `ซื้อ ${promo.min_qty_required} แถม ${promo.free_qty}`;
+      case "bundle":
+        return "ราคาพิเศษยกชุด";
       default:
-        return Sparkles;
+        return "ส่วนลดพิเศษ";
     }
   };
-  // Mock Data for Top Stats
-  const topStats = [
-    {
-      id: 1,
-      label: "โปรโมชั่นที่ใช้งาน",
-      value: "12 รายการ",
-      trend: "+15%",
-      icon: Zap,
-      color: "text-primary",
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-    },
-    {
-      id: 2,
-      label: "ยอดขายจากโปรโมชั่น",
-      value: "฿245,600",
-      trend: "+28%",
-      icon: TrendingUp,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-    },
-    {
-      id: 3,
-      label: "ลูกค้าที่ใช้โปรโมชั่น",
-      value: "1,847 คน",
-      trend: "+42%",
-      icon: Users,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-    },
-    {
-      id: 4,
-      label: "คำแนะนำจาก AI",
-      value: "8 รายการ",
-      isAi: true,
-      icon: Sparkles,
-      color: "text-orange-600",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/20",
-    },
-  ];
 
-  // Mock Data for AI Recommendations
-  const aiRecommendations = [
-    {
-      id: 1,
-      title: "โปรโมชั่นสินค้าขายดี",
-      desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
-      match: "92%",
-      benefit: "+25% ยอดขาย",
-      icon: TrendingUp,
-      color: "text-purple-500",
-      bg: "bg-purple-50",
-    },
-    {
-      id: 2,
-      title: "ซื้อ 2 แถม 1",
-      desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
-      match: "88%",
-      benefit: "+40% ยอดขาย",
-      icon: Package,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
-    },
-    {
-      id: 3,
-      title: "โปรโมชั่นสมาชิก",
-      desc: "ส่วนลด 20% สำหรับสมาชิก VIP",
-      match: "85%",
-      benefit: "+15% ยอดขาย",
-      icon: Users,
-      color: "text-emerald-500",
-      bg: "bg-emerald-50",
-    },
-  ];
+  const formatDateRange = (start, end) => {
+    if (!start && !end) return "ไม่มีกำหนด";
+    const s = start ? new Date(start).toLocaleDateString("th-TH") : "...";
+    const e = end ? new Date(end).toLocaleDateString("th-TH") : "ไม่มีกำหนด";
+    return `${s} - ${e}`;
+  };
 
-  // Mock Data for Active Promotions
-  const activePromotions = [
-    {
-      id: "PROMO-001",
-      name: "Flash Sale ตรุษจีน",
-      discount: "ลด 30%",
-      date: "2024-02-01 - 2024-02-15",
-      items: "20 สินค้า",
-      efficiency: 85,
-      status: "ใช้งาน",
-      statusColor: "bg-emerald-500",
-    },
-    {
-      id: "PROMO-002",
-      name: "ซื้อครบ 500 ฟรีของแถม",
-      discount: "ลด 0%",
-      date: "2024-02-10 - 2024-02-20",
-      items: "1 สินค้า",
-      efficiency: 72,
-      status: "ใช้งาน",
-      statusColor: "bg-emerald-500",
-    },
-    {
-      id: "PROMO-003",
-      name: "ปีใหม่ ลดทุกชิ้น",
-      discount: "ลด 25%",
-      date: "2024-01-01 - 2024-01-05",
-      items: "All",
-      efficiency: 0, // Finished
-      status: "หมดเขต",
-      statusColor: "bg-gray-400",
-    },
-  ];
+  const getStatusInfo = (isActive, endDate) => {
+    const now = new Date();
+    const isExpired = endDate && new Date(endDate) < now;
+    if (isExpired) return { label: "หมดเขต", color: "bg-gray-400" };
+    return isActive
+      ? { label: "ใช้งาน", color: "bg-emerald-500" }
+      : { label: "ปิดใช้งาน", color: "bg-orange-400" };
+  };
 
   // Mock Data for Chart
   const chartData = [
@@ -371,58 +351,79 @@ const AIPromotionPage = () => {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activePromotions.map((promo) => (
-                  <div
-                    key={promo.id}
-                    className="bg-gray-50 p-6 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="font-black text-gray-900 mb-1 group-hover:text-primary transition-colors">
-                          {promo.name}
-                        </h4>
-                        <p className="text-[10px] font-bold text-inactive uppercase tracking-wider">
-                          {promo.id}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg text-white ${promo.statusColor}`}
-                      >
-                        {promo.status}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 mb-5">
-                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                        <Target size={14} className="text-inactive" />
-                        <span>{promo.discount}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                        <Calendar size={14} className="text-inactive" />
-                        <span>{promo.date}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                        <Package size={14} className="text-inactive" />
-                        <span>{promo.items}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold">
-                        <span className="text-inactive">ประสิทธิภาพ</span>
-                        <span className="text-gray-900">
-                          {promo.efficiency}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full transition-all duration-1000 ease-out"
-                          style={{ width: `${promo.efficiency}%` }}
-                        />
-                      </div>
-                    </div>
+                {isPromosLoading ? (
+                  <div className="col-span-2 py-10 flex justify-center">
+                    <MoreHorizontal className="animate-bounce text-inactive" />
                   </div>
-                ))}
+                ) : activePromotions.length === 0 ? (
+                  <div className="col-span-2 py-10 text-center text-inactive font-bold">
+                    ยังไม่มีโปรโมชั่นที่ใช้งานอยู่
+                  </div>
+                ) : (
+                  activePromotions.map((promo) => {
+                    const status = getStatusInfo(
+                      promo.is_active,
+                      promo.end_date,
+                    );
+                    return (
+                      <div
+                        key={promo.id}
+                        className="bg-gray-50 p-6 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h4 className="font-black text-gray-900 mb-1 group-hover:text-primary transition-colors">
+                              {promo.name}
+                            </h4>
+                            <p className="text-[10px] font-bold text-inactive uppercase tracking-wider">
+                              ID: {promo.id.slice(0, 8)}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg text-white ${status.color}`}
+                          >
+                            {status.label}
+                          </span>
+                        </div>
+
+                        <div className="space-y-3 mb-5">
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                            <Target size={14} className="text-inactive" />
+                            <span>{getPromotionLabel(promo)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                            <Calendar size={14} className="text-inactive" />
+                            <span>
+                              {formatDateRange(
+                                promo.start_date,
+                                promo.end_date,
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                            <Package size={14} className="text-inactive" />
+                            <span>{promo.itemCount} สินค้า</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold">
+                            <span className="text-inactive">ประสิทธิภาพ</span>
+                            <span className="text-gray-900">
+                              {promo.efficiency || 0}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full transition-all duration-1000 ease-out"
+                              style={{ width: `${promo.efficiency || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
