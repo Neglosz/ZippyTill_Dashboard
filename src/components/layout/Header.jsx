@@ -88,6 +88,23 @@ const Header = () => {
     }
   };
 
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error fetching user for header:", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
   // Dynamic title mapping
   const getTitle = () => {
     const path = location.pathname;
@@ -101,6 +118,18 @@ const Header = () => {
   };
 
   const title = getTitle();
+
+  const getUserDisplayName = () => {
+    if (!currentUser) return "User";
+    return (
+      currentUser.user_metadata?.full_name || currentUser.email.split("@")[0]
+    );
+  };
+
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <header className="h-20 shrink-0 px-8 flex items-center justify-between bg-white shadow-elevation sticky top-0 z-40 relative group/header border-b border-gray-100/50">
@@ -164,18 +193,18 @@ const Header = () => {
                   : "bg-primary/10 text-primary"
               }`}
             >
-              AD
+              {getUserInitials()}
             </div>
             <div className="text-left hidden md:block">
               <p
                 className={`text-xs font-bold leading-none ${showProfile ? "text-white" : "text-gray-900"}`}
               >
-                Admin
+                {getUserDisplayName()}
               </p>
               <p
                 className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${showProfile ? "text-white/70" : "text-inactive"}`}
               >
-                ผู้ดูแลระบบ
+                {currentUser?.user_metadata?.role || "ผู้ใช้งาน"}
               </p>
             </div>
             <ChevronDown
@@ -186,6 +215,7 @@ const Header = () => {
           <ProfileDropdown
             isOpen={showProfile}
             onClose={() => setShowProfile(false)}
+            user={currentUser}
           />
         </div>
       </div>

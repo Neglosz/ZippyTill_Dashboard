@@ -3,7 +3,7 @@ import { X, Calendar, Upload } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 
-const AddProductModal = ({ isOpen, onClose, onSave }) => {
+const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
   const fileInputRef = React.useRef(null);
   const [formData, setFormData] = useState({
     id: "",
@@ -36,12 +36,12 @@ const AddProductModal = ({ isOpen, onClose, onSave }) => {
         unit: "ชิ้น",
       });
     }
-  }, [isOpen]);
+  }, [isOpen, activeBranchId]);
 
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const cats = await productService.getAllCategories();
+      const cats = await productService.getAllCategories(activeBranchId);
       setCategories(cats);
     } catch (err) {
       console.error("Error fetching categories:", err);

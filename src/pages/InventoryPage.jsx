@@ -318,12 +318,14 @@ const InventoryPage = () => {
           onClose={() => setIsEditModalOpen(false)}
           product={editingProduct}
           onSave={handleSaveProduct}
+          activeBranchId={activeBranchId}
         />
 
         <AddProductModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onSave={handleSaveProduct}
+          activeBranchId={activeBranchId}
         />
 
         {activeTab === "report" ? (
