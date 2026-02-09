@@ -70,7 +70,7 @@ const SystemNotificationModal = ({ isOpen, onClose, data }) => {
         <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex justify-center">
           <button
             onClick={onClose}
-            className="px-12 py-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-gray-200 uppercase tracking-widest text-[11px]"
+            className="px-12 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 uppercase tracking-widest text-[11px]"
           >
             รับทราบและดำเนินการ
           </button>
@@ -125,7 +125,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
         </h3>
       </div>
 
-      <div className="space-y-3 mt-auto">
+      <div className="space-y-3">
         {items.length > 0 ? (
           items.map((item, idx) => (
             <div
