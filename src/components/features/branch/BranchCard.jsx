@@ -31,7 +31,8 @@ const BranchCard = ({
 
   return (
     <div
-      className={`rounded-[40px] overflow-hidden transition-all duration-700 flex flex-col h-full group relative hover:-translate-y-2.5 ${
+      onClick={handleAction}
+      className={`rounded-[40px] overflow-hidden transition-all duration-700 flex flex-col h-full group relative hover:-translate-y-2.5 cursor-pointer ${
         isDark
           ? "bg-[#1E2022] border-white/10 shadow-2xl shadow-black/60 hover:shadow-black/80"
           : "bg-white border-gray-100 shadow-premium hover:shadow-float"
@@ -198,13 +199,12 @@ const BranchCard = ({
 
         {/* Action Button - High Dimension */}
         <div className="mt-auto relative z-10">
-          <button
+          <div
             className={`w-full py-5 rounded-[24px] font-black text-[10px] uppercase tracking-[0.25em] shadow-xl hover:-translate-y-1.5 active:scale-95 transition-all duration-500 flex items-center justify-center gap-4 group/btn relative overflow-hidden ${
               isDark
                 ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
                 : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
             }`}
-            onClick={handleAction}
           >
             <div
               className={`absolute inset-0 bg-gradient-to-r ${isDark ? "from-white/10" : "from-primary/20"} to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500`}
@@ -215,7 +215,7 @@ const BranchCard = ({
               strokeWidth={3}
               className="group-hover/btn:translate-x-2 transition-transform duration-500 relative z-10"
             />
-          </button>
+          </div>
         </div>
       </div>
     </div>
