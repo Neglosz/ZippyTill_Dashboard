@@ -1,0 +1,333 @@
+/* Receipt Modal Styles */
+.receipt-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.receipt-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.receipt-modal-overlay.visible {
+  opacity: 1;
+}
+
+.receipt-modal-content {
+  position: relative;
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(100px) scale(0.9);
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
+}
+
+.receipt-modal-content.visible {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.receipt-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.receipt-modal-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+  color: #333;
+}
+
+.receipt-close-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.receipt-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.receipt-success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.receipt-success-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(53, 224, 173, 0.2) 0%,
+    rgba(53, 224, 173, 0.1) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.receipt-success-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #35e0ad;
+  margin: 0 0 2px 0;
+}
+
+.receipt-success-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+.receipt-store-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.receipt-store-name {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 0 3px 0;
+  color: #333;
+}
+
+.receipt-store-address {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  margin: 0;
+}
+
+.receipt-store-phone {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.receipt-details {
+  margin-bottom: 15px;
+}
+
+.receipt-detail-row {
+  display: flex;
+  margin-bottom: 5px;
+}
+
+.receipt-detail-label {
+  font-size: 13px;
+  color: #666;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.receipt-detail-value {
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+}
+
+.receipt-items-container {
+  max-height: 120px;
+  margin-bottom: 15px;
+  overflow-y: auto;
+}
+
+.receipt-items-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-item-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.receipt-item-name {
+  font-size: 14px;
+  color: #333;
+}
+
+.receipt-item-price {
+  font-size: 14px;
+  color: #333;
+}
+
+.receipt-totals-container {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 15px;
+  margin-bottom: 10px;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.receipt-total-label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.receipt-total-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.receipt-total-label-small {
+  font-size: 14px;
+  color: #666;
+}
+
+.receipt-total-value-small {
+  font-size: 14px;
+  color: #666;
+}
+
+.receipt-change {
+  color: #35e0ad;
+}
+
+.receipt-note-text {
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+  margin: 0 0 15px 0;
+}
+
+.receipt-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.receipt-print-button {
+  flex: 1;
+  background-color: #4a90d9;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.receipt-print-button:hover {
+  background-color: #3a7bc0;
+}
+
+.receipt-print-button:active {
+  transform: scale(0.98);
+}
+
+.receipt-new-transaction-button {
+  flex: 1;
+  background-color: #35e0ad;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.receipt-new-transaction-button:hover {
+  background-color: #2bc99a;
+}
+
+.receipt-new-transaction-button:active {
+  transform: scale(0.98);
+}
+
+/* Scrollbar styling for items list */
+.receipt-items-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.receipt-items-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.receipt-items-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.receipt-items-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Modal content scrollbar */
+.receipt-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.receipt-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.receipt-modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.receipt-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
