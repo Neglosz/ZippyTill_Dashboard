@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import CustomDatePicker from "../../common/CustomDatePicker";
 
 const EditDebtorModal = ({ item, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState(item || {});
-
-  useEffect(() => {
-    if (item) {
-      setFormData(item);
-    }
-  }, [item]);
 
   if (!isOpen || !item) return null;
 

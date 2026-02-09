@@ -1,69 +1,108 @@
 import React from "react";
-import {
-  CreditCard,
-  Calendar,
-  AlertCircle,
-  TrendingUp,
-} from "lucide-react";
+import { CreditCard, Calendar, AlertCircle, TrendingUp } from "lucide-react";
 
-const SummaryStats = ({ totalCount, totalAmount, recentCount, overdueCount = 5 }) => {
+const SummaryStats = ({ totalCount, totalAmount, recentCount }) => {
   // Mock data for Payment Rate (since it's not in props yet)
   const paymentRate = 87;
 
   return (
-    <div className="mb-6">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-900">ค้างชำระ</h2>
-        <p className="text-gray-500 text-sm">จัดการและติดตามลูกค้าที่ค้างชำระ</p>
-      </div>
+    <div className="mb-8">
+  
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1: Total Amount (Orange/Primary) */}
+        <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Amount (Purple) */}
-        <div className="bg-[#A855F7] rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-purple-100 text-sm font-medium mb-1">ยอดค้างชำระทั้งหมด</p>
-              <h3 className="text-2xl font-bold">฿{Math.floor(totalAmount).toLocaleString()}</h3>
+          <div className="flex justify-between items-start mb-8 relative z-10">
+            <div className="h-12 w-12 bg-orange-50 rounded-2xl flex items-center justify-center text-primary border border-orange-100 shadow-sm group-hover:rotate-6 transition-transform">
+              <CreditCard size={22} strokeWidth={2.5} />
             </div>
-            <CreditCard className="text-purple-200" size={24} />
+            <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
+              Total Balance
+            </div>
           </div>
-          <p className="text-purple-100 text-sm">{totalCount} ราย</p>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+              ยอดค้างชำระทั้งหมด
+            </p>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+              <span className="text-xl mr-1 opacity-40 italic">฿</span>
+              {Math.floor(totalAmount).toLocaleString()}
+            </h3>
+          </div>
         </div>
 
-        {/* Card 2: Pending Items (Blue) */}
-        <div className="bg-[#3B82F6] rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-blue-100 text-sm font-medium mb-1">รายการค้าง</p>
-              <h3 className="text-2xl font-bold">{totalCount} รายการ</h3>
+        {/* Card 2: Pending Items (Orange/Secondary) */}
+        <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+          <div className="flex justify-between items-start mb-8 relative z-10">
+            <div className="h-12 w-12 bg-orange-50 rounded-2xl flex items-center justify-center text-primary border border-orange-100 shadow-sm group-hover:rotate-6 transition-transform">
+              <Calendar size={22} strokeWidth={2.5} />
             </div>
-            <Calendar className="text-blue-200" size={24} />
+            <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
+              Active Invoices
+            </div>
           </div>
-          <p className="text-blue-100 text-sm">ทั้งหมด</p>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+              รายการค้าง
+            </p>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+              {totalCount}{" "}
+              <span className="text-lg font-black text-inactive">รายการ</span>
+            </h3>
+          </div>
         </div>
 
-        {/* Card 3: Overdue (Red) */}
-        <div className="bg-[#EF4444] rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-red-100 text-sm font-medium mb-1">เกินกำหนด</p>
-              <h3 className="text-2xl font-bold">{recentCount} ราย</h3>
+        {/* Card 3: Overdue (Red/Urgent) */}
+        <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+          <div className="flex justify-between items-start mb-8 relative z-10">
+            <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 border border-rose-100 shadow-sm group-hover:rotate-6 transition-transform">
+              <AlertCircle size={22} strokeWidth={2.5} />
             </div>
-            <AlertCircle className="text-red-200" size={24} />
+            <div className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50 shadow-inner-light">
+              Urgent Attention
+            </div>
           </div>
-          <p className="text-red-100 text-sm">ต้องติดตาม</p>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+              เกินกำหนด
+            </p>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+              {recentCount}{" "}
+              <span className="text-lg font-black text-inactive">บุคคล</span>
+            </h3>
+          </div>
         </div>
 
-        {/* Card 4: Payment Rate (Green) */}
-        <div className="bg-[#22C55E] rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-green-100 text-sm font-medium mb-1">อัตราชำระ</p>
-              <h3 className="text-2xl font-bold">{paymentRate}%</h3>
+        {/* Card 4: Payment Rate (Green/Success) */}
+        <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+          <div className="flex justify-between items-start mb-8 relative z-10">
+            <div className="h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-100 shadow-sm group-hover:rotate-6 transition-transform">
+              <TrendingUp size={22} strokeWidth={2.5} />
             </div>
-            <CreditCard className="text-green-200" size={24} />
+            <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/50 shadow-inner-light">
+              Recovery Rate
+            </div>
           </div>
-          <p className="text-green-100 text-sm">เดือนนี้</p>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
+              อัตราชำระ
+            </p>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+              {paymentRate}
+              <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
+            </h3>
+          </div>
         </div>
       </div>
     </div>

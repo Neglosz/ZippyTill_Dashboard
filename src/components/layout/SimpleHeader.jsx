@@ -1,57 +1,77 @@
 import React from "react";
 import { LogOut, Store } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../../services/authService";
 
 /**
  * SimpleHeader Component
  * Displays the App Logo/Title and a Logout button.
  */
 const SimpleHeader = ({ isDark = false }) => {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await authService.logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      console.error("Logout Error:", err);
+      // Even if logout fails, navigate to login page for safety
+      navigate("/", { replace: true });
+    }
+  };
+
   return (
     <header
-      className={`h-16 shrink-0 px-8 flex items-center justify-between shadow-sm sticky top-0 z-50 transition-colors ${
+      className={`h-20 shrink-0 px-8 flex items-center justify-between sticky top-0 z-50 transition-all duration-500 ${
         isDark
           ? "bg-transparent text-white border-b border-white/10"
-          : "bg-white text-[#1B2559]"
+          : "bg-white/80 backdrop-blur-md text-gray-900 border-b border-gray-100"
       }`}
     >
       {/* Brand / Logo Area */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 group cursor-pointer">
         <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-colors ${
+          className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
             isDark
-              ? "bg-white text-[#1E2022]"
-              : "bg-[#7B5CFA] text-white shadow-[#7B5CFA]/20"
+              ? "bg-white text-gray-900 shadow-xl"
+              : "bg-primary text-white shadow-lg shadow-primary/20"
           }`}
         >
-          <Store size={24} strokeWidth={2} />
+          <Store size={24} strokeWidth={2.5} />
         </div>
         <div className="flex flex-col">
           <h1
-            className={`text-xl font-bold leading-none tracking-tight ${
-              isDark ? "text-white" : "text-[#1B2559]"
+            className={`text-xl font-black leading-none tracking-tighter ${
+              isDark ? "text-white" : "text-gray-900"
             }`}
           >
-            EASY FLOW
+            ZIPPY TILL
           </h1>
           <span
-            className={`text-xs font-medium mt-0.5 ${
-              isDark ? "text-gray-400" : "text-gray-500"
+            className={`text-[10px] font-black uppercase tracking-[0.2em] mt-1.5 ${
+              isDark ? "text-inactive opacity-60" : "text-inactive"
             }`}
           >
-            ระบบจัดการคลังสินค้า
+            Premium POS System
           </span>
         </div>
       </div>
 
       {/* Actions Area */}
       <button
-        className={`flex items-center gap-2 transition-colors font-medium text-sm ${
+        onClick={handleSignOut}
+        className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all duration-300 font-bold text-sm border group ${
           isDark
-            ? "text-gray-300 hover:text-white"
-            : "text-gray-500 hover:text-[#7B5CFA]"
+            ? "text-gray-300 hover:text-white border-white/10 hover:bg-white/5"
+            : "text-inactive hover:text-primary border-transparent hover:bg-primary/5"
         }`}
       >
-        <LogOut size={18} />
+        <LogOut
+          size={18}
+          strokeWidth={2.5}
+          className="group-hover:-translate-x-1 transition-transform"
+        />
         <span>ออกจากระบบ</span>
       </button>
     </header>

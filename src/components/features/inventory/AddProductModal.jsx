@@ -3,13 +3,7 @@ import { X, Calendar, Upload } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 
-const EditProductModal = ({
-  isOpen,
-  onClose,
-  product,
-  onSave,
-  activeBranchId,
-}) => {
+const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
   const fileInputRef = React.useRef(null);
   const [formData, setFormData] = useState({
     id: "",
@@ -20,6 +14,7 @@ const EditProductModal = ({
     price: "",
     exp: "",
     image: "",
+    unit: "ชิ้น",
   });
 
   const [categories, setCategories] = useState([]);
@@ -27,45 +22,29 @@ const EditProductModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchInitialData();
+      fetchCategories();
+      // Reset form when opening
+      setFormData({
+        id: "",
+        name: "",
+        category: "",
+        qty: "",
+        cost: "",
+        price: "",
+        exp: "",
+        image: "",
+        unit: "ชิ้น",
+      });
     }
-  }, [isOpen, product, activeBranchId]);
+  }, [isOpen, activeBranchId]);
 
-  const fetchInitialData = async () => {
+  const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Categories
       const cats = await productService.getAllCategories(activeBranchId);
       setCategories(cats);
-
-      // 2. Map Product Data
-      if (product) {
-        let expDate = "";
-        try {
-          const batches = await productService.getProductBatches(product.id);
-          if (batches && batches.length > 0) {
-            // Take the most recent batch expiry date
-            expDate = batches[0].expire_date || "";
-          }
-        } catch (batchErr) {
-          console.error("Error fetching batches:", batchErr);
-        }
-
-        setFormData({
-          id: product.barcode || product.id || "",
-          dbId: product.id, // Keep original DB ID for updates
-          name: product.name || "",
-          category: product.category_id || "",
-          qty: product.stock_qty || "",
-          cost: product.cost_price || "",
-          price: product.price || "",
-          exp: expDate,
-          image: product.image_url || product.image || "",
-          unit: product.unit_type || "ชิ้น",
-        });
-      }
     } catch (err) {
-      console.error("Error fetching initial data:", err);
+      console.error("Error fetching categories:", err);
     } finally {
       setIsLoading(false);
     }
@@ -87,18 +66,17 @@ const EditProductModal = ({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Simple resizing to avoid huge base64 strings
         const img = new Image();
         img.src = reader.result;
         img.onload = () => {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
-          const MAX_WIDTH = 800; // Limit width
+          const MAX_WIDTH = 800;
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7); // Compress
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
           setFormData((prev) => ({ ...prev, image: compressedBase64 }));
         };
@@ -112,9 +90,7 @@ const EditProductModal = ({
       <div className="bg-white rounded-[24px] w-full max-w-[1000px] relative shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-2xl font-bold text-[#1B2559]">
-            {product ? "แก้ไขรายละเอียดสินค้า" : "เพิ่มสินค้าใหม่"}
-          </h2>
+          <h2 className="text-2xl font-bold text-[#1B2559]">เพิ่มสินค้าใหม่</h2>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
@@ -126,30 +102,40 @@ const EditProductModal = ({
         <div className="p-8 flex flex-col lg:flex-row gap-8">
           {/* Left Column: Image - Upload Focus (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col justify-center items-center">
-            {/* Premium Image Frame */}
             <div className="w-full aspect-[4/3] relative group">
-              {/* Decorative Blur Background */}
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-              {/* Main Container - View Only */}
-              <div className="w-full h-full bg-white rounded-[32px] flex items-center justify-center p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(27,37,89,0.15)] group-hover:-translate-y-1">
-                {/* Subtle Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white/20 opacity-50" />
-
-                <img
-                  src={
-                    formData.image ||
-                    "https://via.placeholder.com/300x400?text=No+Image"
-                  }
-                  alt={formData.name}
-                  className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
-                  onError={(e) => {
-                    e.target.src =
-                      "https://via.placeholder.com/300x400?text=No+Image";
-                  }}
+              <div
+                onClick={handleImageClick}
+                className="w-full h-full bg-white rounded-[32px] flex items-center justify-center p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(27,37,89,0.15)] group-hover:-translate-y-1 cursor-pointer"
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
                 />
 
-                {/* Shiny Corner Effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white/20 opacity-50" />
+
+                {formData.image ? (
+                  <img
+                    src={formData.image}
+                    alt={formData.name}
+                    className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 text-gray-300 group-hover:text-primary transition-colors">
+                    <div className="w-16 h-16 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
+                      <Upload size={24} strokeWidth={2.5} />
+                    </div>
+                    <p className="text-sm font-bold text-gray-400 group-hover:text-primary/70">
+                      อัปโหลดรูปภาพ
+                    </p>
+                  </div>
+                )}
+
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/80 to-transparent opacity-50 pointer-events-none" />
               </div>
             </div>
@@ -315,15 +301,9 @@ const EditProductModal = ({
                 disabled={isLoading}
                 className="group relative bg-gradient-to-r from-primary to-orange-600 text-white text-base font-black px-12 py-4 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300 active:scale-95 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
-                {/* Internal Glow Flare */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
                 <span className="relative flex items-center gap-2">
-                  {isLoading
-                    ? "กำลังบันทึก..."
-                    : product
-                      ? "แก้ไขรายการ"
-                      : "เพิ่มสินค้า"}
+                  {isLoading ? "กำลังบันทึก..." : "เพิ่มสินค้า"}
                 </span>
               </button>
             </div>
@@ -335,4 +315,4 @@ const EditProductModal = ({
   );
 };
 
-export default EditProductModal;
+export default AddProductModal;

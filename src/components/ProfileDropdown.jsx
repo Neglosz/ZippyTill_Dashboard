@@ -1,10 +1,31 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, Settings, Shield } from "lucide-react";
+import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
+import { authService } from "../services/authService";
 
-const ProfileDropdown = ({ isOpen, onClose }) => {
+const ProfileDropdown = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();
   if (!isOpen) return null;
+
+  const displayName =
+    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate("/", { replace: true });
+      onClose();
+    } catch (err) {
+      console.error("Logout error:", err);
+      navigate("/", { replace: true });
+      onClose();
+    }
+  };
+
+  const handleSwitchStore = () => {
+    navigate("/select-branch");
+    onClose();
+  };
 
   return (
     <>
@@ -14,24 +35,36 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
             Account
           </p>
-          <p className="text-sm font-bold text-[#1B2559]">Admin User</p>
+          <p className="text-sm font-bold text-[#1B2559] truncate">
+            {displayName}
+          </p>
           <p className="text-[10px] text-gray-500 truncate">
-            admin@zippytill.com
+            {user?.email || "No email available"}
           </p>
         </div>
 
         <div className="p-2">
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#6d28d9] transition-all group">
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group">
             <User
               size={18}
-              className="text-gray-400 group-hover:text-[#6d28d9]"
+              className="text-gray-400 group-hover:text-primary"
             />
             Profile Info
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#6d28d9] transition-all group">
+          <button
+            onClick={handleSwitchStore}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group"
+          >
+            <LayoutGrid
+              size={18}
+              className="text-gray-400 group-hover:text-primary"
+            />
+            สลับสาขา
+          </button>
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group">
             <Settings
               size={18}
-              className="text-gray-400 group-hover:text-[#6d28d9]"
+              className="text-gray-400 group-hover:text-primary"
             />
             Settings
           </button>
@@ -40,11 +73,7 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
         <div className="p-2 border-t border-gray-50">
           <button
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all group"
-            onClick={() => {
-              console.log("Signing out...");
-              navigate("/" ,{replace: true});
-              onClose();
-            }}
+            onClick={handleLogout}
           >
             <LogOut
               size={18}

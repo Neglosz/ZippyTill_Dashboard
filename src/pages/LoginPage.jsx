@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Box, BarChart3, TrendingUp, Lock, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
+import React, { useState } from "react";
+import { Box, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../services/authService";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -17,155 +17,176 @@ const LoginPage = () => {
 
     try {
       await authService.login(email, password);
-      // Navigate to select-branch on success
-      navigate('/select-branch');
+      // Navigate to select-branch on success with history replacement
+      navigate("/select-branch", { replace: true });
     } catch (err) {
       console.error("Login Error:", err);
       // Supabase typically returns an error object with a message property
-      setError(err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ โปรดตรวจสอบอีเมลและรหัสผ่าน');
+      setError(
+        err.message ||
+          "เกิดข้อผิดพลาดในการเข้าสู่ระบบ โปรดตรวจสอบอีเมลและรหัสผ่าน",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // Outer container:
-    // Desktop: Split screen, fixed height.
-    // Mobile: Stacked, natural scroll.
-    <div className="flex flex-col lg:flex-row min-h-screen font-sans bg-[#f8f9fa]">
+    <div className="flex flex-col lg:flex-row min-h-screen font-sans bg-[#F3F4F6] relative overflow-hidden">
+      {/* Background - Minimalist clean background already set in layout/global */}
 
       {/* Left Side - Branding & Info */}
-      {/* Visible on all screens now. On mobile it is top section. */}
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-      <div className="w-full lg:w-1/2 bg-[#1E2022] text-white p-6 lg:p-12 flex flex-col justify-between relative overflow-hidden shrink-0 lg:h-screen">
-        {/* Background Gradient */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#1E2022] to-[#1F252A] opacity-100 z-0"></div>
-
-        {/* Decorative Circles */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-8 -mb-8 pointer-events-none"></div>
-
+      <div className="w-full lg:w-1/2 bg-white text-gray-900 p-10 lg:p-24 flex flex-col justify-between relative overflow-hidden shrink-0 lg:h-screen border-r border-gray-100">
         {/* Content Container */}
-        {/* Added overflow-y-auto to allow scrolling if content is too tall on small vertical screens */}
         <div className="relative z-10 flex flex-col h-full lg:justify-between overflow-y-auto no-scrollbar">
           {/* Header / Logo */}
-          <div>
-            <div className="flex items-center gap-3 mb-6 lg:mb-12">
-              <div className="bg-white text-black font-bold h-10 w-10 lg:h-12 lg:w-12 flex items-center justify-center rounded-lg text-xl lg:text-2xl">Z</div>
-              <h1 className="text-xl lg:text-3xl font-bold tracking-wide">Zippy Till</h1>
+          <div className="group/logo cursor-pointer">
+            <div className="flex items-center gap-5 mb-16 lg:mb-24">
+              <div className="bg-primary text-white font-bold h-14 w-14 flex items-center justify-center rounded-xl text-3xl transition-colors duration-500">
+                Z
+              </div>
+              <h1 className="text-3xl lg:text-5xl font-bold tracking-tight text-gray-900">
+                Zippy Till
+              </h1>
             </div>
 
-            <div className="mb-6 lg:mb-12">
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 lg:mb-4 leading-tight">
-                ระบบจัดการคลังสินค้า<br className="hidden lg:block" />
-                <span className="lg:inline block">ที่ทรงพลังและใช้งานง่าย</span>
+            <div className="mb-16 lg:mb-24">
+              <h2 className="text-4xl lg:text-6xl font-bold mb-8 leading-[1.1] tracking-tight text-gray-900">
+                จัดการคลังสินค้า
+                <br className="hidden lg:block" />
+                <span className="lg:inline block text-inactive">
+                  ที่ทรงพลังและชัดเจน
+                </span>
               </h2>
-              <p className="text-purple-100 text-sm lg:text-base max-w-md leading-relaxed">
-                จัดการธุรกิจของคุณอย่างมีประสิทธิภาพด้วยระบบที่ออกแบบมาเพื่อคุณ ไม่ว่าจะเป็นการจัดการสต็อก
-                ติดตามยอดขายหรือวิเคราะห์การเงิน
+              <div className="w-16 h-1.5 bg-primary/20 rounded-full mb-8">
+                <div className="h-full bg-primary w-full" />
+              </div>
+              <p className="text-gray-500 text-base lg:text-lg max-w-md leading-relaxed font-medium">
+                ยกระดับธุรกิจของคุณด้วยระบบ POS ระดับพรีเมียม
+                ที่มาพร้อมกับดีไซน์ที่ล้ำสมัยและการใช้งานที่ทรงประสิทธิภาพ
               </p>
             </div>
 
-            <div className="flex gap-8 lg:gap-12 mb-8 lg:mb-12">
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold">670+</p>
-                <p className="text-xs lg:text-sm text-purple-200">ร้านค้าในระบบ</p>
+            <div className="flex gap-16 lg:gap-24 mb-16">
+              <div className="group/stat">
+                <p className="text-4xl lg:text-6xl font-bold tracking-tight text-primary">
+                  670+
+                </p>
+                <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
+                  Businesses Trusted
+                </p>
               </div>
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold">24/7</p>
-                <p className="text-xs lg:text-sm text-purple-200">ซัพพอร์ต</p>
+              <div className="group/stat">
+                <p className="text-4xl lg:text-6xl font-bold tracking-tight text-gray-900">
+                  24/7
+                </p>
+                <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
+                  Expert Support
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 pb-8 lg:pb-0">
+          <div className="grid grid-cols-1 gap-5 pb-8 lg:pb-0">
             {/* Feature Items */}
-            <FeatureItem icon={Box} title="จัดการสต็อกอัจฉริยะ" desc="ติดตามสินค้าคงคลังแบบเรียลไทม์" />
-            <FeatureItem icon={BarChart3} title="รายงานที่ละเอียด" desc="วิเคราะห์ยอดขายและกำไร" />
-            <FeatureItem icon={TrendingUp} title="เพิ่มยอดขาย" desc="ใช้ข้อมูลตัดสินใจเพื่อการเติบโต" />
-            <FeatureItem icon={Lock} title="ปลอดภัย" desc="ระบบคลาวด์มาตรฐานสากล" />
+            <FeatureItem
+              icon={Box}
+              title="Smart Stock Control"
+              desc="Real-time inventory tracking"
+            />
+            <FeatureItem
+              icon={BarChart3}
+              title="Advanced Analytics"
+              desc="Deep dive into your sales"
+            />
           </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 bg-[#f8f9fa] flex flex-col items-center justify-center p-4 lg:p-6 lg:h-screen relative">
-
-        {/* Floating Z Logo - Desktop Clean */}
-        <div className="hidden lg:flex mb-6">
-          <div className="bg-white shadow-xl h-16 w-16 flex items-center justify-center rounded-xl text-3xl font-bold text-black border border-gray-100">
-            Z
-          </div>
-        </div>
-
-        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md z-10 relative">
-          <div className="text-center mb-5 lg:mb-6">
-            <h2 className="text-lg lg:text-xl font-bold text-gray-800">ยินดีต้อนรับ</h2>
-            <p className="text-xs lg:text-sm text-gray-500 mt-1">เข้าสู่ระบบเพื่อเริ่มจัดการธุรกิจของคุณ</p>
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12 lg:h-screen relative">
+        <div className="bg-white p-12 lg:p-16 rounded-3xl w-full max-w-lg z-10 relative border border-gray-100/50 shadow-elevation transition-all duration-500 hover:shadow-elevation-hover hover:-translate-y-0.5">
+          <div className="text-center mb-10">
+            <div className="inline-flex p-4 bg-gray-50 border border-gray-100 rounded-2xl mb-6">
+              <Lock size={28} className="text-primary" strokeWidth={2} />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight">
+              Welcome Back
+            </h2>
+            <p className="text-[11px] font-bold text-inactive mt-2 uppercase tracking-wider">
+              Secure login to your dashboard
+            </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg flex items-center gap-2">
-              <div className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-600"></div>
+            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-[10px] font-bold rounded-2xl flex items-center gap-3">
+              <div className="shrink-0 w-2 h-2 rounded-full bg-rose-500"></div>
               {error}
             </div>
           )}
 
-          <form className="space-y-3 lg:space-y-5" onSubmit={handleLogin}>
-            <div>
-              <label className="block text-[10px] lg:text-xs font-semibold text-gray-600 mb-1 ml-1">อีเมล</label>
+          <form className="space-y-8" onSubmit={handleLogin}>
+            <div className="relative group/input">
+              <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
+                Email Address
+              </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-2.5 text-xs lg:text-sm focus:ring-2 focus:ring-[#1E2022] focus:bg-white transition-all outline-none"
+                placeholder="admin@zippytill.com"
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
               />
             </div>
 
-            <div>
-              <label className="block text-[10px] lg:text-xs font-semibold text-gray-600 mb-1 ml-1">รหัสผ่าน</label>
+            <div className="relative group/input">
+              <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
+                Secure Password
+              </label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="********"
-                className="w-full bg-gray-100 border-none rounded-lg px-4 py-2.5 text-xs lg:text-sm focus:ring-2 focus:ring-[#1E2022] focus:bg-white transition-all outline-none"
+                placeholder="••••••••••••"
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
               />
-              <div className="text-right mt-1.5">
-                <a href="#" className="text-[10px] text-gray-500 hover:text-[#1E2022]">ลืมรหัสผ่าน?</a>
+              <div className="text-right mt-3 mr-2">
+                <a
+                  href="#"
+                  className="text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
+                >
+                  Forgot access?
+                </a>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#1E2022] to-[#1F252A] text-white font-bold py-2.5 lg:py-3 text-sm lg:text-base rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-gray-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-primary text-white font-bold py-5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 hover:bg-[#d66515] active:scale-[0.98] mt-4"
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin mr-2" size={18} />
-                  กำลังเข้าสู่ระบบ...
+                  <Loader2
+                    className="animate-spin mr-3"
+                    size={20}
+                    strokeWidth={2}
+                  />
+                  Authentication...
                 </>
               ) : (
-                "เข้าสู่ระบบ"
+                <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
+                  Sign In to Terminal
+                </span>
               )}
             </button>
           </form>
         </div>
 
-        <div className="mt-6 lg:absolute lg:bottom-4 text-[10px] text-gray-400">
-          © 2026 Zippy Till. All rights reserved.
+        <div className="mt-12 lg:absolute lg:bottom-10 text-[10px] text-inactive font-bold tracking-widest uppercase opacity-60">
+          © 2026 ZIPPY TILL • SWISS MODERN TERMINAL
         </div>
       </div>
     </div>
@@ -173,14 +194,18 @@ const LoginPage = () => {
 };
 
 // Helper component for features to keep code clean and uniform
-const FeatureItem = ({ icon: Icon, title, desc }) => (
-  <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl flex items-center gap-4 border border-white/10">
-    <div className="bg-white text-[#1E2022] p-2 rounded-lg shrink-0">
-      <Icon size={20} />
+const FeatureItem = ({ icon, title, desc }) => (
+  <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-4 border border-transparent transition-all duration-300">
+    <div className="bg-white text-primary p-2.5 rounded-lg shrink-0 border border-gray-100">
+      {React.createElement(icon, { size: 20, strokeWidth: 2 })}
     </div>
     <div>
-      <h3 className="font-bold text-sm lg:text-base">{title}</h3>
-      <p className="text-xs text-purple-100">{desc}</p>
+      <h3 className="font-bold text-sm tracking-tight text-gray-900">
+        {title}
+      </h3>
+      <p className="text-[10px] text-inactive font-bold uppercase tracking-wider mt-0.5">
+        {desc}
+      </p>
     </div>
   </div>
 );

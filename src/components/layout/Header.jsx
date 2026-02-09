@@ -1,13 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Users, Bell, ChevronDown } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "../ProfileDropdown";
+import { supabase } from "../../lib/supabase";
+import { useBranch } from "../../contexts/BranchContext";
 
 const Header = () => {
   const location = useLocation();
+  const { activeBranchId } = useBranch();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!activeBranchId) return;
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("store_id", activeBranchId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (error) {
+      console.error("Error fetching notifications:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel(`notifications_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        () => {
+          fetchNotifications();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeBranchId]);
+
+  const clearAllNotifications = async () => {
+    if (!activeBranchId) return;
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("store_id", activeBranchId);
+
+      if (error) throw error;
+      setNotifications([]);
+    } catch (error) {
+      console.error("Error clearing notifications:", error.message);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      setNotifications(notifications.filter((n) => n.id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error.message);
+    }
+  };
+
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error fetching user for header:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   // Dynamic title mapping
   const getTitle = () => {
@@ -23,53 +119,103 @@ const Header = () => {
 
   const title = getTitle();
 
-  return (
-    <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] z-[40]">
-      <h2 className="text-2xl font-bold text-[#1B2559]">{title}</h2>
+  const getUserDisplayName = () => {
+    if (!currentUser) return "User";
+    return (
+      currentUser.user_metadata?.full_name || currentUser.email.split("@")[0]
+    );
+  };
 
-      <div className="flex items-center gap-6">
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <header className="h-20 shrink-0 px-8 flex items-center justify-between bg-white shadow-elevation sticky top-0 z-40 relative group/header border-b border-gray-100/50">
+      {/* Edge lighting effect - High Dimension */}
+
+      <div className="flex flex-col">
+        <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-snug">
+          {title}
+        </h2>
+        <div className="flex items-center gap-2 mt-1.5 opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
+            Overview & Metrics
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative p-2 rounded-full transition-colors ${
+            className={`relative p-3 rounded-xl transition-all duration-300 border ${
               showNotifications
-                ? "bg-[#E9E3FF] text-[#6d28d9]"
-                : "bg-[#F4F7FE] text-gray-400 hover:text-[#6d28d9]"
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "bg-gray-50 text-inactive hover:text-primary hover:bg-gray-100 hover:border-gray-200"
             }`}
           >
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            <Bell size={20} className={showNotifications ? "rotate-0" : ""} />
+            {notifications.length > 0 && (
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+            )}
           </button>
           <NotificationDropdown
             isOpen={showNotifications}
+            notifications={notifications}
+            loading={loading}
             onClose={() => setShowNotifications(false)}
+            onClearAll={clearAllNotifications}
+            onDelete={deleteNotification}
           />
         </div>
 
+        {/* Vertical Divider */}
+        <div className="h-8 w-[1px] bg-gray-100 mx-1" />
+
+        {/* User Profile */}
         <div className="relative">
           <button
             onClick={() => setShowProfile(!showProfile)}
-            className="flex items-center gap-3 bg-white p-1 pr-2 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+            className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl transition-all duration-300 border ${
+              showProfile
+                ? "bg-primary text-white border-primary"
+                : "bg-gray-50 hover:bg-gray-100 border-transparent hover:border-gray-200"
+            }`}
           >
-            <div className="h-10 w-10 bg-[#F4F7FE] rounded-full flex items-center justify-center text-[#6d28d9]">
-              <Users size={20} />
+            <div
+              className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors duration-300 ${
+                showProfile
+                  ? "bg-white/20 text-white"
+                  : "bg-primary/10 text-primary"
+              }`}
+            >
+              {getUserInitials()}
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-bold text-[#1B2559] leading-tight">
-                Admin
+            <div className="text-left hidden md:block">
+              <p
+                className={`text-xs font-bold leading-none ${showProfile ? "text-white" : "text-gray-900"}`}
+              >
+                {getUserDisplayName()}
               </p>
-              <p className="text-xs text-gray-400 font-medium">Administrator</p>
+              <p
+                className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${showProfile ? "text-white/70" : "text-inactive"}`}
+              >
+                {currentUser?.user_metadata?.role || "ผู้ใช้งาน"}
+              </p>
             </div>
             <ChevronDown
-              size={16}
-              className={`text-gray-400 transition-transform duration-200 ${
-                showProfile ? "rotate-180" : ""
-              }`}
+              size={14}
+              className={`transition-transform duration-300 ${showProfile ? "rotate-180" : ""}`}
             />
           </button>
           <ProfileDropdown
             isOpen={showProfile}
             onClose={() => setShowProfile(false)}
+            user={currentUser}
           />
         </div>
       </div>

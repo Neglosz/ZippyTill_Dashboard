@@ -1,19 +1,28 @@
 import { supabase } from "../lib/supabase";
 
 export const creditService = {
-  // Get all sales that are on credit and not fully paid
-  async getOverdueItems() {
+  // Get all sales that are on credit and not fully paid for a specific branch
+  async getOverdueItems(storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+
     const { data, error } = await supabase
       .from("credit_accounts")
       .select(
         `
         *,
-        customers_info (
+        customers_info!inner (
           name,
-          phone
+          phone,
+          image_url,
+          store_id
+        ),
+        orders (
+          order_no,
+          store_id
         )
-      `
+      `,
       )
+      .eq("customers_info.store_id", storeId) // Filter via joined customer record
       .gt("remaining_amount", 0); // Only items with debt remaining
 
     if (error) throw error;
@@ -24,28 +33,32 @@ export const creditService = {
       customerId: item.customer_id, // Add customerId for grouping
       name: item.customers_info?.name || "Unknown",
       phone: item.customers_info?.phone || "-",
+      imageUrl: item.customers_info?.image_url, // Map image_url
       amount: item.remaining_amount, // Show remaining debt
       totalAmount: item.total_debt, // Keep track of original total
       dueDate: item.due_date,
       createdAt: item.created_at, // Add creation date
       status: item.status || "ค้างชำระ",
       overdueDays: calculateOverdueDays(item.due_date),
+      orderNo: item.orders?.order_no || item.order_id, // Map order_no
     }));
   },
 
-  // Update item (Simulate update for now, maybe just editing notes or extending due date)
-  // In real world, we might update 'credit_accounts' or 'customers' table depending on what changed
-  async updateDebtor(id, debtorData) {
-    // First, get the customer_id from credit_accounts
+  // Update item (scoped to branch)
+  async updateDebtor(id, debtorData, storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+
+    // First, verify the account belongs to the store via customer join
     const { data: accountData, error: fetchError } = await supabase
       .from("credit_accounts")
-      .select("customer_id")
+      .select("*, customers_info!inner(store_id)")
       .eq("id", id)
+      .eq("customers_info.store_id", storeId)
       .single();
 
     if (fetchError) throw fetchError;
 
-    // Update customer info (name, phone) in customers_info table
+    // Update customer info (name, phone)
     if (debtorData.name || debtorData.phone) {
       const updateFields = {};
       if (debtorData.name) updateFields.name = debtorData.name;
@@ -54,7 +67,8 @@ export const creditService = {
       const { error: customerError } = await supabase
         .from("customers_info")
         .update(updateFields)
-        .eq("id", accountData.customer_id);
+        .eq("id", accountData.customer_id)
+        .eq("store_id", storeId); // Scoped update
 
       if (customerError) throw customerError;
     }
@@ -67,6 +81,8 @@ export const creditService = {
         status: debtorData.status,
       })
       .eq("id", id)
+      // Note: We can't filter update by join directly in Supabase,
+      // but we verified it above and RLS should handle the rest.
       .select(
         `
         *,
@@ -74,7 +90,7 @@ export const creditService = {
           name,
           phone
         )
-      `
+      `,
       )
       .single();
 
@@ -92,8 +108,20 @@ export const creditService = {
     };
   },
 
-  // Delete item (Voiding a credit sale?)
-  async deleteDebtor(id) {
+  // Delete item (scoped to branch)
+  async deleteDebtor(id, storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+
+    // First verify
+    const { data, error: vError } = await supabase
+      .from("credit_accounts")
+      .select("*, customers_info!inner(store_id)")
+      .eq("id", id)
+      .eq("customers_info.store_id", storeId)
+      .single();
+
+    if (vError) throw vError;
+
     const { error } = await supabase
       .from("credit_accounts")
       .delete()
