@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Phone,
@@ -10,12 +11,14 @@ import {
   Pencil,
   Save,
 } from "lucide-react";
+import ReceiptModal from "../../ReceiptModal";
 
 const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState("info"); // "info" or "bills"
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", phone: "", customerDueDate: "" });
+  const [selectedBill, setSelectedBill] = useState(null);
 
   useEffect(() => {
     if (item) {
@@ -114,8 +117,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
 
   const bills = item.items || [];
 
-  return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-50 p-4 animate-in fade-in duration-500 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-500 overflow-y-auto">
       <div className="bg-gradient-to-br from-white via-white to-gray-50/80 rounded-[48px] w-full max-w-4xl max-h-[80vh] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/80 relative backdrop-blur-xl">
         {/* Enhanced Background Decor */}
         <div
@@ -384,9 +387,16 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                             className="p-6 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent transition-all duration-300 flex items-center justify-between group"
                           >
                             <div className="flex items-center gap-5">
-                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 group-hover:from-orange-50 group-hover:to-orange-100 group-hover:text-primary transition-all duration-300 border border-gray-200/60 group-hover:border-orange-200/60 shadow-md group-hover:shadow-lg group-hover:scale-110">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBill(bill);
+                                }}
+                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 group-hover:from-orange-50 group-hover:to-orange-100 group-hover:text-primary transition-all duration-300 border border-gray-200/60 group-hover:border-orange-200/60 shadow-md group-hover:shadow-lg group-hover:scale-110 cursor-pointer"
+                                title="ดูใบเสร็จ"
+                              >
                                 <Calendar size={22} strokeWidth={2.5} />
-                              </div>
+                              </button>
                               <div>
                                 <p className="text-base font-black text-gray-900 mb-1">
                                   #{bill.orderNo}
@@ -431,7 +441,46 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Receipt Modal */}
+      <ReceiptModal
+        visible={!!selectedBill}
+        transaction={
+          selectedBill
+            ? {
+                receiptNo: selectedBill.orderNo || "-",
+                date: new Date(
+                  selectedBill.createdAt || selectedBill.dueDate,
+                ).toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+                paymentMethod: "เครดิต",
+                items: [
+                  {
+                    name: `รายการ #${selectedBill.orderNo}`,
+                    quantity: 1,
+                    price: Number(selectedBill.amount),
+                  },
+                ],
+                total: Number(selectedBill.amount),
+                received: 0,
+                change: 0,
+                store: {
+                  name: item?.name || "ลูกค้า",
+                  address: "-",
+                  phone: item?.phone || "-",
+                },
+              }
+            : null
+        }
+        onClose={() => setSelectedBill(null)}
+        onPrint={() => window.print()}
+        onNewTransaction={() => setSelectedBill(null)}
+      />
+    </div>,
+    document.body
   );
 };
 
