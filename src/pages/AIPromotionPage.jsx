@@ -145,22 +145,27 @@ const AIPromotionPage = () => {
     fetchRecs();
   }, [activeBranchId, activeBranchName]);
 
-  useEffect(() => {
-    const fetchPromos = async () => {
-      if (!activeBranchId) return;
-      try {
-        setIsPromosLoading(true);
-        const data = await promotionService.getPromotions(activeBranchId);
-        setActivePromotions(data);
-      } catch (error) {
-        console.error("Failed to fetch promotions:", error);
-      } finally {
-        setIsPromosLoading(false);
-      }
-    };
+  const fetchPromos = async () => {
+    if (!activeBranchId) return;
+    try {
+      setIsPromosLoading(true);
+      const data = await promotionService.getPromotions(activeBranchId);
+      setActivePromotions(data);
+    } catch (error) {
+      console.error("Failed to fetch promotions:", error);
+    } finally {
+      setIsPromosLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPromos();
   }, [activeBranchId]);
+
+  const handlePromotionCreated = () => {
+    fetchPromos();
+    setIsModalOpen(false);
+  };
 
   const getPromotionLabel = (promo) => {
     switch (promo.type) {
@@ -243,6 +248,7 @@ const AIPromotionPage = () => {
           isOpen={isModalOpen}
           onClose={handleModalClose}
           initialData={aiPromoData}
+          onPromotionCreated={handlePromotionCreated}
         />
 
         {/* Stats Grid */}

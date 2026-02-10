@@ -65,6 +65,21 @@ export const productService = {
     return data;
   },
 
+  // Get top stock products (High Stock)
+  async getTopStockProducts(branchId, limit = 5) {
+    if (!branchId) throw new Error("Branch ID is required");
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, product_categories(name)")
+      .eq("store_id", branchId)
+      .order("stock_qty", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  },
+
   // Update product (scoped to branch)
   async updateProduct(id, productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");

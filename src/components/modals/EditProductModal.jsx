@@ -42,7 +42,11 @@ const EditProductModal = ({
             <div className="basis-[50%] flex flex-col items-center justify-center">
               <div className="w-72 h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200">
                 <img
-                  src={product.image_url || "https://via.placeholder.com/300"}
+                  src={
+                    product.image ||
+                    product.image_url ||
+                    "https://via.placeholder.com/300"
+                  }
                   alt={product.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -93,6 +97,26 @@ const EditProductModal = ({
                     })
                   }
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
+                />
+              </div>
+
+              {/* Cost Price */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  ทุน (฿)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.costPrice}
+                  onChange={(e) =>
+                    onFormChange({
+                      ...formData,
+                      costPrice: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
+                  placeholder="0.00"
                 />
               </div>
 

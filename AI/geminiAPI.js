@@ -55,13 +55,16 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
   let salesData = null;
   let topProducts = [];
   let notifications = null;
+  let topStockProducts = [];
 
   try {
-    [topProducts, salesData, notifications] = await Promise.all([
-      saleService.getTopSellingProducts(branchId),
-      saleService.getWeeklyAnalytics(branchId),
-      productService.getDashboardNotifications(branchId),
-    ]);
+    [topProducts, salesData, notifications, topStockProducts] =
+      await Promise.all([
+        saleService.getTopSellingProducts(branchId),
+        saleService.getWeeklyAnalytics(branchId),
+        productService.getDashboardNotifications(branchId),
+        productService.getTopStockProducts(branchId),
+      ]);
   } catch (error) {
     console.error("Error fetching context for AI:", error);
   }
@@ -81,23 +84,39 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
     },
     // Extract problematic items for AI to focus on
     stockIssues: [
-      ...(notifications?.expiringSoon || []).map(
-        (p) => `${p.name} (ใกล้หมดอายุ)`,
-      ),
-      ...(notifications?.lowStock || []).map((p) => `${p.name} (สต็อกต่ำ)`),
+      ...(notifications?.expiringSoon || []).map((p) => ({
+        name: p.name,
+        reason: `ใกล้หมดอายุ - หมดอายุวันที่ ${p.expiryDate}`,
+        id: p.id,
+      })),
+      ...(notifications?.lowStock || []).map((p) => ({
+        name: p.name,
+        reason: `สต็อกต่ำ - เหลือ ${p.qty}`,
+        id: p.id,
+      })),
     ].slice(0, 5),
+    highStockItems: topStockProducts.slice(0, 5).map((p) => ({
+      name: p.name,
+      reason: `สต็อกเยอะ - ${p.stock_qty} ${p.unit_type || "ชิ้น"}`,
+      id: p.id,
+    })),
   };
 
   const prompt = `
     Based on the following REAL store data from Supabase for branch "${contextData.branchName}":
     ${JSON.stringify(contextData, null, 2)}
     
-    Recommend 3 promotions that would help increase sales or solve stock issues.
+    Recommend 3 promotions that would help increase sales, clear aging stock, or move high-stock items.
+    
+    Analysis Logic:
+    1. **High Stock Items**: If there are items with high stock (highStockItems), suggest a "Clearance Sale", "Bulk Buy", or "Buy X Get Y" to reduce inventory.
+    2. **Expiring Items**: If there are items expiring soon (in stockIssues), prioritize a "Quick Sale" or "Deep Discount" to clear them before loss.
+    3. **Best Sellers**: If no critical stock issues, focus on "Bundles" or "Upsell" for top selling items.
+    
     Rules:
-    1. Focus on top selling items to boost revenue further.
-    2. Focus on expiring or low stock items if they exist to clear or restock them.
-    3. Use Thai for titles and descriptions.
-    4. Provide the response in EXPLICIT JSON format (no markdown code blocks) with this structure:
+    1. Use Thai for titles and short descriptions.
+    2. **IMPORTANT**: For "target_products", you MUST return the **EXACT NAME** of the product from the input data (e.g. from stockIssues or highStockItems or topSellingItems). Do not invent names.
+    3. Provide the response in EXPLICIT JSON format (no markdown code blocks) with this structure:
     [
       {
         "id": number,
@@ -107,7 +126,8 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
         "benefit": "benefit in Thai (e.g., +25% ยอดขาย)",
         "icon": "TrendingUp | Package | Users",
         "color": "tailwind text color class",
-        "bg": "tailwind bg color class"
+        "bg": "tailwind bg color class",
+        "target_products": ["Exact Product Name 1", "Exact Product Name 2"]
       }
     ]
   `;

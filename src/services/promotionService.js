@@ -54,4 +54,40 @@ export const promotionService = {
       throw error;
     }
   },
+
+  createPromotion: async (promoData, products) => {
+    try {
+      // 1. Insert promotion
+      const { data: promo, error: promoError } = await supabase
+        .from("promotions")
+        .insert(promoData)
+        .select()
+        .single();
+
+      if (promoError) throw promoError;
+
+      // 2. Insert promotion items
+      const promoItems = products.map((p) => ({
+        promotion_id: promo.id,
+        product_id: p.id,
+        is_active: true,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("promotion_items")
+        .insert(promoItems);
+
+      if (itemsError) throw itemsError;
+
+      return promo;
+    } catch (error) {
+      console.error("promotionService createPromotion error:", error);
+      throw error;
+    }
+  },
+
+  calculateEfficiency: (items, totalSales) => {
+    // This is a mock function for now, need actual sales data
+    return Math.floor(Math.random() * 40) + 60; // Returns 60-100%
+  },
 };
