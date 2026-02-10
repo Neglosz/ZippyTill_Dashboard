@@ -258,7 +258,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                 ) : (
                   /* Bill List Tab */
                   <div className="bg-white p-10 h-full">
-                    <div className="mb-7 animate-in slide-in-from-top duration-500">
+                    <div className="mb-7">
                       <h3 className="text-2xl font-black bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent tracking-tight mb-2">
                         รายการใบแจ้งหนี้ทั้งหมด
                       </h3>
@@ -272,7 +272,6 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                           <div
                             key={bill.id}
                             className="p-6 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent transition-all duration-300 flex items-center justify-between group"
-                            style={{ animationDelay: `${index * 50}ms` }}
                           >
                             <div className="flex items-center gap-5">
                               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 group-hover:from-orange-50 group-hover:to-orange-100 group-hover:text-primary transition-all duration-300 border border-gray-200/60 group-hover:border-orange-200/60 shadow-md group-hover:shadow-lg group-hover:scale-110">
