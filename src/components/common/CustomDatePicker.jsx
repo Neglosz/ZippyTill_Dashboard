@@ -15,20 +15,20 @@ const CustomDatePicker = ({ value, onChange }) => {
   const [currentDate, setCurrentDate] = useState(initialDate); // Navigation state
   const [selectedDate, setSelectedDate] = useState(initialDate); // Selection state
 
-  const daysOfWeek = ["SAN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const daysOfWeek = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "มกราคม",
+    "กุมภาพันธ์",
+    "มีนาคม",
+    "เมษายน",
+    "พฤษภาคม",
+    "มิถุนายน",
+    "กรกฎาคม",
+    "สิงหาคม",
+    "กันยายน",
+    "ตุลาคม",
+    "พฤศจิกายน",
+    "ธันวาคม",
   ];
 
   const getDaysInMonth = (date) => {
@@ -49,13 +49,13 @@ const CustomDatePicker = ({ value, onChange }) => {
     const newDate = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      day
+      day,
     );
     setSelectedDate(newDate);
 
     // Format to DD/MM/YYYY for parent
     const formattedDate = `${String(day).padStart(2, "0")}/${String(
-      newDate.getMonth() + 1
+      newDate.getMonth() + 1,
     ).padStart(2, "0")}/${newDate.getFullYear()}`;
     onChange(formattedDate);
     setShowCalendar(false);
@@ -81,7 +81,7 @@ const CustomDatePicker = ({ value, onChange }) => {
 
       {/* Calendar Dropdown */}
       {showCalendar && (
-        <div className="absolute bottom-0 left-full ml-16 z-50 bg-white rounded-2xl shadow-xl p-6 w-[320px] border border-gray-100">
+        <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-2xl shadow-xl p-6 w-[320px] border border-gray-100">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <button

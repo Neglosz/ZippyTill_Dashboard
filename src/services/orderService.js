@@ -97,7 +97,7 @@ export const orderService = {
       )
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (error) throw error;
     return data;
