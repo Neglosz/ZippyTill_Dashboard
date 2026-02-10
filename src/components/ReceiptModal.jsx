@@ -291,6 +291,44 @@ export default function ReceiptModal({
 
   return (
     <div style={styles.modalWrapper}>
+      {/* Embedded CSS for pseudo-classes & scrollbar */}
+      <style>{`
+        .receipt-close-button:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+        .receipt-print-button:active,
+        .receipt-new-transaction-button:active {
+          transform: scale(0.98);
+        }
+        .receipt-items-container::-webkit-scrollbar {
+          width: 4px;
+        }
+        .receipt-items-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 2px;
+        }
+        .receipt-items-container::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 2px;
+        }
+        .receipt-items-container::-webkit-scrollbar-thumb:hover {
+          background: #a1a1a1;
+        }
+        .receipt-modal-content::-webkit-scrollbar {
+          width: 6px;
+        }
+        .receipt-modal-content::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .receipt-modal-content::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+        .receipt-modal-content::-webkit-scrollbar-thumb:hover {
+          background: #a1a1a1;
+        }
+      `}</style>
+
       {/* Overlay */}
       <div
         style={{
@@ -302,6 +340,7 @@ export default function ReceiptModal({
 
       {/* Content */}
       <div
+        className="receipt-modal-content"
         style={{
           ...styles.modalContent,
           transform: isAnimating
@@ -314,6 +353,7 @@ export default function ReceiptModal({
         <div style={styles.modalHeader}>
           <h2 style={styles.modalTitle}>ใบเสร็จรับเงิน</h2>
           <button
+            className="receipt-close-button"
             onClick={handleClose}
             style={styles.closeButton}
             aria-label="Close"
@@ -355,7 +395,7 @@ export default function ReceiptModal({
         </div>
 
         {/* Items */}
-        <div style={styles.itemsContainer}>
+        <div className="receipt-items-container" style={styles.itemsContainer}>
           <div style={styles.itemsList}>
             {items.map((item, index) => (
               <div key={index} style={styles.itemRow}>
@@ -394,6 +434,7 @@ export default function ReceiptModal({
         {/* Action Buttons */}
         <div style={styles.actionButtons}>
           <button
+            className="receipt-print-button"
             style={styles.printButton}
             onClick={onPrint}
             onMouseOver={(e) =>
@@ -407,6 +448,7 @@ export default function ReceiptModal({
             <span>พิมพ์</span>
           </button>
           <button
+            className="receipt-new-transaction-button"
             style={styles.newTransactionButton}
             onClick={onNewTransaction}
             onMouseOver={(e) =>
