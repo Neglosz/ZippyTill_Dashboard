@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaCheck, FaTimes, FaPrint, FaArrowRight } from "react-icons/fa";
+import { Check, X, Printer, ArrowRight } from "lucide-react";
 
 const styles = {
   modalWrapper: {
@@ -358,14 +358,14 @@ export default function ReceiptModal({
             style={styles.closeButton}
             aria-label="Close"
           >
-            <FaTimes size={20} color="#000" />
+            <X size={20} color="#000" />
           </button>
         </div>
 
         {/* Success Icon */}
         <div style={styles.successContainer}>
           <div style={styles.successIcon}>
-            <FaCheck size={40} color="#35E0AD" />
+            <Check size={40} color="#35E0AD" />
           </div>
           <h3 style={styles.successTitle}>ชำระเงินสำเร็จ</h3>
           <p style={styles.successSubtitle}>ขอบคุณที่ใช้บริการ</p>
@@ -444,7 +444,7 @@ export default function ReceiptModal({
               (e.currentTarget.style.backgroundColor = "#4A90D9")
             }
           >
-            <FaPrint size={18} color="#fff" />
+            <Printer size={18} color="#fff" />
             <span>พิมพ์</span>
           </button>
           <button
@@ -459,7 +459,7 @@ export default function ReceiptModal({
             }
           >
             <span>รายการใหม่</span>
-            <FaArrowRight size={16} color="#fff" />
+            <ArrowRight size={16} color="#fff" />
           </button>
         </div>
       </div>
