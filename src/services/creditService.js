@@ -110,6 +110,35 @@ export const creditService = {
     };
   },
 
+  // Update customer info (name, phone, due_date) directly on customers_info table
+  async updateCustomerInfo(customerId, updateData, storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+
+    const updateFields = {};
+    if (updateData.name !== undefined) updateFields.name = updateData.name;
+    if (updateData.phone !== undefined) updateFields.phone = updateData.phone;
+    if (updateData.customerDueDate !== undefined)
+      updateFields.due_date = updateData.customerDueDate;
+
+    const { data, error } = await supabase
+      .from("customers_info")
+      .update(updateFields)
+      .eq("id", customerId)
+      .eq("store_id", storeId)
+      .select("id, name, phone, due_date, image_url")
+      .single();
+
+    if (error) throw error;
+
+    return {
+      customerId: data.id,
+      name: data.name,
+      phone: data.phone,
+      customerDueDate: data.due_date,
+      imageUrl: data.image_url,
+    };
+  },
+
   // Delete item (scoped to branch)
   async deleteDebtor(id, storeId) {
     if (!storeId) throw new Error("Store ID is required");
