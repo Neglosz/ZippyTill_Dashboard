@@ -24,8 +24,16 @@ import {
 import { createPortal } from "react-dom";
 import EditProductModal from "./EditProductModal";
 import { productService } from "../../services/productService";
+import { promotionService } from "../../services/promotionService";
+import { useBranch } from "../../contexts/BranchContext";
 
-const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
+const CreatePromotionModal = ({
+  isOpen,
+  onClose,
+  initialData = null,
+  onPromotionCreated,
+}) => {
+  const { activeBranchId } = useBranch();
   const [step, setStep] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -39,6 +47,77 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
     endDate: "",
     prompt: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ... (rest of the state and useEffects)
+
+  const handleCreatePromotion = async () => {
+    if (!activeBranchId) return;
+    setIsSubmitting(true);
+    try {
+      // Prepare promotion data
+      const newPromo = {
+        store_id: activeBranchId,
+        name: promoData.name,
+        description: promoData.prompt || "",
+        type:
+          promoData.type === "percent"
+            ? "discount_percent"
+            : promoData.type === "amount"
+              ? "discount_amount"
+              : promoData.type === "buy_get"
+                ? "buy_x_get_y"
+                : "custom",
+        discount_value: parseFloat(promoData.value) || 0,
+        min_spend: parseFloat(promoData.minSpend) || 0,
+        start_date: promoData.startDate || new Date().toISOString(),
+        end_date: promoData.endDate || null,
+        is_active: true,
+        // Add other fields as necessary mapping from promoData
+      };
+
+      // Call service
+
+      await promotionService.createPromotion(newPromo, selectedProducts);
+
+      // Notify parent and close
+      if (onPromotionCreated) {
+        onPromotionCreated();
+      } else {
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error creating promotion:", error);
+      // Handle error (show toast/alert)
+      alert(
+        `เกิดข้อผิดพลาดในการสร้างโปรโมชั่น: ${error.message || error.details || "Unknown error"}`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ... (rest of the component)
+
+  // Update the confirm button in renderStep3 (or the one outside)
+  /* 
+    The confirm button seems to be at the bottom of the modal, distinct from step renders or inside them.
+    Based on previous file reads, it was in the footer of renderStep3 or main return.
+    Let's check where the "Create Promotion" button is.
+    It seemed to be:
+            <button
+            type="button"
+            className="..."
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+          >
+            ... สร้างโปรโมชั่น
+          </button>
+    I will replace this onClick with handleCreatePromotion.
+  */
 
   // Handle AI Initial Data
   useEffect(() => {
@@ -82,7 +161,8 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
       setError(null);
 
       try {
-        const data = await productService.getAllProducts();
+        if (!activeBranchId) return;
+        const data = await productService.getAllProducts(activeBranchId);
 
         // Transform database data to component format
         const transformedProducts = data.map((product) => {
@@ -114,6 +194,21 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
         });
 
         setProducts(transformedProducts);
+
+        // Auto-select products if initialData has target_products
+        if (initialData && initialData.target_products) {
+          const targets = initialData.target_products.map((t) =>
+            String(t).toLowerCase(),
+          );
+          const toSelect = transformedProducts.filter(
+            (p) =>
+              targets.some((t) => p.name.toLowerCase().includes(t)) ||
+              targets.some((t) => String(p.id).toLowerCase() === t),
+          );
+          if (toSelect.length > 0) {
+            setSelectedProducts(toSelect);
+          }
+        }
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("ไม่สามารถโหลดข้อมูลสินค้าได้");
@@ -123,7 +218,7 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
     };
 
     fetchProducts();
-  }, [isOpen]);
+  }, [isOpen, initialData, activeBranchId]);
 
   if (!isOpen) return null;
 
@@ -395,9 +490,6 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
                     <h4 className="font-bold text-gray-900 text-sm mb-1 leading-tight line-clamp-1">
                       {product.name}
                     </h4>
-                    <p className="text-[10px] text-gray-400 font-semibold mb-2 tracking-wide">
-                      {product.id}
-                    </p>
 
                     {/* Price & Stock */}
                     <div className="flex justify-between items-center">
@@ -421,7 +513,7 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
         {/* Glow Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-orange-400/10 rounded-3xl blur-2xl" />
 
-        <div className="relative bg-white/90 backdrop-blur-xl border border-gray-100 rounded-3xl p-6 shadow-2xl flex flex-col h-[500px]">
+        <div className="relative bg-white/90 backdrop-blur-xl border border-gray-100 rounded-3xl p-6 shadow-2xl flex flex-col h-[600px]">
           {/* Header with Gradient */}
           <div className="mb-5">
             <div className="flex items-center justify-between mb-2">
@@ -787,6 +879,7 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
         ? {
             ...p,
             quantity: parseFloat(editFormData.quantity) || p.quantity,
+            costPrice: parseFloat(editFormData.costPrice) || p.costPrice,
             expiryDate: editFormData.expiryDate || p.expiryDate,
             acceptableProfit:
               parseFloat(editFormData.acceptableProfit) || p.acceptableProfit,
@@ -1002,6 +1095,7 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
                           setEditingProduct(product);
                           setEditFormData({
                             quantity: product.quantity,
+                            costPrice: product.costPrice,
                             expiryDate: product.expiryDate,
                             acceptableProfit: product.acceptableProfit,
                             lastSalePrice: product.lastSalePrice,
@@ -1043,11 +1137,16 @@ const CreatePromotionModal = ({ isOpen, onClose, initialData = null }) => {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onClose();
+              handleCreatePromotion();
             }}
+            disabled={isSubmitting}
           >
-            <Sparkles size={20} className="animate-pulse" />
-            สร้างโปรโมชั่น
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Sparkles size={20} className="animate-pulse" />
+            )}
+            {isSubmitting ? "กำลังสร้าง..." : "สร้างโปรโมชั่น"}
           </button>
         </div>
       </div>

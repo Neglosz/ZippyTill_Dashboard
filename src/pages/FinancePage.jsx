@@ -29,6 +29,7 @@ import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import CustomDatePicker from "../components/common/CustomDatePicker";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -88,6 +89,9 @@ const FinancePage = () => {
   const [monthlyChartData, setMonthlyChartData] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
+  // Cache State
+  const dataCache = React.useRef({});
+
   // Filters State
   const [viewMode, setViewMode] = useState("day"); // 'day', 'month', 'year'
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -121,16 +125,81 @@ const FinancePage = () => {
     }
   };
 
+  const getCacheKey = (mode, date) => {
+    const d = new Date(date);
+    const keyDate = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    return `${activeBranchId}-${mode}-${keyDate}`;
+  };
+
   const fetchChartData = async () => {
+    const cacheKey = getCacheKey(viewMode, selectedDate);
+
+    // Check Cache
+    if (dataCache.current[cacheKey]) {
+      setDailyGraphData(dataCache.current[cacheKey]);
+      prefetchAdjacentData(); // Still try to prefetch adjacent
+      return;
+    }
+
     try {
       const data = await transactionService.getAggregatedTransactions(
         activeBranchId,
         viewMode,
         selectedDate,
       );
+
+      // Update Cache
+      dataCache.current[cacheKey] = data;
       setDailyGraphData(data);
+
+      // Trigger Prefetch
+      prefetchAdjacentData();
     } catch (error) {
       console.error("Failed to fetch chart data:", error);
+    }
+  };
+
+  const prefetchAdjacentData = async () => {
+    try {
+      // Calculate Previous and Next Dates
+      const prevDate = new Date(selectedDate);
+      const nextDate = new Date(selectedDate);
+
+      if (viewMode === "day") {
+        prevDate.setDate(selectedDate.getDate() - 1);
+        nextDate.setDate(selectedDate.getDate() + 1);
+      } else if (viewMode === "month") {
+        prevDate.setMonth(selectedDate.getMonth() - 1);
+        nextDate.setMonth(selectedDate.getMonth() + 1);
+      } else if (viewMode === "year") {
+        prevDate.setFullYear(selectedDate.getFullYear() - 1);
+        nextDate.setFullYear(selectedDate.getFullYear() + 1);
+      }
+
+      const prevKey = getCacheKey(viewMode, prevDate);
+      const nextKey = getCacheKey(viewMode, nextDate);
+
+      // Fetch Previous if not cached
+      if (!dataCache.current[prevKey]) {
+        transactionService
+          .getAggregatedTransactions(activeBranchId, viewMode, prevDate)
+          .then((data) => {
+            dataCache.current[prevKey] = data;
+          })
+          .catch(() => {}); // Ignore prefetch errors
+      }
+
+      // Fetch Next if not cached
+      if (!dataCache.current[nextKey]) {
+        transactionService
+          .getAggregatedTransactions(activeBranchId, viewMode, nextDate)
+          .then((data) => {
+            dataCache.current[nextKey] = data;
+          })
+          .catch(() => {}); // Ignore prefetch errors
+      }
+    } catch (error) {
+      // Silently fail prefetch
     }
   };
 
@@ -152,6 +221,20 @@ const FinancePage = () => {
     else if (viewMode === "year")
       newDate.setFullYear(selectedDate.getFullYear() + 1);
     setSelectedDate(newDate);
+  };
+
+  const handleDateChange = (dateStr) => {
+    if (!dateStr) return;
+    const [day, month, year] = dateStr.split("/");
+    const newDate = new Date(year, month - 1, day);
+    setSelectedDate(newDate);
+  };
+
+  const formatDateForPicker = (date) => {
+    const d = new Date(date);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(
+      d.getMonth() + 1,
+    ).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
   const formatSelectedDate = () => {
@@ -385,26 +468,83 @@ const FinancePage = () => {
         </div>
 
         {/* Chart Section */}
-        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
-          <div className="flex justify-between items-start mb-8 relative z-10">
+        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative">
+          <div className="flex justify-between items-start mb-8 relative z-20">
             <div>
               <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
-                กระแสเงินรายวัน
+                กระแสเงิน
+                {viewMode === "day"
+                  ? "รายวัน"
+                  : viewMode === "month"
+                    ? "รายเดือน"
+                    : "รายปี"}
               </h2>
               <p className="text-inactive text-[10px] font-black uppercase tracking-widest">
-                Daily Cash Flow
+                {viewMode === "day"
+                  ? "Daily"
+                  : viewMode === "month"
+                    ? "Monthly"
+                    : "Yearly"}{" "}
+                Cash Flow
               </p>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-primary shadow-sm shadow-primary/20"></span>
-                <span className="text-sm text-inactive font-bold">
-                  เงินเข้า
-                </span>
+
+              <div className="flex gap-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-primary shadow-sm shadow-primary/20"></span>
+                  <span className="text-sm text-inactive font-bold">
+                    เงินเข้า
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-200"></span>
+                  <span className="text-sm text-inactive font-bold">
+                    เงินออก
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-200"></span>
-                <span className="text-sm text-inactive font-bold">เงินออก</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {/* Date Controls */}
+              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                {["day", "month", "year"].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === mode
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-inactive hover:text-gray-600"
+                    }`}
+                  >
+                    {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Date Navigation */}
+              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                <button
+                  onClick={handlePrevDate}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-colors shadow-sm"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="w-[160px]">
+                  <CustomDatePicker
+                    key={formatDateForPicker(selectedDate)}
+                    value={formatDateForPicker(selectedDate)}
+                    onChange={handleDateChange}
+                  />
+                </div>
+
+                <button
+                  onClick={handleNextDate}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-colors shadow-sm"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             </div>
           </div>
@@ -450,7 +590,7 @@ const FinancePage = () => {
                     viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
                   }
                   style={{ filter: "url(#barShadow)" }}
-                  animationDuration={1500}
+                  animationDuration={500}
                 />
                 <Bar
                   dataKey="expense"
@@ -461,7 +601,7 @@ const FinancePage = () => {
                     viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
                   }
                   style={{ filter: "url(#barShadow)" }}
-                  animationDuration={1500}
+                  animationDuration={500}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -523,9 +663,9 @@ const FinancePage = () => {
                 Export
               </button>
             </div>
-            <div className="overflow-x-auto scrollbar-hide">
-              <table className="w-full">
-                <thead>
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-hide">
+              <table className="w-full relative">
+                <thead className="sticky top-0 bg-white z-10 shadow-sm">
                   <tr className="border-b border-gray-50">
                     <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
                       รายการ
@@ -561,7 +701,7 @@ const FinancePage = () => {
                       </td>
                       <td className="py-4 px-4 text-sm font-bold text-gray-900">
                         {tx.payment_type === "credit_sale"
-                          ? "เครดิต"
+                          ? "ค้างชำระ"
                           : "เงินสด"}
                       </td>
                       <td

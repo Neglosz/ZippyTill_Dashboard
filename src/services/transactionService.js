@@ -7,33 +7,24 @@ export const transactionService = {
     let startDate, endDate;
     const selectedDate = new Date(date);
 
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const day = selectedDate.getDate();
+
     if (periodType === "day") {
-      // For day view, use created_at to filter by specific date with time
-      const dateStr = selectedDate.toISOString().split("T")[0];
-      startDate = dateStr + "T00:00:00";
-      endDate = dateStr + "T23:59:59";
+      // For day view, filter by trans_date (Business Date) instead of created_at
+      // This ensures that sales belonging to a business day appear on that day's report
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      endDate = startDate;
     } else if (periodType === "month") {
-      startDate = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        1,
-      )
-        .toISOString()
-        .split("T")[0];
-      endDate = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth() + 1,
-        0,
-      )
-        .toISOString()
-        .split("T")[0];
+      // First day of month
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      // Last day of month
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      endDate = `${year}-${String(month + 1).padStart(2, "0")}-${lastDay}`;
     } else if (periodType === "year") {
-      startDate = new Date(selectedDate.getFullYear(), 0, 1)
-        .toISOString()
-        .split("T")[0];
-      endDate = new Date(selectedDate.getFullYear(), 11, 31)
-        .toISOString()
-        .split("T")[0];
+      startDate = `${year}-01-01`;
+      endDate = `${year}-12-31`;
     }
 
     try {
@@ -43,8 +34,7 @@ export const transactionService = {
         .eq("store_id", storeId);
 
       if (periodType === "day") {
-        // For day view, filter by created_at to get hourly data
-        query = query.gte("created_at", startDate).lte("created_at", endDate);
+        query = query.eq("trans_date", startDate);
       } else {
         // For month/year views, filter by trans_date
         query = query.gte("trans_date", startDate).lte("trans_date", endDate);
