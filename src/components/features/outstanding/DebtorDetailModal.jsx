@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Phone,
@@ -7,10 +7,64 @@ import {
   CreditCard,
   Clock,
   User,
+  Pencil,
+  Save,
 } from "lucide-react";
 
-const DebtorDetailModal = ({ item, isOpen, onClose }) => {
+const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState("info"); // "info" or "bills"
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", customerDueDate: "" });
+
+  useEffect(() => {
+    if (item) {
+      setEditForm({
+        name: item.name || "",
+        phone: item.phone || "",
+        customerDueDate: item.customerDueDate || "",
+      });
+      setIsEditing(false);
+    }
+  }, [item]);
+
+  const handlePhoneChange = (e) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    let formatted = rawValue;
+    if (rawValue.length > 6) {
+      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3, 6)}-${rawValue.slice(6, 10)}`;
+    } else if (rawValue.length > 3) {
+      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3)}`;
+    }
+    setEditForm((prev) => ({ ...prev, phone: formatted }));
+  };
+
+  const handleSave = async () => {
+    if (!onSave || !item) return;
+    setIsSaving(true);
+    try {
+      await onSave(item.customerId, {
+        name: editForm.name,
+        phone: editForm.phone.replace(/\D/g, ""),
+        customerDueDate: editForm.customerDueDate,
+      });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Error saving:", err);
+      alert("บันทึกไม่สำเร็จ");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditForm({
+      name: item.name || "",
+      phone: item.phone || "",
+      customerDueDate: item.customerDueDate || "",
+    });
+    setIsEditing(false);
+  };
 
   if (!isOpen || !item) return null;
 
@@ -162,16 +216,38 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                   /* Customer Information Tab */
                   <div className="bg-white p-6 h-full">
                     <div className="space-y-4">
+                      {/* Edit Button */}
+                      {!isEditing && onSave && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => setIsEditing(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-sm font-bold hover:bg-primary/20 transition-all duration-300 active:scale-95 border border-primary/20"
+                          >
+                            <Pencil size={14} strokeWidth={2.5} />
+                            แก้ไข
+                          </button>
+                        </div>
+                      )}
+
                       {/* Customer Name and Status */}
-                      <div className="animate-in slide-in-from-bottom duration-500">
+                      <div>
                         <label className="text-[10px] font-bold text-gray-500 mb-1.5 block uppercase tracking-[0.15em]">
                           ชื่อลูกค้า
                         </label>
                         <div className="flex items-center justify-between">
-                          <div className="text-2xl font-black bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent tracking-tight">
-                            {item.name || item.customerName}
-                          </div>
-                          {getStatusBadge(
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                              className="text-xl font-black text-gray-900 tracking-tight bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 w-full focus:ring-2 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all"
+                            />
+                          ) : (
+                            <div className="text-2xl font-black bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent tracking-tight">
+                              {item.name || item.customerName}
+                            </div>
+                          )}
+                          {!isEditing && getStatusBadge(
                             item.status ||
                               (item.maxOverdueDays > 0
                                 ? "เกินกำหนด"
@@ -182,34 +258,40 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                       </div>
 
                       {/* Phone */}
-                      <div
-                        className="animate-in slide-in-from-bottom duration-500"
-                        style={{ animationDelay: "100ms" }}
-                      >
+                      <div>
                         <label className="text-[10px] font-bold text-gray-500 mb-1.5 block uppercase tracking-[0.15em]">
                           เบอร์โทรศัพท์
                         </label>
-                        <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-orange-400/10 flex items-center justify-center group-hover:from-primary/20 group-hover:to-orange-400/20 transition-all duration-300">
-                            <Phone
-                              size={18}
-                              className="text-primary"
-                              strokeWidth={2.5}
+                        {isEditing ? (
+                          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-200">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-orange-400/10 flex items-center justify-center shrink-0">
+                              <Phone size={18} className="text-primary" strokeWidth={2.5} />
+                            </div>
+                            <input
+                              type="text"
+                              value={editForm.phone}
+                              onChange={handlePhoneChange}
+                              maxLength={12}
+                              placeholder="0XX-XXX-XXXX"
+                              className="flex-1 bg-transparent font-bold text-base text-gray-900 outline-none"
                             />
                           </div>
-                          {item.phone
-                            ? item.phone
-                                .replace(/\D/g, "")
-                                .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
-                            : "-"}
-                        </div>
+                        ) : (
+                          <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-orange-400/10 flex items-center justify-center group-hover:from-primary/20 group-hover:to-orange-400/20 transition-all duration-300">
+                              <Phone size={18} className="text-primary" strokeWidth={2.5} />
+                            </div>
+                            {item.phone
+                              ? item.phone
+                                  .replace(/\D/g, "")
+                                  .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
+                              : "-"}
+                          </div>
+                        )}
                       </div>
 
                       {/* Amount and Bills - Enhanced Cards */}
-                      <div
-                        className="grid grid-cols-2 gap-3 animate-in slide-in-from-bottom duration-500"
-                        style={{ animationDelay: "200ms" }}
-                      >
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="bg-gradient-to-br from-orange-50 via-orange-50/50 to-orange-100/30 p-4 rounded-2xl border border-orange-200/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.05] hover:-translate-y-1 group relative overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           <label className="text-[9px] font-bold text-orange-700/80 mb-1.5 block uppercase tracking-[0.15em] relative z-10">
@@ -235,24 +317,52 @@ const DebtorDetailModal = ({ item, isOpen, onClose }) => {
                       </div>
 
                       {/* Due Date */}
-                      <div
-                        className="animate-in slide-in-from-bottom duration-500"
-                        style={{ animationDelay: "300ms" }}
-                      >
+                      <div>
                         <label className="text-[10px] font-bold text-gray-500 mb-1.5 block uppercase tracking-[0.15em]">
                           วันครบกำหนดล่าสุด
                         </label>
-                        <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-gradient-to-r from-red-50/80 to-pink-50/50 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-100/80 to-pink-100/50 flex items-center justify-center group-hover:from-red-200/80 group-hover:to-pink-200/50 transition-all duration-300">
-                            <Calendar
-                              size={18}
-                              className="text-red-500"
-                              strokeWidth={2.5}
+                        {isEditing ? (
+                          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-200">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-100/80 to-pink-100/50 flex items-center justify-center shrink-0">
+                              <Calendar size={18} className="text-red-500" strokeWidth={2.5} />
+                            </div>
+                            <input
+                              type="date"
+                              value={editForm.customerDueDate || ""}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, customerDueDate: e.target.value }))}
+                              className="flex-1 bg-transparent font-bold text-base text-gray-900 outline-none"
                             />
                           </div>
-                          {formatDate(item.customerDueDate)}
-                        </div>
+                        ) : (
+                          <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-gradient-to-r from-red-50/80 to-pink-50/50 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-100/80 to-pink-100/50 flex items-center justify-center group-hover:from-red-200/80 group-hover:to-pink-200/50 transition-all duration-300">
+                              <Calendar size={18} className="text-red-500" strokeWidth={2.5} />
+                            </div>
+                            {formatDate(item.customerDueDate)}
+                          </div>
+                        )}
                       </div>
+
+                      {/* Save / Cancel Buttons */}
+                      {isEditing && (
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={isSaving}
+                            className="flex-1 px-4 py-3 rounded-2xl text-gray-600 font-bold bg-gray-100 hover:bg-gray-200 transition-all duration-300 active:scale-95 border border-gray-200"
+                          >
+                            ยกเลิก
+                          </button>
+                          <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary to-orange-500 text-white font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 active:scale-95 disabled:opacity-50"
+                          >
+                            <Save size={16} strokeWidth={2.5} />
+                            {isSaving ? "กำลังบันทึก..." : "บันทึก"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

@@ -155,15 +155,9 @@ const OverduePage = () => {
         selectedCustomer &&
         selectedCustomer.items.some((i) => i.id === updatedItem.id)
       ) {
-        // We need to re-fetch or carefully update the local state.
-        // Simplest is to just update the item in the list and let the grouping logic handle it on re-render,
-        // BUT 'selectedCustomer' is a separate state snapshot.
-        // Let's rely on the main 'overdueItems' update and re-compute `selectedCustomer`?
-        // Actually, let's just update the `selectedCustomer` items locally for immediate feedback
         setSelectedCustomer((prev) => ({
           ...prev,
           items: prev.items.map((i) => (i.id === updatedItem.id ? result : i)),
-          // Re-calc totals if amount changed
           totalAmount: prev.items
             .map((i) => (i.id === updatedItem.id ? result : i))
             .reduce((sum, x) => sum + Number(x.amount), 0),
@@ -176,6 +170,48 @@ const OverduePage = () => {
       console.error("Error updating item:", err);
       alert("Failed to update item");
     }
+  };
+
+  const handleSaveCustomerInfo = async (customerId, updateData) => {
+    const result = await creditService.updateCustomerInfo(
+      customerId,
+      updateData,
+      activeBranchId,
+    );
+
+    // Update all overdueItems that belong to this customer
+    setOverdueItems((prev) =>
+      prev.map((item) =>
+        item.customerId === customerId
+          ? {
+              ...item,
+              name: result.name,
+              phone: result.phone,
+              customerDueDate: result.customerDueDate,
+            }
+          : item,
+      ),
+    );
+
+    // Update selectedCustomer state
+    setSelectedCustomer((prev) =>
+      prev
+        ? {
+            ...prev,
+            name: result.name,
+            phone: result.phone,
+            customerDueDate: result.customerDueDate,
+            items: prev.items.map((i) => ({
+              ...i,
+              name: result.name,
+              phone: result.phone,
+              customerDueDate: result.customerDueDate,
+            })),
+          }
+        : prev,
+    );
+
+    setShowEditSuccess(true);
   };
 
   // --- MAIN VIEW ---
@@ -208,9 +244,9 @@ const OverduePage = () => {
         </div>
 
         <SummaryStats
-          totalCount={totalOverdueCount}
+          totalCount={overdueItems.length}
           totalAmount={totalOverdueAmount}
-          recentCount={recentOverdueCount}
+          recentCount={totalOverdueCount}
         />
 
         <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group/container">
@@ -372,10 +408,7 @@ const OverduePage = () => {
           item={selectedCustomer}
           isOpen={!!selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
-          onEdit={(item) => {
-            setSelectedCustomer(null);
-            handleEditClick(item);
-          }}
+          onSave={handleSaveCustomerInfo}
         />
 
         <EditDebtorModal
