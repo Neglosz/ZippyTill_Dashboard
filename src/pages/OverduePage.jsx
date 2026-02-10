@@ -108,6 +108,7 @@ const OverduePage = () => {
           name: item.name,
           phone: item.phone,
           imageUrl: item.imageUrl,
+          customerDueDate: item.customerDueDate,
           totalAmount: 0,
           totalCount: 0,
           maxOverdueDays: 0,
