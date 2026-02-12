@@ -224,7 +224,7 @@ export const productService = {
           `
           id,
           qty,
-          products (name),
+          products (name, image_url),
           orders!inner(created_at, store_id, order_no)
         `,
         )
@@ -238,6 +238,7 @@ export const productService = {
         id: `SALE-${item.id}`,
         created_at: item.orders?.created_at,
         product: item.products?.name || "ไม่ทราบชื่อสินค้า",
+        imageUrl: item.products?.image_url,
         type: "OUT",
         qty: item.qty,
         note: `ออเดอร์ #${item.orders?.order_no || "N/A"}`,
