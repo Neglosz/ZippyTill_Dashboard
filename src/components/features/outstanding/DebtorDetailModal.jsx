@@ -17,7 +17,11 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState("info"); // "info" or "bills"
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", phone: "", customerDueDate: "" });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    customerDueDate: "",
+  });
   const [selectedBill, setSelectedBill] = useState(null);
 
   useEffect(() => {
@@ -140,7 +144,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
             <X size={22} strokeWidth={2.5} />
           </button>
 
-          <div className="flex max-h-[75vh]">
+          <div className="flex h-[600px]">
             {/* Section 1 - Left: Profile Image (Full Height) */}
             <div className="w-1/2 bg-gradient-to-br from-gray-50 via-white to-gray-100/50 flex items-center justify-center p-8 relative overflow-hidden">
               {/* Enhanced decorative elements with animation */}
@@ -214,7 +218,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
               </div>
 
               {/* Tab Content - Adjusted Height */}
-              <div className="max-h-[500px] overflow-y-auto custom-scrollbar bg-white">
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
                 {activeTab === "info" ? (
                   /* Customer Information Tab */
                   <div className="bg-white p-6 h-full">
@@ -242,7 +246,12 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                             <input
                               type="text"
                               value={editForm.name}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
                               className="text-xl font-black text-gray-900 tracking-tight bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 w-full focus:ring-2 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all"
                             />
                           ) : (
@@ -250,13 +259,14 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                               {item.name || item.customerName}
                             </div>
                           )}
-                          {!isEditing && getStatusBadge(
-                            item.status ||
-                              (item.maxOverdueDays > 0
-                                ? "เกินกำหนด"
-                                : "ค้างชำระ"),
-                            item.overdueDays || item.maxOverdueDays,
-                          )}
+                          {!isEditing &&
+                            getStatusBadge(
+                              item.status ||
+                                (item.maxOverdueDays > 0
+                                  ? "เกินกำหนด"
+                                  : "ค้างชำระ"),
+                              item.overdueDays || item.maxOverdueDays,
+                            )}
                         </div>
                       </div>
 
@@ -268,7 +278,11 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                         {isEditing ? (
                           <div className="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-200">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-orange-400/10 flex items-center justify-center shrink-0">
-                              <Phone size={18} className="text-primary" strokeWidth={2.5} />
+                              <Phone
+                                size={18}
+                                className="text-primary"
+                                strokeWidth={2.5}
+                              />
                             </div>
                             <input
                               type="text"
@@ -282,7 +296,11 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                         ) : (
                           <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-orange-400/10 flex items-center justify-center group-hover:from-primary/20 group-hover:to-orange-400/20 transition-all duration-300">
-                              <Phone size={18} className="text-primary" strokeWidth={2.5} />
+                              <Phone
+                                size={18}
+                                className="text-primary"
+                                strokeWidth={2.5}
+                              />
                             </div>
                             {item.phone
                               ? item.phone
@@ -327,19 +345,32 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                         {isEditing ? (
                           <div className="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-200">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-100/80 to-pink-100/50 flex items-center justify-center shrink-0">
-                              <Calendar size={18} className="text-red-500" strokeWidth={2.5} />
+                              <Calendar
+                                size={18}
+                                className="text-red-500"
+                                strokeWidth={2.5}
+                              />
                             </div>
                             <input
                               type="date"
                               value={editForm.customerDueDate || ""}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, customerDueDate: e.target.value }))}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  customerDueDate: e.target.value,
+                                }))
+                              }
                               className="flex-1 bg-transparent font-bold text-base text-gray-900 outline-none"
                             />
                           </div>
                         ) : (
                           <div className="flex items-center gap-3 text-gray-900 font-bold text-base bg-gradient-to-r from-red-50/80 to-pink-50/50 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-100/80 to-pink-100/50 flex items-center justify-center group-hover:from-red-200/80 group-hover:to-pink-200/50 transition-all duration-300">
-                              <Calendar size={18} className="text-red-500" strokeWidth={2.5} />
+                              <Calendar
+                                size={18}
+                                className="text-red-500"
+                                strokeWidth={2.5}
+                              />
                             </div>
                             {formatDate(item.customerDueDate)}
                           </div>
@@ -480,7 +511,7 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
         onNewTransaction={() => setSelectedBill(null)}
       />
     </div>,
-    document.body
+    document.body,
   );
 };
 
