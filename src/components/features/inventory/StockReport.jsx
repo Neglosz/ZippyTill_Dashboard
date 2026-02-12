@@ -169,11 +169,10 @@ const StockReportPage = () => {
             <button
               key={type}
               onClick={() => setSelectedType(type)}
-              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                selectedType === type
-                  ? "bg-white text-primary shadow-sm border border-primary/10"
-                  : "text-inactive hover:text-gray-900"
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedType === type
+                ? "bg-white text-primary shadow-sm border border-primary/10"
+                : "text-inactive hover:text-gray-900"
+                }`}
             >
               {type === "ALL" ? "ทั้งหมด" : type}
             </button>
@@ -203,7 +202,7 @@ const StockReportPage = () => {
             <thead>
               <tr className="text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
                 <th className="pb-4 font-black">วัน/เวลา</th>
-                <th className="pb-4 font-black">สินค้า</th>
+                <th className="pb-4 font-black pl-32">สินค้า</th>
                 <th className="pb-4 font-black text-center">ประเภท</th>
                 <th className="pb-4 font-black text-right">จำนวน</th>
                 <th className="pb-4 font-black pl-8">หมายเหตุ</th>
@@ -232,30 +231,40 @@ const StockReportPage = () => {
                         })}
                       </div>
                     </td>
-                    <td className="py-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-                      {tx.product}
+                    <td className="py-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors pl-16">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
+                          <img
+                            src={tx.imageUrl}
+                            alt={tx.product}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = "https://via.placeholder.com/150";
+                            }}
+                          />
+                        </div>
+                        {tx.product}
+                      </div>
                     </td>
                     <td className="py-4 text-center">
                       <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                        ${
-                          tx.type === "IN"
+                        ${tx.type === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : tx.type === "OUT"
                               ? "bg-rose-50 text-rose-600 border border-rose-100"
                               : "bg-amber-50 text-amber-600 border border-amber-100"
-                        }`}
+                          }`}
                       >
                         {tx.type}
                       </span>
                     </td>
                     <td
-                      className={`py-4 text-right font-black text-2xl tracking-tighter ${
-                        tx.type === "OUT" ||
+                      className={`py-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
                         (tx.type === "ADJUST" && tx.qty < 0)
-                          ? "text-rose-500"
-                          : "text-emerald-500"
-                      }`}
+                        ? "text-rose-500"
+                        : "text-emerald-500"
+                        }`}
                     >
                       {tx.type === "OUT" || (tx.type === "ADJUST" && tx.qty < 0)
                         ? "-"

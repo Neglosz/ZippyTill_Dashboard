@@ -81,13 +81,13 @@ const TaxCalculationPage = () => {
     <>
       {/* Background Decorative Blobs - High Dimension */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[130px] animate-pulse" />
-        <div className="absolute bottom-[-5%] left-[-5%] w-[35%] h-[35%] bg-blue-500/5 rounded-full blur-[110px]" />
+        <div className="absolute top-[5%] right-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
       </div>
 
       <div className="relative pb-10 space-y-6 min-h-screen">
-        {/* Header Banner */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
+        {/* Header Banner - Aligned with Sales/Finance */}
+        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group mb-8">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
@@ -99,305 +99,297 @@ const TaxCalculationPage = () => {
                 <span className="text-primary">.</span>
               </h1>
               <p className="text-sm font-medium text-inactive">
-                คำนวณและจัดการภาษีมูลค่าเพิ่มสำหรับสาขา
+                คำนวณและจัดการภาษีสำหรับสาขา
               </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* Column 1: Personal Income Tax (PIT) */}
-          <div className="flex flex-col gap-6">
-            {/* PIT Input Card */}
-            <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-8 relative overflow-hidden">
-              <div className="flex items-center gap-3 relative z-10">
-                <ReceiptText className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                  ข้อมูลการคำนวณภาษีเงินได้
-                </h2>
-              </div>
-
-              <div className="space-y-5">
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] block">
-                    เลือกประเภทภาษี
-                  </label>
-                  <div className="relative">
-                    <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5 appearance-none focus:ring-2 focus:ring-primary/20 transition-all outline-none text-gray-900 font-bold text-sm">
-                      <option>ภ.ด.94 (ภาษีเงินได้บุคคลธรรมดา)</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-inactive" />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-                      รายได้รวม (บาท)
-                    </label>
-                  </div>
-                  <input
-                    type="number"
-                    value={income}
-                    placeholder="0.00"
-                    onChange={(e) => handleNumberInput(e, setIncome)}
-                    onWheel={handleWheel}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <DollarSign className="w-4 h-4 text-rose-500" />
-                    <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-                      ค่าใช้จ่าย (บาท)
-                    </label>
-                  </div>
-                  <input
-                    type="number"
-                    value={expenses}
-                    placeholder="0.00"
-                    onChange={(e) => handleNumberInput(e, setExpenses)}
-                    onWheel={handleWheel}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wallet className="w-4 h-4 text-purple-500" />
-                    <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-                      ค่าลดหย่อนอื่นๆ (บาท)
-                    </label>
-                  </div>
-                  <input
-                    type="number"
-                    value={deductions}
-                    placeholder="0.00"
-                    onChange={(e) => handleNumberInput(e, setDeductions)}
-                    onWheel={handleWheel}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
-                  />
-                </div>
-              </div>
+        {/* PIT Section: Horizontal Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+          {/* PIT Input - Left Column */}
+          <div className="lg:col-span-4 bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-6 relative overflow-hidden h-full">
+            <div className="flex items-center gap-3 relative z-10 border-b border-gray-50 pb-4">
+              <ReceiptText className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                ข้อมูลการคำนวณ
+              </h2>
             </div>
 
-            {/* PIT Results Card */}
-            <div className="bg-[#FFF7ED] rounded-[32px] p-8 shadow-premium border border-orange-100 relative flex flex-col gap-8 overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/20 transition-colors"></div>
-
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-sm">
-                  <Calculator className="w-7 h-7 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight text-gray-900">
-                    สรุปภาษีเงินได้
-                  </h2>
-                  <p className="text-[10px] font-black text-inactive uppercase tracking-widest mt-1">
-                    บุคคลธรรมดา
-                  </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-inactive uppercase tracking-[0.1em] block">
+                  เลือกประเภทภาษี
+                </label>
+                <div className="relative">
+                  <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 appearance-none focus:ring-2 focus:ring-primary/20 transition-all outline-none text-gray-900 font-bold text-xs">
+                    <option>ภ.ด.94 (ภาษีเงินได้บุคคลธรรมดา)</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-inactive" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 relative z-10">
-                {[
-                  {
-                    label: "รายได้สุทธิ",
-                    val: pitResult.taxableIncome,
-                    icon: <ReceiptText className="w-4 h-4" />,
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="col-span-2 bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-orange-100/50 hover:border-primary/30 transition-all group/item shadow-sm"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="text-primary/60 group-hover/item:text-primary transition-colors">
-                        {item.icon}
-                      </div>
-                      <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
-                        {item.label}
-                      </span>
-                    </div>
-                    <div className="text-3xl font-black tracking-tighter text-gray-900 break-all">
-                      ฿{formatCurrency(item.val)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-white rounded-2xl p-7 relative z-10 border border-primary/20 shadow-premium group hover:shadow-lg transition-all">
-                <span className="text-[10px] font-black text-primary/70 uppercase tracking-[0.2em] block mb-2">
-                  ภาษีที่ต้องชำระ (เบื้องต้น)
-                </span>
-                <div className="text-5xl font-black text-primary drop-shadow-sm group-hover:scale-105 transition-transform tracking-tighter break-all">
-                  ฿{formatCurrency(pitResult.totalTax)}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500 font-bold" />
+                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.1em]">
+                    รายได้รวม (บาท)
+                  </label>
                 </div>
+                <input
+                  type="number"
+                  value={income}
+                  placeholder="0.00"
+                  onChange={(e) => handleNumberInput(e, setIncome)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                />
               </div>
 
-              <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 text-[10px] font-bold leading-relaxed text-orange-800/60 relative z-10 italic">
-                หมายเหตุ: การคำนวณนี้เป็นเพียงการประมาณการเบื้องต้น
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-3.5 h-3.5 text-rose-500" />
+                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.1em]">
+                    ค่าใช้จ่าย (บาท)
+                  </label>
+                </div>
+                <input
+                  type="number"
+                  value={expenses}
+                  placeholder="0.00"
+                  onChange={(e) => handleNumberInput(e, setExpenses)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-3.5 h-3.5 text-purple-500" />
+                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.1em]">
+                    ค่าลดหย่อนอื่นๆ (บาท)
+                  </label>
+                </div>
+                <input
+                  type="number"
+                  value={deductions}
+                  placeholder="0.00"
+                  onChange={(e) => handleNumberInput(e, setDeductions)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                />
               </div>
             </div>
           </div>
 
-          {/* Column 2: Value Added Tax (VAT) */}
-          <div className="flex flex-col gap-6">
-            {/* VAT Input Card */}
-            <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-8 relative overflow-hidden">
-              <div className="flex items-center gap-3 relative z-10">
-                <ShoppingCart className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                  ภาษีมูลค่าเพิ่ม (VAT 7%)
-                </h2>
+          {/* PIT Results - Right Column - Aligned with Finance cards */}
+          <div className="lg:col-span-8 bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative flex flex-col gap-6 overflow-hidden h-full group">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full -mr-40 -mt-40 blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
+
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-sm">
+                <Calculator className="w-5 h-5 text-primary" />
               </div>
+              <h2 className="text-xl font-black tracking-tight text-gray-900 uppercase">
+                ผลการคำนวณ
+              </h2>
+            </div>
 
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-                      ยอดรวมราคาขาย (รวม VAT)
-                    </label>
+            <div className="grid grid-cols-2 gap-4 relative z-10">
+              {[
+                { label: "รายได้รวม (บาท)", val: income || 0, icon: <TrendingUp className="w-3.5 h-3.5" />, color: "text-emerald-500" },
+                { label: "ค่าใช้จ่าย (บาท)", val: expenses || 0, icon: <DollarSign className="w-3.5 h-3.5" />, color: "text-rose-500" },
+                { label: "ค่าลดหย่อน (บาท)", val: deductions || 0, icon: <Wallet className="w-3.5 h-3.5" />, color: "text-purple-500" },
+                { label: "รายได้สุทธิ", val: pitResult.taxableIncome, icon: <ReceiptText className="w-3.5 h-3.5" />, color: "text-primary" }
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="bg-gray-50/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-100 hover:border-primary/20 transition-all shadow-sm group/item"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`${item.color}`}>
+                      {item.icon}
+                    </div>
+                    <span className="text-[10px] font-black text-inactive uppercase tracking-wider">
+                      {item.label}
+                    </span>
                   </div>
-                  <input
-                    type="number"
-                    value={sellVatAmount}
-                    placeholder="0.00"
-                    onChange={(e) => handleNumberInput(e, setSellVatAmount)}
-                    onWheel={handleWheel}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
-                  />
+                  <div className="text-2xl font-black tracking-tighter text-gray-900">
+                    ฿{formatCurrency(item.val)}
+                  </div>
                 </div>
+              ))}
+            </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <DollarSign className="w-4 h-4 text-rose-500" />
-                    <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-                      ยอดรวมราคาซื้อ (รวม VAT)
-                    </label>
-                  </div>
-                  <input
-                    type="number"
-                    value={buyVatAmount}
-                    placeholder="0.00"
-                    onChange={(e) => handleNumberInput(e, setBuyVatAmount)}
-                    onWheel={handleWheel}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-2xl tracking-tighter"
-                  />
-                </div>
+            <div className="bg-primary rounded-2xl p-6 relative z-10 border border-primary/10 shadow-premium group hover:scale-[1.01] transition-all cursor-default overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
+              <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.15em] block mb-1">
+                ภาษีที่ต้องชำระ (เบื้องต้น)
+              </span>
+              <div className="text-4xl font-black text-white tracking-tighter">
+                ฿{formatCurrency(pitResult.totalTax)}
               </div>
             </div>
 
-            {/* VAT Results Card (New Vertical Layout) */}
-            <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group">
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-sm">
-                  <ReceiptText className="w-7 h-7 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight text-gray-900">
-                    สรุปภาษีมูลค่าเพิ่ม
-                  </h2>
-                  <p className="text-[10px] font-black text-inactive uppercase tracking-widest mt-1">
-                    ส่วนต่าง ภาษีขาย - ภาษีซื้อ
-                  </p>
-                </div>
+            <div className="mt-auto px-5 py-3 bg-gray-50 rounded-xl border border-gray-100 text-[10px] font-bold text-inactive relative z-10 italic">
+              หมายเหตุ: การคำนวณนี้เป็นเพียงการประมาณการเบื้องต้น
+            </div>
+          </div>
+        </div>
+
+        {/* VAT Section: 3-Column Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Purchase VAT Card */}
+          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-emerald-500" />
+              </div>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีซื้อ</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">ยอดรวมซื้อ (รวม VAT)</label>
+                <input
+                  type="number"
+                  value={buyVatAmount}
+                  placeholder="0"
+                  onChange={(e) => handleNumberInput(e, setBuyVatAmount)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all"
+                />
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100">
+                <span className="text-[10px] font-black text-emerald-600 uppercase">VAT 7%</span>
+                <span className="text-2xl font-black text-emerald-600 tracking-tighter">฿{formatCurrency(buyVat)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales VAT Card */}
+          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-blue-500" />
+              </div>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีขาย</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">ยอดรวมขาย (รวม VAT)</label>
+                <input
+                  type="number"
+                  value={sellVatAmount}
+                  placeholder="0"
+                  onChange={(e) => handleNumberInput(e, setSellVatAmount)}
+                  onWheel={handleWheel}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all"
+                />
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100">
+                <span className="text-[10px] font-black text-blue-600 uppercase">VAT 7%</span>
+                <span className="text-2xl font-black text-blue-600 tracking-tighter">฿{formatCurrency(sellVat)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Net VAT Card - Aligned with dashboard theme */}
+          <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative overflow-hidden h-full flex flex-col group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-xl group-hover:bg-primary/10 transition-colors" />
+
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-sm">
+                <ReceiptText className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีที่ต้องนำส่ง</h2>
+            </div>
+
+            <div className="space-y-4 relative z-10">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] font-black text-inactive uppercase">ภาษีขาย</span>
+                <span className="text-lg font-black text-blue-600 leading-none">฿{formatCurrency(sellVat)}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] font-black text-inactive uppercase">ภาษีซื้อ</span>
+                <span className="text-lg font-black text-rose-500 leading-none">฿{formatCurrency(buyVat)}</span>
               </div>
 
-              <div className="space-y-4 relative z-10">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    ภาษีขาย (7%)
-                  </span>
-                  <span className="text-xl font-black text-emerald-600">
-                    +{formatCurrency(sellVat)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    ภาษีซื้อ (7%)
-                  </span>
-                  <span className="text-xl font-black text-rose-500">
-                    -{formatCurrency(buyVat)}
-                  </span>
-                </div>
-
-                <div className="bg-primary/5 rounded-2xl p-6 text-center border border-primary/10 group-hover:bg-primary/10 transition-colors mt-2">
-                  <span className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-2 block">
-                    ยอดนำส่งสุทธิ (VAT)
-                  </span>
-                  <span className="text-5xl font-black block tracking-tighter text-primary break-all">
+              <div className="pt-4 mt-2">
+                <div className="bg-primary rounded-2xl p-6 text-center shadow-lg hover:scale-[1.02] transition-transform overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
+                  <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">ยอดสุทธิที่ต้องนำส่ง</span>
+                  <div className="text-4xl font-black text-white tracking-tighter relative z-10">
                     ฿{formatCurrency(netVat)}
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Tax Rates Table - Moved to Right Column to balance height */}
-            <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 overflow-hidden">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                  <ReceiptText className="w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                  อัตราภาษีบุคคลธรรมดา
-                </h2>
-              </div>
+        {/* Tax Rates Table - Full Width */}
+        <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 overflow-hidden relative">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+              <ReceiptText className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
+              อัตราภาษีเงินได้บุคคลธรรมดา
+            </h2>
+          </div>
 
-              <div className="overflow-x-auto scrollbar-hide">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-primary text-white">
-                      <th className="px-6 py-4 rounded-tl-2xl font-black text-[10px] uppercase tracking-wider">
-                        เงินได้สุทธิ (บาท/ปี)
-                      </th>
-                      <th className="px-6 py-4 rounded-tr-2xl font-black text-[10px] text-right uppercase tracking-wider">
-                        อัตราภาษี
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {[
-                      {
-                        range: "0 - 150,000",
-                        rate: "ยกเว้น (0%)",
-                        highlight: true,
-                      },
-                      { range: "150,001 - 300,000", rate: "5%" },
-                      { range: "300,001 - 500,000", rate: "10%" },
-                      { range: "500,001 - 750,000", rate: "15%" },
-                      { range: "750,001 - 1,000,000", rate: "20%" },
-                      { range: "1,000,001 - 2,000,000", rate: "25%" },
-                      { range: "2,000,001 - 5,000,000", rate: "30%" },
-                      { range: "มากกว่า 5,000,000", rate: "35%" },
-                    ].map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-gray-50/50 transition-colors group"
-                      >
-                        <td className="px-6 py-4 text-xs font-bold text-inactive">
-                          {row.range}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span
-                            className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${
-                              row.highlight
-                                ? "bg-emerald-50 text-emerald-600"
-                                : "bg-gray-100 text-inactive group-hover:bg-primary/10 group-hover:text-primary transition-all"
+          <div className="overflow-x-auto scrollbar-hide rounded-2xl border border-gray-50">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gradient-to-r from-orange-600 to-amber-600 text-white">
+                  <th className="px-8 py-4 font-black text-[10px] uppercase tracking-[0.2em]">
+                    เงินได้สุทธิ (บาท/ปี)
+                  </th>
+                  <th className="px-8 py-4 font-black text-[10px] text-right uppercase tracking-[0.2em]">
+                    อัตราภาษี
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {[
+                  { range: "0 - 150,000", min: 0, max: 150000, rate: "ยกเว้น (0%)" },
+                  { range: "150,001 - 300,000", min: 150001, max: 300000, rate: "5%" },
+                  { range: "300,001 - 500,000", min: 300001, max: 500000, rate: "10%" },
+                  { range: "500,001 - 750,000", min: 500001, max: 750000, rate: "15%" },
+                  { range: "750,001 - 1,000,000", min: 750001, max: 1000000, rate: "20%" },
+                  { range: "1,000,001 - 2,000,000", min: 1000001, max: 2000000, rate: "25%" },
+                  { range: "2,000,001 - 5,000,000", min: 2000001, max: 5000000, rate: "30%" },
+                  { range: "มากกว่า 5,000,000", min: 5000001, max: Infinity, rate: "35%" },
+                ].map((row, idx) => {
+                  const isActive = taxableIncome >= row.min && taxableIncome <= row.max;
+                  return (
+                    <tr
+                      key={idx}
+                      className={`transition-all duration-300 group border-l-4 ${isActive
+                          ? "bg-primary/5 border-primary"
+                          : "hover:bg-gray-50/50 border-transparent"
+                        }`}
+                    >
+                      <td className={`px-8 py-4 text-xs font-bold ${isActive ? "text-primary" : "text-gray-600"}`}>
+                        {row.range}
+                      </td>
+                      <td className="px-8 py-4 text-right">
+                        <span
+                          className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-300 ${isActive
+                              ? "bg-primary text-white shadow-md scale-110"
+                              : "bg-gray-100 text-inactive group-hover:bg-orange-50 group-hover:text-orange-600 border border-transparent group-hover:border-orange-100"
                             }`}
-                          >
-                            {row.rate}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        >
+                          {row.rate}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
 

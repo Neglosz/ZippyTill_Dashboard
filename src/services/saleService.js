@@ -99,7 +99,28 @@ export const saleService = {
         categoryMap[catName].revenue += totalRevenue;
       });
 
-      return Object.values(categoryMap);
+      // Filter categories with revenue and sort by revenue descending
+      const sortedCategories = Object.values(categoryMap)
+        .filter((c) => c.revenue > 0)
+        .sort((a, b) => b.revenue - a.revenue);
+
+      // If more than 3 categories, group the rest into "อื่นๆ"
+      if (sortedCategories.length > 3) {
+        const top3 = sortedCategories.slice(0, 3);
+        const others = sortedCategories.slice(3);
+        const othersRevenue = others.reduce((sum, c) => sum + c.revenue, 0);
+
+        // Check if "อื่นๆ" already exists in top3 (unlikely but possible if null category was a top seller)
+        const existingOthersIndex = top3.findIndex((c) => c.name === "อื่นๆ");
+        if (existingOthersIndex !== -1) {
+          top3[existingOthersIndex].revenue += othersRevenue;
+          return top3;
+        } else {
+          return [...top3, { name: "อื่นๆ", revenue: othersRevenue }];
+        }
+      }
+
+      return sortedCategories;
     } catch (error) {
       console.error("saleService getSalesByCategory error:", error);
       throw error;
