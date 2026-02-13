@@ -95,8 +95,8 @@ const StockReportPage = () => {
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Out Items */}
-        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500">
-          <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm group-hover:rotate-6 transition-transform border border-rose-100 shrink-0">
+        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden">
+          <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm border border-rose-100 shrink-0">
             <TrendingDown size={28} strokeWidth={2.5} />
           </div>
           <div>
@@ -108,7 +108,6 @@ const StockReportPage = () => {
               <span className="text-lg font-black text-inactive">รายการ</span>
             </h3>
           </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-rose-100/50 transition-colors" />
         </div>
 
         {/* Total In Items (Placeholder for future) */}
