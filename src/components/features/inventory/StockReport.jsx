@@ -173,7 +173,7 @@ const StockReportPage = () => {
                 : "text-inactive hover:text-gray-900"
                 }`}
             >
-              {type === "ALL" ? "ทั้งหมด" : type}
+              {type === "ALL" ? "ทั้งหมด" : type === "IN" ? "นำเข้า" : type === "OUT" ? "นำออก" : "ปรับสต็อก"}
             </button>
           ))}
         </div>
@@ -186,7 +186,7 @@ const StockReportPage = () => {
             <div className="p-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
               <History size={24} strokeWidth={2.5} />
             </div>
-            ความเคลื่อนไหวล่าสุด
+            รายการเคลื่อนไหวสต็อก
           </h2>
           <button
             onClick={fetchStockMovements}
@@ -200,11 +200,12 @@ const StockReportPage = () => {
           <table className="w-full text-left border-separate border-spacing-y-4">
             <thead>
               <tr className="text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
-                <th className="pb-4 font-black">วัน/เวลา</th>
-                <th className="pb-4 font-black pl-32">สินค้า</th>
-                <th className="pb-4 font-black text-center">ประเภท</th>
-                <th className="pb-4 font-black text-right">จำนวน</th>
-                <th className="pb-4 font-black pl-8">หมายเหตุ</th>
+                <th className="pb-4 px-4 font-black">วัน/เวลา</th>
+                <th className="pb-4 px-4 font-black">รูป</th>
+                <th className="pb-4 px-4 font-black">สินค้า</th>
+                <th className="pb-4 px-4 font-black text-center">ประเภท</th>
+                <th className="pb-4 px-4 font-black text-right">จำนวน</th>
+                <th className="pb-4 px-4 font-black">หมายเหตุ</th>
               </tr>
             </thead>
             <tbody className="text-[#1B2559]">
@@ -214,7 +215,7 @@ const StockReportPage = () => {
                     key={tx.id}
                     className="group border-b border-gray-50 hover:bg-gray-50 transition-all duration-300"
                   >
-                    <td className="py-4 px-1 first-of-type:rounded-l-[20px]">
+                    <td className="py-4 px-4 first-of-type:rounded-l-[20px]">
                       <div className="font-black text-[#1B2559]">
                         {new Date(tx.created_at).toLocaleTimeString("th-TH", {
                           hour: "2-digit",
@@ -230,22 +231,22 @@ const StockReportPage = () => {
                         })}
                       </div>
                     </td>
-                    <td className="py-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors pl-16">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm">
-                          <img
-                            src={tx.imageUrl}
-                            alt={tx.product}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = "https://via.placeholder.com/150";
-                            }}
-                          />
-                        </div>
-                        {tx.product}
+                    <td className="py-4 px-4">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm">
+                        <img
+                          src={tx.imageUrl}
+                          alt={tx.product}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/150";
+                          }}
+                        />
                       </div>
                     </td>
-                    <td className="py-4 text-center">
+                    <td className="py-4 px-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
+                      {tx.product}
+                    </td>
+                    <td className="py-4 px-4 text-center">
                       <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
                         ${tx.type === "IN"
@@ -255,11 +256,11 @@ const StockReportPage = () => {
                               : "bg-amber-50 text-amber-600 border border-amber-100"
                           }`}
                       >
-                        {tx.type}
+                        {tx.type === "IN" ? "นำเข้า" : tx.type === "OUT" ? "นำออก" : "ปรับสต็อก"}
                       </span>
                     </td>
                     <td
-                      className={`py-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
+                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
                         (tx.type === "ADJUST" && tx.qty < 0)
                         ? "text-rose-500"
                         : "text-emerald-500"
@@ -270,14 +271,14 @@ const StockReportPage = () => {
                         : "+"}
                       {Math.abs(tx.qty).toLocaleString()}
                     </td>
-                    <td className="py-4 pl-8 text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px]">
+                    <td className="py-4 px-4 text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px]">
                       {tx.note}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="py-20 text-center">
+                  <td colSpan="6" className="py-20 text-center">
                     <div className="flex flex-col items-center gap-4 opacity-20">
                       <Package size={64} strokeWidth={1} />
                       <p className="text-xl font-black uppercase tracking-widest">
