@@ -546,8 +546,8 @@ const InventoryPage = () => {
                         <div className="mt-auto pt-4 border-t border-gray-100/50 flex items-center gap-4">
                           {/* Left: Stock (Outside) */}
                           <div className="flex flex-col gap-1 min-w-[70px]">
-                            <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
-                              คงเหลือ
+                            <p className="text-[10px] font-black text-inactive uppercase tracking-tighter">
+                              {product.is_weightable ? "คงเหลือ (KG)" : "คงเหลือ"}
                             </p>
                             <div className="flex items-center gap-1.5">
                               <span
@@ -574,7 +574,7 @@ const InventoryPage = () => {
                                 </svg>
                               </span>
                               <span
-                                className={`text-base font-black leading-none ${product.stock_qty < 10 ? "text-rose-500" : "text-[#1B2559]"}`}
+                                className={`text-2xl font-black leading-none ${product.stock_qty < 10 ? "text-rose-500" : "text-[#1B2559]"}`}
                               >
                                 {product.stock_qty}
                               </span>

@@ -22,7 +22,7 @@ export default {
           "inset 0 1px 1px rgba(255, 255, 255, 0.8), inset 0 -1px 1px rgba(0, 0, 0, 0.02)",
       },
       fontFamily: {
-        sans: ["Inter", "Prompt", "sans-serif"],
+        sans: ["IBM Plex Sans Thai", "sans-serif"],
       },
       keyframes: {
         fadeInUp: {
