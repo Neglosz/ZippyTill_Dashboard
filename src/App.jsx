@@ -10,6 +10,8 @@ import TaxCalculationPage from "./pages/TaxCalculationPage";
 import FinancePage from "./pages/FinancePage";
 import AIPromotionPage from "./pages/AIPromotionPage";
 import SalesPage from "./pages/salesPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingPage from "./pages/SettingPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { BranchProvider } from "./contexts/BranchContext";
 
@@ -43,6 +45,8 @@ function App() {
             <Route path="finance" element={<FinancePage />} />
             <Route path="tax" element={<TaxCalculationPage />} />
             <Route path="ai-promo" element={<AIPromotionPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="settings" element={<SettingPage />} />
           </Route>
         </Routes>
       </BranchProvider>

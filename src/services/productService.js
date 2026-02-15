@@ -244,10 +244,28 @@ export const productService = {
         note: `ออเดอร์ #${item.orders?.order_no || "N/A"}`,
       }));
 
-      // In the future, we could also fetch from a 'stock_adjustments' or 'stock_in' table
-      // and merge them here, then sort by date.
+      // Fetch newly added products as IN movements
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("id, name, image_url, stock_qty, created_at")
+        .eq("store_id", branchId)
+        .gt("stock_qty", 0)
+        .order("created_at", { ascending: false });
 
-      return movements.sort(
+      if (productsError) throw productsError;
+
+      const productMovements = (productsData || []).map((item) => ({
+        id: `NEW-${item.id}`,
+        created_at: item.created_at,
+        product: item.name || "ไม่ทราบชื่อสินค้า",
+        imageUrl: item.image_url,
+        type: "IN",
+        qty: item.stock_qty,
+        note: "เพิ่มสินค้าใหม่",
+      }));
+
+      const allMovements = [...movements, ...productMovements];
+      return allMovements.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );
     } catch (error) {
