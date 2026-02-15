@@ -19,15 +19,12 @@ import StockReport from "../components/features/inventory/StockReport";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
 
-const CATEGORY_TAGS = ["ทั้งหมด", "ทั่วไป", "สินค้า 1", "สินค้า 2", "สินค้า 3"];
-
 const InventoryPage = () => {
   const { activeBranchId } = useBranch();
   const [activeTab, setActiveTab] = useState("products"); // 'products' or 'report'
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTag, setActiveTag] = useState("ทั้งหมด");
   const [searchQuery, setSearchQuery] = useState("");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -354,23 +351,6 @@ const InventoryPage = () => {
                   ตัวกรอง
                 </button>
               </div>
-
-              {/* Category Tags */}
-              <div className="flex overflow-x-auto pb-1 lg:pb-0 gap-2 w-full lg:w-auto no-scrollbar">
-                {CATEGORY_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setActiveTag(tag)}
-                    className={`px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-widest border ${
-                      activeTag === tag
-                        ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
-                        : "bg-white text-inactive hover:text-gray-900 border-gray-100 hover:bg-gray-50"
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Product Grid - Horizontal Cards */}
@@ -383,16 +363,10 @@ const InventoryPage = () => {
                   </p>
                 </div>
               ) : products.filter((p) => {
-                  const matchesTag =
-                    activeTag === "ทั้งหมด" ||
-                    (activeTag === "ทั่วไป" &&
-                      (!p.product_categories ||
-                        p.product_categories.name === "ทั่วไป")) ||
-                    p.product_categories?.name === activeTag;
                   const matchesSearch =
                     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (p.barcode && p.barcode.includes(searchQuery));
-                  return matchesTag && matchesSearch;
+                  return matchesSearch;
                 }).length === 0 ? (
                 <div className="col-span-full bg-white rounded-[32px] p-20 text-center shadow-premium border border-gray-100">
                   <Package
@@ -406,18 +380,12 @@ const InventoryPage = () => {
               ) : (
                 products
                   .filter((p) => {
-                    const matchesTag =
-                      activeTag === "ทั้งหมด" ||
-                      (activeTag === "ทั่วไป" &&
-                        (!p.product_categories ||
-                          p.product_categories.name === "ทั่วไป")) ||
-                      p.product_categories?.name === activeTag;
                     const matchesSearch =
                       p.name
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase()) ||
                       (p.barcode && p.barcode.includes(searchQuery));
-                    return matchesTag && matchesSearch;
+                    return matchesSearch;
                   })
                   .map((product) => {
                     // Find earliest expiry date
