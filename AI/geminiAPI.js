@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 export const generateAIContent = async (
   prompt,
-  modelName = "gemini-3-flash-preview",
+  modelName = "gemini-3-pro-preview",
 ) => {
   try {
     const model = genAI.getGenerativeModel({ model: modelName });
@@ -20,19 +20,21 @@ export const generateAIContent = async (
     const isModelOverloaded =
       error.message?.includes("503") || error.message?.includes("overloaded");
 
-    // Primary Fallback: gemini-3 -> gemini-1.5-flash
+    // Primary Fallback: gemini-3-pro -> gemini-3-flash
     if (
-      modelName === "gemini-3-flash-preview" &&
+      modelName === "gemini-3-pro-preview" &&
       (isModelUnavailable || isModelOverloaded)
     ) {
-      console.warn("Gemini 3 fails, falling back to Gemini 1.5 Flash...");
-      return generateAIContent(prompt, "gemini-1.5-flash");
+      console.warn("Gemini 3 Pro fails, falling back to Gemini 3 Flash...");
+      return generateAIContent(prompt, "gemini-3-flash-preview");
     }
 
-    // Secondary Fallback: gemini-1.5-flash -> gemini-pro (1.0 Pro)
-    if (modelName === "gemini-1.5-flash" && isModelUnavailable) {
-      console.warn("Gemini 1.5 Flash not found, falling back to Gemini Pro...");
-      return generateAIContent(prompt, "gemini-pro");
+    // Secondary Fallback: gemini-3-flash -> gemini-1.5-flash
+    if (modelName === "gemini-3-flash-preview" && isModelUnavailable) {
+      console.warn(
+        "Gemini 3 Flash not found, falling back to Gemini 1.5 Flash...",
+      );
+      return generateAIContent(prompt, "gemini-1.5-flash");
     }
 
     if (error.message?.includes("404")) {
@@ -69,13 +71,17 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
     console.error("Error fetching context for AI:", error);
   }
 
+  // Send only top 10 products to reduce AI processing time
+  const productData = topProducts.slice(0, 10).map((p) => ({
+    id: p.id,
+    name: p.name,
+    sold_qty: p.sold_qty,
+    revenue: p.revenue,
+  }));
+
   const contextData = {
     branchName: branchName || "Unknown Branch",
-    topSellingItems: topProducts.slice(0, 5).map((p) => ({
-      name: p.name,
-      sold_qty: p.sold_qty,
-      revenue: p.revenue,
-    })),
+    topSellingItems: productData,
     salesGrowth: salesData?.growth || 0,
     inventoryStats: {
       lowStock: notifications?.lowStock?.length || 0,
@@ -103,31 +109,66 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
   };
 
   const prompt = `
-    Based on the following REAL store data from Supabase for branch "${contextData.branchName}":
+    Analyze store "${contextData.branchName}" and create 3 best promotions (JSON only):
     ${JSON.stringify(contextData, null, 2)}
     
-    Recommend 3 promotions that would help increase sales, clear aging stock, or move high-stock items.
+    Rules: Maximize profit, clear inventory, attract customers.
     
-    Analysis Logic:
-    1. **High Stock Items**: If there are items with high stock (highStockItems), suggest a "Clearance Sale", "Bulk Buy", or "Buy X Get Y" to reduce inventory.
-    2. **Expiring Items**: If there are items expiring soon (in stockIssues), prioritize a "Quick Sale" or "Deep Discount" to clear them before loss.
-    3. **Best Sellers**: If no critical stock issues, focus on "Bundles" or "Upsell" for top selling items.
+    ANALYSIS & CALCULATION RULES:
     
-    Rules:
-    1. Use Thai for titles and short descriptions.
-    2. **IMPORTANT**: For "target_products", you MUST return the **EXACT NAME** of the product from the input data (e.g. from stockIssues or highStockItems or topSellingItems). Do not invent names.
-    3. Provide the response in EXPLICIT JSON format (no markdown code blocks) with this structure:
+    1. **PRODUCT SELECTION** (target_products):
+       - For expiring items: Select products expiring within 7-30 days from stockIssues
+       - For high stock: Select products with stock > 50 units from highStockItems
+       - For best sellers: Select top 3-5 products from topSellingItems
+       - ALWAYS use exact product names and IDs from the input data
+    
+    2. **PROMOTION TYPE** (promotion_type):
+       - Expiring soon (< 7 days): "discount_percent" with 30-50% off
+       - High stock (> 100 units): "buy_x_get_y" (e.g., buy 2 get 1)
+       - Moderate stock: "discount_percent" with 15-25% off
+       - Best sellers: "discount_amount" with fixed baht discount
+    
+    3. **DISCOUNT VALUE** (discount_value):
+       - Calculate based on profit margin (don't go below 50% of profit)
+       - For percent: 15-50% depending on urgency
+       - For amount: 10-100 baht based on product price
+       - For buy_x_get_y: min_qty_required=2-3, free_qty=1
+    
+    4. **MINIMUM SPEND** (min_spend):
+       - Calculate as: average_product_price × 2
+       - For bundle deals: sum of product prices × 1.5
+       - For clearance: 0 (no minimum to move fast)
+    
+    5. **DURATION** (duration_days):
+       - Expiring items: 3-7 days (urgent)
+       - High stock: 14-30 days (moderate)
+       - Regular promotions: 7-14 days
+       - Best sellers: 30 days (long-term)
+    
+    OUTPUT REQUIREMENTS:
+    - Use Thai language for title and description
+    - Explain WHY each promotion is recommended
+    - Show expected impact (e.g., "+25% sales")
+    - Return VALID JSON (no markdown code blocks)
+    
+    JSON Structure:
     [
       {
         "id": number,
-        "title": "Thai title",
-        "desc": "Thai explanation of why this is recommended and what it is",
+        "title": "Thai promotion title",
+        "desc": "Thai explanation of why this promotion works and its business logic",
         "match": "XX%",
-        "benefit": "benefit in Thai (e.g., +25% ยอดขาย)",
+        "benefit": "Expected result in Thai (e.g., +25% ยอดขาย, -50% สต็อก)",
         "icon": "TrendingUp | Package | Users",
-        "color": "tailwind text color class",
-        "bg": "tailwind bg color class",
-        "target_products": ["Exact Product Name 1", "Exact Product Name 2"]
+        "color": "text-purple-500",
+        "bg": "bg-purple-50",
+        "target_products": [{"name": "Exact Product Name", "id": "product_id"}],
+        "promotion_type": "discount_percent | discount_amount | buy_x_get_y",
+        "discount_value": calculated_number,
+        "min_spend": calculated_number,
+        "duration_days": calculated_number,
+        "min_qty_required": number (only for buy_x_get_y),
+        "free_qty": number (only for buy_x_get_y)
       }
     ]
   `;
@@ -145,7 +186,7 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
 export const chatWithAI = async (
   message,
   history = [],
-  modelName = "gemini-3-flash-preview",
+  modelName = "gemini-3-pro-preview",
 ) => {
   try {
     const model = genAI.getGenerativeModel({ model: modelName });
@@ -166,15 +207,15 @@ export const chatWithAI = async (
 
     // Primary Fallback for Chat
     if (
-      modelName === "gemini-3-flash-preview" &&
+      modelName === "gemini-3-pro-preview" &&
       (isModelUnavailable || isModelOverloaded)
     ) {
-      return chatWithAI(message, history, "gemini-1.5-flash");
+      return chatWithAI(message, history, "gemini-3-flash-preview");
     }
 
     // Secondary Fallback for Chat
-    if (modelName === "gemini-1.5-flash" && isModelUnavailable) {
-      return chatWithAI(message, history, "gemini-pro");
+    if (modelName === "gemini-3-flash-preview" && isModelUnavailable) {
+      return chatWithAI(message, history, "gemini-1.5-flash");
     }
 
     throw error;

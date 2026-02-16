@@ -70,7 +70,7 @@ export const promotionService = {
       const promoItems = products.map((p) => ({
         promotion_id: promo.id,
         product_id: p.id,
-        is_active: true,
+        is_active: "active", // Changed from true to "active" to match text field
       }));
 
       const { error: itemsError } = await supabase

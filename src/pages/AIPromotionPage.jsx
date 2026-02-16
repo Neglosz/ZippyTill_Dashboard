@@ -30,6 +30,40 @@ import { promotionService } from "../services/promotionService";
 
 const AIPromotionPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
+
+  // Cache utilities for AI recommendations
+  const CACHE_KEY = "ai_promo_recommendations";
+  const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+  const getCache = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+      const { data, timestamp, branchId } = JSON.parse(cached);
+      // Invalidate if different branch or expired
+      if (branchId !== activeBranchId) return null;
+      if (Date.now() - timestamp > CACHE_DURATION) return null;
+      return data;
+    } catch (error) {
+      console.error("Cache read error:", error);
+      return null;
+    }
+  };
+
+  const setCache = (data) => {
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data,
+          timestamp: Date.now(),
+          branchId: activeBranchId,
+        }),
+      );
+    } catch (error) {
+      console.error("Cache write error:", error);
+    }
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [isRecLoading, setIsRecLoading] = useState(true);
@@ -38,7 +72,18 @@ const AIPromotionPage = () => {
   const [aiPromoData, setAiPromoData] = useState(null);
 
   const handleCreateFromAI = (rec) => {
-    setAiPromoData(rec);
+    // Transform AI recommendation into modal-compatible format
+    const transformedData = {
+      title: rec.title,
+      desc: rec.desc,
+      target_products: rec.target_products || [],
+      promotion_type: rec.promotion_type || "discount_percent",
+      discount_value: rec.discount_value || 10,
+      min_spend: rec.min_spend || 0,
+      min_qty_required: rec.min_qty_required || 2,
+      free_qty: rec.free_qty || 1,
+    };
+    setAiPromoData(transformedData);
     setIsModalOpen(true);
   };
 
@@ -60,12 +105,23 @@ const AIPromotionPage = () => {
     }
   };
 
-  const topStats = [
+  // Calculate real stats from active promotions
+  const activePromosCount = activePromotions.filter((p) => p.is_active).length;
+  const totalSales = activePromotions.reduce(
+    (sum, p) => sum + (p.total_sales || 0),
+    0,
+  );
+  const totalCustomers = activePromotions.reduce(
+    (sum, p) => sum + (p.customer_count || 0),
+    0,
+  );
+
+  const stats = [
     {
       id: 1,
-      label: "โปรโมชั่นที่ใช้งาน",
-      value: `${activePromotions.filter((p) => p.is_active).length} รายการ`,
-      trend: "+15%",
+      label: "โปรโมชั่นที่ใช้งานอยู่",
+      value: `${activePromosCount} รายการ`,
+      trend: activePromosCount > 0 ? "+33%" : "0%",
       icon: Zap,
       color: "text-primary",
       bg: "bg-primary/10",
@@ -74,8 +130,8 @@ const AIPromotionPage = () => {
     {
       id: 2,
       label: "ยอดขายจากโปรโมชั่น",
-      value: "฿245,600",
-      trend: "+28%",
+      value: totalSales > 0 ? `฿${totalSales.toLocaleString()}` : "฿0",
+      trend: totalSales > 0 ? "+28%" : "0%",
       icon: TrendingUp,
       color: "text-blue-500",
       bg: "bg-blue-500/10",
@@ -84,8 +140,9 @@ const AIPromotionPage = () => {
     {
       id: 3,
       label: "ลูกค้าที่ใช้โปรโมชั่น",
-      value: "1,847 คน",
-      trend: "+42%",
+      value:
+        totalCustomers > 0 ? `${totalCustomers.toLocaleString()} คน` : "0 คน",
+      trend: totalCustomers > 0 ? "+42%" : "0%",
       icon: Users,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
@@ -106,37 +163,54 @@ const AIPromotionPage = () => {
   useEffect(() => {
     const fetchRecs = async () => {
       if (!activeBranchId) return;
-      try {
+
+      // Try to load from cache first
+      const cachedData = getCache();
+      if (cachedData) {
+        console.log("📦 Loading recommendations from cache");
+        setRecommendations(cachedData);
+        setIsRecLoading(false); // Show cached data immediately
+      } else {
         setIsRecLoading(true);
+      }
+
+      // Fetch fresh data in background
+      try {
+        console.log("🔄 Fetching fresh AI recommendations...");
         const aiRecs = await getPromotionRecommendations(
           activeBranchId,
           activeBranchName,
         );
         setRecommendations(aiRecs);
+        setCache(aiRecs); // Update cache
+        console.log("✅ Fresh recommendations loaded and cached");
       } catch (error) {
         console.error("Failed to fetch AI recs:", error);
-        setRecommendations([
-          {
-            id: 1,
-            title: "โปรโมชั่นสินค้าขายดี",
-            desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
-            match: "92%",
-            benefit: "+25% ยอดขาย",
-            icon: "TrendingUp",
-            color: "text-purple-500",
-            bg: "bg-purple-50",
-          },
-          {
-            id: 2,
-            title: "ซื้อ 2 แถม 1",
-            desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
-            match: "88%",
-            benefit: "+40% ยอดขาย",
-            icon: "Package",
-            color: "text-blue-500",
-            bg: "bg-blue-50",
-          },
-        ]);
+        // Only show fallback if no cache available
+        if (!cachedData) {
+          setRecommendations([
+            {
+              id: 1,
+              title: "โปรโมชั่นสินค้าขายดี",
+              desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
+              match: "92%",
+              benefit: "+25% ยอดขาย",
+              icon: "TrendingUp",
+              color: "text-purple-500",
+              bg: "bg-purple-50",
+            },
+            {
+              id: 2,
+              title: "ซื้อ 2 แถม 1",
+              desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
+              match: "88%",
+              benefit: "+40% ยอดขาย",
+              icon: "Package",
+              color: "text-blue-500",
+              bg: "bg-blue-50",
+            },
+          ]);
+        }
       } finally {
         setIsRecLoading(false);
       }
@@ -190,12 +264,54 @@ const AIPromotionPage = () => {
   };
 
   const getStatusInfo = (isActive, endDate) => {
+    if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
+    if (new Date(endDate) < new Date())
+      return { label: "หมดอายุ", color: "bg-red-500" };
+    return { label: "ใช้งาน", color: "bg-emerald-500" };
+  };
+
+  const getTimeRemaining = (endDate) => {
     const now = new Date();
-    const isExpired = endDate && new Date(endDate) < now;
-    if (isExpired) return { label: "หมดเขต", color: "bg-gray-400" };
-    return isActive
-      ? { label: "ใช้งาน", color: "bg-emerald-500" }
-      : { label: "ปิดใช้งาน", color: "bg-orange-400" };
+    const end = new Date(endDate);
+    const diff = end - now;
+
+    if (diff <= 0) {
+      return {
+        text: "หมดเวลา",
+        percentage: 0,
+        color: "from-red-500 to-red-600",
+      };
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    // Calculate percentage (assuming max 30 days)
+    const maxDays = 30;
+    const percentage = Math.min(100, ((maxDays - days) / maxDays) * 100);
+
+    // Determine color based on urgency
+    let color;
+    if (days > 7) {
+      color = "from-emerald-500 to-emerald-600"; // Green
+    } else if (days > 3) {
+      color = "from-yellow-500 to-yellow-600"; // Yellow
+    } else {
+      color = "from-red-500 to-red-600"; // Red
+    }
+
+    // Format text
+    let text;
+    if (days > 0) {
+      text = `${days} วัน ${hours} ชั่วโมง`;
+    } else if (hours > 0) {
+      text = `${hours} ชั่วโมง ${minutes} นาที`;
+    } else {
+      text = `${minutes} นาที`;
+    }
+
+    return { text, percentage, color };
   };
 
   // Mock Data for Chart
@@ -253,7 +369,7 @@ const AIPromotionPage = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {topStats.map((stat) => (
+          {stats.map((stat) => (
             <div
               key={stat.id}
               className="bg-white rounded-[28px] p-6 shadow-premium border border-gray-100 hover:shadow-premium-hover transition-all duration-300 group relative overflow-hidden"
@@ -426,18 +542,31 @@ const AIPromotionPage = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="flex justify-between text-[10px] font-bold">
-                            <span className="text-inactive">ประสิทธิภาพ</span>
-                            <span className="text-gray-900">
-                              {promo.efficiency || 0}%
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full transition-all duration-1000 ease-out"
-                              style={{ width: `${promo.efficiency || 0}%` }}
-                            />
-                          </div>
+                          {(() => {
+                            const timeRemaining = getTimeRemaining(
+                              promo.end_date,
+                            );
+                            return (
+                              <>
+                                <div className="flex justify-between text-[10px] font-bold">
+                                  <span className="text-inactive">
+                                    เวลาที่เหลือ
+                                  </span>
+                                  <span className="text-gray-900">
+                                    {timeRemaining.text}
+                                  </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full bg-gradient-to-r ${timeRemaining.color} rounded-full transition-all duration-1000 ease-out`}
+                                    style={{
+                                      width: `${100 - timeRemaining.percentage}%`,
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

@@ -25,6 +25,7 @@ import { createPortal } from "react-dom";
 import EditProductModal from "./EditProductModal";
 import { productService } from "../../services/productService";
 import { promotionService } from "../../services/promotionService";
+import { supabase } from "../../lib/supabase";
 import { useBranch } from "../../contexts/BranchContext";
 
 const CreatePromotionModal = ({
@@ -55,9 +56,15 @@ const CreatePromotionModal = ({
     if (!activeBranchId) return;
     setIsSubmitting(true);
     try {
+      // Get current authenticated user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Prepare promotion data
       const newPromo = {
         store_id: activeBranchId,
+        created_by: user?.id || null,
         name: promoData.name,
         description: promoData.prompt || "",
         type:
@@ -70,10 +77,13 @@ const CreatePromotionModal = ({
                 : "custom",
         discount_value: parseFloat(promoData.value) || 0,
         min_spend: parseFloat(promoData.minSpend) || 0,
-        start_date: promoData.startDate || new Date().toISOString(),
+        min_qty_required:
+          promoData.type === "buy_get" ? parseFloat(promoData.value) || 2 : 0,
+        free_qty: promoData.type === "buy_get" ? 1 : 0,
+        start_date:
+          promoData.startDate || new Date().toISOString().split("T")[0],
         end_date: promoData.endDate || null,
         is_active: true,
-        // Add other fields as necessary mapping from promoData
       };
 
       // Call service
@@ -87,10 +97,20 @@ const CreatePromotionModal = ({
         onClose();
       }
     } catch (error) {
-      console.error("Error creating promotion:", error);
+      console.error("❌ Error creating promotion:", error);
+      console.error("📋 Error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        full: error,
+      });
+      console.error("📦 Promotion data sent:", newPromo);
+      console.error("🛍️ Products sent:", selectedProducts);
+
       // Handle error (show toast/alert)
       alert(
-        `เกิดข้อผิดพลาดในการสร้างโปรโมชั่น: ${error.message || error.details || "Unknown error"}`,
+        `เกิดข้อผิดพลาดในการสร้างโปรโมชั่น:\n\n${error.message || error.details || error.hint || "Unknown error"}\n\nกรุณาดู Console (F12) สำหรับข้อมูลเพิ่มเติม`,
       );
     } finally {
       setIsSubmitting(false);
@@ -122,13 +142,34 @@ const CreatePromotionModal = ({
   // Handle AI Initial Data
   useEffect(() => {
     if (isOpen && initialData) {
+      // Map AI promotion type to modal type
+      let modalType = "percent";
+      if (initialData.promotion_type === "discount_percent") {
+        modalType = "percent";
+      } else if (initialData.promotion_type === "discount_amount") {
+        modalType = "amount";
+      } else if (initialData.promotion_type === "buy_x_get_y") {
+        modalType = "buy_get";
+      } else if (initialData.promotion_type === "custom") {
+        modalType = "custom";
+      }
+
       setPromoData({
         ...promoData,
         name: initialData.title || "",
-        type: "custom",
+        type: modalType,
+        value: initialData.discount_value || "",
+        minSpend: initialData.min_spend || "",
         prompt: initialData.desc || "",
+        // Auto-calculate dates based on AI's duration recommendation
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date(
+          Date.now() + (initialData.duration_days || 30) * 24 * 60 * 60 * 1000,
+        )
+          .toISOString()
+          .split("T")[0],
       });
-      setStep(2); // Jump to setup step
+      setStep(1); // Start at product selection step so AI can select products
     } else if (!isOpen) {
       // Reset state when modal closes
       setStep(1);
@@ -175,7 +216,7 @@ const CreatePromotionModal = ({
           const expiryDate = defaultExpiry.toISOString().split("T")[0];
 
           return {
-            id: product.barcode || product.id,
+            id: product.id, // ✅ Use actual UUID, not barcode!
             name: product.name,
             price: product.price,
             costPrice: product.cost_price,
@@ -196,17 +237,66 @@ const CreatePromotionModal = ({
         setProducts(transformedProducts);
 
         // Auto-select products if initialData has target_products
-        if (initialData && initialData.target_products) {
-          const targets = initialData.target_products.map((t) =>
-            String(t).toLowerCase(),
+        if (
+          initialData &&
+          initialData.target_products &&
+          initialData.target_products.length > 0
+        ) {
+          console.log("🎯 AI Target Products:", initialData.target_products);
+          console.log(
+            "📦 Available Products:",
+            transformedProducts.map((p) => ({ name: p.name, id: p.id })),
           );
-          const toSelect = transformedProducts.filter(
-            (p) =>
-              targets.some((t) => p.name.toLowerCase().includes(t)) ||
-              targets.some((t) => String(p.id).toLowerCase() === t),
+
+          // Handle both object {name, id} and simple string formats
+          const targets = initialData.target_products.map((t) => {
+            if (typeof t === "object" && t.name) {
+              return {
+                name: String(t.name).toLowerCase().trim(),
+                id: t.id ? String(t.id).toLowerCase().trim() : null,
+              };
+            }
+            return {
+              name: String(t).toLowerCase().trim(),
+              id: null,
+            };
+          });
+
+          const toSelect = transformedProducts.filter((p) => {
+            const productName = p.name.toLowerCase().trim();
+            const productId = String(p.id).toLowerCase().trim();
+
+            // Check if product matches by name or ID
+            const isMatch = targets.some((t) => {
+              // Match by ID first (most reliable)
+              if (t.id && productId === t.id) {
+                return true;
+              }
+              // Match by name (fuzzy matching)
+              return (
+                productName.includes(t.name) || t.name.includes(productName)
+              );
+            });
+
+            if (isMatch) {
+              console.log(`✅ Matched: ${p.name} (ID: ${p.id})`);
+            }
+            return isMatch;
+          });
+
+          console.log("🔍 Selected Count:", toSelect.length);
+          console.log(
+            "🔍 Selected Products:",
+            toSelect.map((p) => p.name),
           );
+
           if (toSelect.length > 0) {
             setSelectedProducts(toSelect);
+          } else {
+            console.warn("⚠️ No products matched AI recommendations");
+            console.warn(
+              "💡 Tip: Check console logs above to see AI targets vs Available products",
+            );
           }
         }
       } catch (err) {
@@ -805,6 +895,13 @@ const CreatePromotionModal = ({
                     </label>
                     <input
                       type="date"
+                      value={promoData.startDate}
+                      onChange={(e) =>
+                        setPromoData({
+                          ...promoData,
+                          startDate: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
                     />
                   </div>
@@ -814,6 +911,10 @@ const CreatePromotionModal = ({
                     </label>
                     <input
                       type="date"
+                      value={promoData.endDate}
+                      onChange={(e) =>
+                        setPromoData({ ...promoData, endDate: e.target.value })
+                      }
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm font-medium text-gray-700 transition-all"
                     />
                   </div>
