@@ -107,9 +107,18 @@ const ProfilePage = () => {
 
   const displayName = branchName || userProfile.storeName || "สาขาหลัก";
 
+  const formatPhone = (phone) => {
+    if (!phone) return "-";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length === 10) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    return phone;
+  };
+
   const infoItems = [
     { icon: Mail, label: "อีเมล", value: userProfile.email || "-" },
-    { icon: Phone, label: "เบอร์โทรศัพท์", value: userProfile.phone || storeData.phone || "-" },
+    { icon: Phone, label: "เบอร์โทรศัพท์", value: formatPhone(userProfile.phone || storeData.phone) },
     { icon: Briefcase, label: "ตำแหน่ง", value: userProfile.role || "-" },
     { icon: Store, label: "สาขา", value: displayName },
     { icon: MapPin, label: "ที่อยู่", value: storeData.address || "-" },
