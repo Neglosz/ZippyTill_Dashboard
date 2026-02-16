@@ -17,6 +17,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import SystemNotificationModal from "../components/modals/SystemNotificationModal";
+import ReceiptModal from "../components/ReceiptModal";
 import { productService } from "../services/productService";
 import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
@@ -27,6 +28,8 @@ const DashboardPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
   const scrollRef = React.useRef(null);
   const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false);
+  const [selectedTransaction, setSelectedTransaction] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [metrics, setMetrics] = React.useState({
     totalRevenue: 0,
@@ -171,6 +174,42 @@ const DashboardPage = () => {
     }
 
     return `${supabaseUrl}/storage/v1/object/public/${fullPath}`;
+  };
+
+  const handleOrderClick = (sale) => {
+    // Transform order data to match ReceiptModal's expected format
+    const transaction = {
+      receiptNo: sale.order_no,
+      date: new Date(sale.created_at).toLocaleString("th-TH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      paymentMethod: sale.payment_method || "เงินสด",
+      items:
+        sale.order_items?.map((item) => ({
+          name: item.products?.name || "N/A",
+          quantity: item.qty || item.quantity || 1,
+          price:
+            (item.price_per_unit || item.price || 0) *
+            (item.qty || item.quantity || 1),
+        })) || [],
+      total: sale.total_amount || 0,
+      received: sale.amount_paid || sale.total_amount || 0,
+      change: Math.max(
+        0,
+        (sale.amount_paid || sale.total_amount || 0) - (sale.total_amount || 0),
+      ),
+      store: {
+        name: activeBranchName || "ZippyTill",
+        address: "สาขา " + (activeBranchName || "Default"),
+        phone: "012-xxx-xxxx",
+      },
+    };
+    setSelectedTransaction(transaction);
+    setIsReceiptModalOpen(true);
   };
 
   if (isLoading) {
@@ -441,17 +480,32 @@ const DashboardPage = () => {
                         // Get first product image from order items
                         const firstProduct = sale.order_items?.[0]?.products;
                         const productImage = firstProduct?.image_url;
+                        const customerName =
+                          sale.customers_info?.name || "ลูกค้าทั่วไป";
+                        const isRegularCustomer =
+                          !sale.customers_info?.name ||
+                          customerName === "ลูกค้าทั่วไป";
 
                         return (
-                          <tr key={idx} className="group/row cursor-pointer">
+                          <tr
+                            key={idx}
+                            className="group/row cursor-pointer"
+                            onClick={() => handleOrderClick(sale)}
+                          >
                             <td className="py-1">
                               <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/row:scale-110">
                                 <img
                                   src={
-                                    productImage ||
-                                    `https://api.dicebear.com/7.x/shapes/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`
+                                    isRegularCustomer
+                                      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`
+                                      : productImage ||
+                                        `https://api.dicebear.com/7.x/shapes/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`
                                   }
-                                  alt="Product"
+                                  alt={
+                                    isRegularCustomer
+                                      ? "Customer Avatar"
+                                      : "Product"
+                                  }
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`;
@@ -789,6 +843,19 @@ const DashboardPage = () => {
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
         data={notificationData}
+      />
+
+      <ReceiptModal
+        visible={isReceiptModalOpen}
+        transaction={selectedTransaction}
+        onClose={() => setIsReceiptModalOpen(false)}
+        onPrint={() => {
+          window.print();
+          setIsReceiptModalOpen(false);
+        }}
+        onNewTransaction={() => {
+          setIsReceiptModalOpen(false);
+        }}
       />
     </div>
   );
