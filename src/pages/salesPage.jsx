@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   BarChart3,
   FileText,
@@ -92,6 +92,7 @@ const SalesPage = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const hasAnimated = useRef(false);
 
   const colors = [
     "#F43F5E", // rose-500
@@ -190,7 +191,7 @@ const SalesPage = () => {
     },
   ];
 
-  const getChartData = () => {
+  const chartData = useMemo(() => {
     let rawData = [];
     switch (timeRange) {
       case "1D":
@@ -217,13 +218,26 @@ const SalesPage = () => {
         (item.fresh || 0) +
         (item.snack || 0),
     }));
-  };
+  }, [timeRange]);
 
   // Pie Chart Data
   const pieData =
     categorySales.length > 0
       ? categorySales
       : [{ name: "ไม่มีข้อมูล", value: 1, color: "#F1F5F9", percentage: 0 }];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] w-full">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm font-bold text-inactive uppercase tracking-widest animate-pulse">
+            กำลังโหลดข้อมูล...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -358,12 +372,26 @@ const SalesPage = () => {
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
-                  data={getChartData()}
+                  data={chartData}
                   margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                 >
                   <defs>
                     <linearGradient
                       id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor="#FDBA74" stopOpacity={0.5} />
+                      <stop
+                        offset="100%"
+                        stopColor="#FED7AA"
+                        stopOpacity={0.35}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="barGradientActive"
                       x1="0"
                       y1="0"
                       x2="0"
@@ -452,7 +480,7 @@ const SalesPage = () => {
                     }
                   />
                   <Tooltip
-                    cursor={{ fill: "rgba(237, 113, 23, 0.05)", radius: 10 }}
+                    cursor={false}
                     contentStyle={{
                       borderRadius: "24px",
                       border: "none",
@@ -480,23 +508,18 @@ const SalesPage = () => {
                       timeRange === "1M" ? `วันที่ ${value}` : value
                     }
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="totalSales"
-                    fill="url(#areaGradient)"
-                    stroke="none"
-                    animationDuration={1000}
-                    animationEasing="ease-out"
-                  />
                   <Bar
                     dataKey="totalSales"
                     fill="url(#barGradient)"
                     radius={[10, 10, 2, 2]}
                     name="ยอดขายรวม"
-                    barSize={timeRange === "1M" ? 12 : 36}
+                    barSize={timeRange === "1M" ? 8 : 24}
+                    isAnimationActive={!hasAnimated.current}
                     animationDuration={1000}
                     animationEasing="ease-out"
                     filter="url(#barShadow)"
+                    onAnimationEnd={() => { hasAnimated.current = true; }}
+                    activeBar={{ fill: "url(#barGradientActive)", filter: "url(#barShadow)" }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -563,8 +586,7 @@ const SalesPage = () => {
                     paddingAngle={10}
                     dataKey="value"
                     cornerRadius={12}
-                    filter="url(#pieShadow)"
-                    animationDuration={1200}
+                    animationDuration={600}
                     animationEasing="ease-out"
                     isAnimationActive={true}
                   >
