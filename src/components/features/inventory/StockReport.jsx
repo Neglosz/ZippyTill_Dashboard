@@ -164,16 +164,17 @@ const StockReportPage = () => {
         </div>
 
         <div className="flex gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100 w-full lg:w-auto overflow-x-auto no-scrollbar">
-          {["ALL", "IN", "OUT", "ADJUST"].map((type) => (
+          {["ALL", "IN", "OUT"].map((type) => (
             <button
               key={type}
               onClick={() => setSelectedType(type)}
-              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedType === type
-                ? "bg-white text-primary shadow-sm border border-primary/10"
-                : "text-inactive hover:text-gray-900"
-                }`}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                selectedType === type
+                  ? "bg-white text-primary shadow-sm border border-primary/10"
+                  : "text-inactive hover:text-gray-900"
+              }`}
             >
-              {type === "ALL" ? "ทั้งหมด" : type === "IN" ? "นำเข้า" : type === "OUT" ? "นำออก" : "ปรับสต็อก"}
+              {type === "ALL" ? "ทั้งหมด" : type === "IN" ? "นำเข้า" : "นำออก"}
             </button>
           ))}
         </div>
@@ -181,19 +182,13 @@ const StockReportPage = () => {
 
       {/* Main Table Area */}
       <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden min-h-[500px]">
-        <div className="flex justify-between items-center mb-10">
+        <div className="mb-10">
           <h2 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-4">
             <div className="p-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
               <History size={24} strokeWidth={2.5} />
             </div>
             รายการเคลื่อนไหวสต็อก
           </h2>
-          <button
-            onClick={fetchStockMovements}
-            className="p-3 text-inactive hover:text-primary hover:bg-primary/5 rounded-2xl transition-all border border-gray-50"
-          >
-            <History size={20} className="rotate-180" />
-          </button>
         </div>
 
         <div className="overflow-x-auto -mx-8 px-8">
@@ -249,22 +244,28 @@ const StockReportPage = () => {
                     <td className="py-4 px-4 text-center">
                       <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                        ${tx.type === "IN"
+                        ${
+                          tx.type === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : tx.type === "OUT"
                               ? "bg-rose-50 text-rose-600 border border-rose-100"
                               : "bg-amber-50 text-amber-600 border border-amber-100"
-                          }`}
+                        }`}
                       >
-                        {tx.type === "IN" ? "นำเข้า" : tx.type === "OUT" ? "นำออก" : "ปรับสต็อก"}
+                        {tx.type === "IN"
+                          ? "นำเข้า"
+                          : tx.type === "OUT"
+                            ? "นำออก"
+                            : "ปรับสต็อก"}
                       </span>
                     </td>
                     <td
-                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
+                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${
+                        tx.type === "OUT" ||
                         (tx.type === "ADJUST" && tx.qty < 0)
-                        ? "text-rose-500"
-                        : "text-emerald-500"
-                        }`}
+                          ? "text-rose-500"
+                          : "text-emerald-500"
+                      }`}
                     >
                       {tx.type === "OUT" || (tx.type === "ADJUST" && tx.qty < 0)
                         ? "-"
