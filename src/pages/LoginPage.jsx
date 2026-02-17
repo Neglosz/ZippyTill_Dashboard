@@ -73,7 +73,7 @@ const LoginPage = () => {
                   670+
                 </p>
                 <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
-                  Businesses Trusted
+                  ธุรกิจที่ไว้วางใจ
                 </p>
               </div>
               <div className="group/stat">
@@ -81,7 +81,7 @@ const LoginPage = () => {
                   24/7
                 </p>
                 <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
-                  Expert Support
+                  ซัพพอร์ตจากผู้เชี่ยวชาญ
                 </p>
               </div>
             </div>
@@ -91,13 +91,13 @@ const LoginPage = () => {
             {/* Feature Items */}
             <FeatureItem
               icon={Box}
-              title="Smart Stock Control"
-              desc="Real-time inventory tracking"
+              title="ควบคุมสต๊อกอัจฉริยะ"
+              desc="ติดตามสินค้าคงคลังแบบเรียลไทม์"
             />
             <FeatureItem
               icon={BarChart3}
-              title="Advanced Analytics"
-              desc="Deep dive into your sales"
+              title="การวิเคราะห์ขั้นสูง"
+              desc="วิเคราะห์ข้อมูลการขายอย่างลึกซึ้ง"
             />
           </div>
         </div>
@@ -111,10 +111,10 @@ const LoginPage = () => {
               <Lock size={28} className="text-primary" strokeWidth={2} />
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight">
-              Welcome Back
+              ยินดีต้อนรับกลับมา
             </h2>
             <p className="text-[11px] font-bold text-inactive mt-2 uppercase tracking-wider">
-              Secure login to your dashboard
+              เข้าสู่ระบบอย่างปลอดภัย
             </p>
           </div>
 
@@ -128,7 +128,7 @@ const LoginPage = () => {
           <form className="space-y-8" onSubmit={handleLogin}>
             <div className="relative group/input">
               <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                Email Address
+                อีเมล
               </label>
               <input
                 type="email"
@@ -142,7 +142,7 @@ const LoginPage = () => {
 
             <div className="relative group/input">
               <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                Secure Password
+                รหัสผ่าน
               </label>
               <input
                 type="password"
@@ -157,7 +157,7 @@ const LoginPage = () => {
                   to="/reset-password"
                   className="text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
                 >
-                  Forgot access?
+                  ลืมรหัสผ่าน?
                 </Link>
               </div>
             </div>
@@ -174,11 +174,11 @@ const LoginPage = () => {
                     size={20}
                     strokeWidth={2}
                   />
-                  Authentication...
+                  กำลังตรวจสอบ...
                 </>
               ) : (
                 <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
-                  Sign In to Terminal
+                  เข้าสู่ระบบ
                 </span>
               )}
             </button>

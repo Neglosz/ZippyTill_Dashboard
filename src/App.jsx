@@ -13,6 +13,7 @@ import SalesPage from "./pages/salesPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingPage from "./pages/SettingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { BranchProvider } from "./contexts/BranchContext";
 
@@ -23,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route
             path="/select-branch"
             element={
