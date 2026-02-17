@@ -26,6 +26,9 @@ const BranchSelectionPage = () => {
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState([]);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [lastAccessedBranchId, setLastAccessedBranchId] = useState(() => {
+    return localStorage.getItem("last_accessed_branch_id");
+  });
 
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -58,6 +61,11 @@ const BranchSelectionPage = () => {
 
   const handleSelect = (branch) => {
     if (dragMoved) return; // Prevent click if we were dragging
+
+    // Save last accessed branch ID and timestamp to localStorage
+    localStorage.setItem("last_accessed_branch_id", branch.id);
+    localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
+
     selectBranch(branch);
     navigate("/dashboard", { replace: true });
   };
@@ -90,12 +98,21 @@ const BranchSelectionPage = () => {
         const user = await authService.getCurrentUser();
         if (user) {
           const userStores = await storeService.getUserStores(user.id);
-          setStores(userStores);
+
+          // Sort stores: last accessed branch first
+          const lastBranchId = localStorage.getItem("last_accessed_branch_id");
+          const sortedStores = [...userStores].sort((a, b) => {
+            if (a.id === lastBranchId) return -1;
+            if (b.id === lastBranchId) return 1;
+            return 0;
+          });
+
+          setStores(sortedStores);
 
           // Fetch aggregate summary if any stores exist
-          if (userStores.length > 0) {
+          if (sortedStores.length > 0) {
             const stats = await storeService.getStoresSummary(
-              userStores.map((s) => s.id),
+              sortedStores.map((s) => s.id),
             );
             if (stats) setSummary(stats);
           }
