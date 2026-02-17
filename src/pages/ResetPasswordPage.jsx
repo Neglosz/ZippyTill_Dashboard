@@ -23,8 +23,8 @@ const ResetPasswordPage = () => {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: `${window.location.origin}/`,
-        }
+          redirectTo: `${window.location.origin}/update-password`,
+        },
       );
 
       if (resetError) throw resetError;
@@ -78,10 +78,10 @@ const ResetPasswordPage = () => {
               </div>
               <div>
                 <h3 className="font-bold text-sm tracking-tight text-gray-900">
-                  Secure Reset
+                  รีเซ็ตอย่างปลอดภัย
                 </h3>
                 <p className="text-[10px] text-inactive font-bold uppercase tracking-wider mt-0.5">
-                  Password reset via email verification
+                  รีเซ็ตรหัสผ่านผ่านการยืนยันอีเมล
                 </p>
               </div>
             </div>
@@ -132,10 +132,10 @@ const ResetPasswordPage = () => {
                   <Mail size={28} className="text-primary" strokeWidth={2} />
                 </div>
                 <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight">
-                  Forgot Password
+                  ลืมรหัสผ่าน
                 </h2>
                 <p className="text-[11px] font-bold text-inactive mt-2 uppercase tracking-wider">
-                  Enter your email to reset
+                  กรอกอีเมลเพื่อรีเซ็ต
                 </p>
               </div>
 
@@ -149,7 +149,7 @@ const ResetPasswordPage = () => {
               <form className="space-y-8" onSubmit={handleResetPassword}>
                 <div className="relative group/input">
                   <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                    Email Address
+                    อีเมล
                   </label>
                   <input
                     type="email"
@@ -173,12 +173,12 @@ const ResetPasswordPage = () => {
                         size={20}
                         strokeWidth={2}
                       />
-                      Sending...
+                      กำลังส่ง...
                     </>
                   ) : (
                     <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
                       <Mail size={16} strokeWidth={2.5} />
-                      Send Reset Link
+                      ส่งลิงก์รีเซ็ต
                     </span>
                   )}
                 </button>
@@ -191,7 +191,7 @@ const ResetPasswordPage = () => {
                   className="inline-flex items-center gap-2 text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
                 >
                   <ArrowLeft size={14} />
-                  Back to Login
+                  กลับหน้า Login
                 </Link>
               </div>
             </>
