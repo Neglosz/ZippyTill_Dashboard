@@ -375,24 +375,21 @@ const FinancePage = () => {
         >
           <defs>
             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FB923C" />
-              <stop offset="100%" stopColor="#ED7117" />
+              <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
+              <stop offset="100%" stopColor="#F97316" stopOpacity={0.9} />
+            </linearGradient>
+            <linearGradient id="incomeGradientActive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFB347" stopOpacity={1} />
+              <stop offset="100%" stopColor="#FF8C00" stopOpacity={1} />
             </linearGradient>
             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#CBD5E1" />
-              <stop offset="100%" stopColor="#94A3B8" />
+              <stop offset="0%" stopColor="#CBD5E1" stopOpacity={0.8} />
+              <stop offset="100%" stopColor="#94A3B8" stopOpacity={0.8} />
             </linearGradient>
-            <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
-              <feOffset dx="0" dy="4" result="offsetblur" />
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.3" />
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+            <linearGradient id="expenseGradientActive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#E2E8F0" stopOpacity={1} />
+              <stop offset="100%" stopColor="#CBD5E1" stopOpacity={1} />
+            </linearGradient>
           </defs>
         </svg>
 
@@ -592,7 +589,7 @@ const FinancePage = () => {
                 />
                 <Tooltip
                   content={<CustomTooltip />}
-                  cursor={{ fill: "#F8FAFC", radius: [10, 10, 0, 0] }}
+                  cursor={false}
                 />
                 <Bar
                   dataKey="income"
@@ -602,8 +599,8 @@ const FinancePage = () => {
                   barSize={
                     viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
                   }
-                  style={{ filter: "url(#barShadow)" }}
                   animationDuration={500}
+                  activeBar={{ fill: "url(#incomeGradientActive)" }}
                 />
                 <Bar
                   dataKey="expense"
@@ -613,8 +610,8 @@ const FinancePage = () => {
                   barSize={
                     viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
                   }
-                  style={{ filter: "url(#barShadow)" }}
                   animationDuration={500}
+                  activeBar={{ fill: "url(#expenseGradientActive)" }}
                 />
               </BarChart>
             </ResponsiveContainer>

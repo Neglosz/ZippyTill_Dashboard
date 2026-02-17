@@ -7,25 +7,25 @@ import {
   TrendingUp,
   TrendingDown,
   ShoppingCart,
+  Cookie,
+  Coffee,
+  Wheat,
+  ShoppingBag,
+  Snowflake,
+  Apple,
+  Milk,
+  Package,
+  MoreHorizontal,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
 import { useBranch } from "../contexts/BranchContext";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  BarChart,
   Bar,
-  AreaChart,
-  Area,
   ComposedChart,
 } from "recharts";
 
@@ -383,11 +383,11 @@ const SalesPage = () => {
                       x2="0"
                       y2="1"
                     >
-                      <stop offset="0%" stopColor="#FDBA74" stopOpacity={0.5} />
+                      <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
                       <stop
                         offset="100%"
-                        stopColor="#FED7AA"
-                        stopOpacity={0.35}
+                        stopColor="#F97316"
+                        stopOpacity={0.9}
                       />
                     </linearGradient>
                     <linearGradient
@@ -397,11 +397,11 @@ const SalesPage = () => {
                       x2="0"
                       y2="1"
                     >
-                      <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
+                      <stop offset="0%" stopColor="#FFB347" stopOpacity={1} />
                       <stop
                         offset="100%"
-                        stopColor="#F97316"
-                        stopOpacity={0.8}
+                        stopColor="#FF8C00"
+                        stopOpacity={1}
                       />
                     </linearGradient>
                     <linearGradient
@@ -526,9 +526,9 @@ const SalesPage = () => {
             </div>
           </div>
 
-          {/* Right Chart: Income Structure */}
+          {/* Right: Income Structure - Modern Card Design */}
           <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-1">
                 <BarChart3 className="w-4 h-4 text-primary" />
                 <span className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
@@ -543,106 +543,77 @@ const SalesPage = () => {
               </p>
             </div>
 
-            <div className="flex-1 min-h-[280px] relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <defs>
-                    <filter
-                      id="pieShadow"
-                      x="-20%"
-                      y="-20%"
-                      width="140%"
-                      height="140%"
-                    >
-                      <feGaussianBlur
-                        in="SourceAlpha"
-                        stdDeviation="5"
-                        result="blur"
-                      />
-                      <feOffset dx="0" dy="6" in="blur" result="offsetBlur" />
-                      <feFlood
-                        floodColor="#000"
-                        floodOpacity="0.1"
-                        result="offsetColor"
-                      />
-                      <feComposite
-                        in="offsetColor"
-                        in2="offsetBlur"
-                        operator="in"
-                        result="shadow"
-                      />
-                      <feMerge>
-                        <feMergeNode in="shadow" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={85}
-                    outerRadius={115}
-                    paddingAngle={10}
-                    dataKey="value"
-                    cornerRadius={12}
-                    animationDuration={600}
-                    animationEasing="ease-out"
-                    isAnimationActive={true}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        strokeWidth={0}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "24px",
-                      border: "none",
-                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-                    }}
-                    itemStyle={{
-                      fontSize: "12px",
-                      fontWeight: 900,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] font-black text-inactive uppercase tracking widest">
-                  Total
-                </span>
-                <span className="text-3xl font-black text-gray-900 tracking-tighter">
-                  100%
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-8 space-y-4">
+            {/* Stacked Progress Bar */}
+            <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex mb-8">
               {pieData.map((item, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-primary/20 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    ></span>
-                    <span className="text-[10px] font-black text-inactive uppercase tracking-widest group-hover:text-gray-900 transition-colors">
-                      {item.name}
-                    </span>
-                  </div>
-                  <span className="text-sm font-black text-gray-900 tracking-tighter">
-                    {item.percentage}%
-                  </span>
-                </div>
+                  className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-700"
+                  style={{
+                    width: `${item.percentage || 0}%`,
+                    backgroundColor: item.color,
+                    minWidth: item.percentage > 0 ? '4px' : '0',
+                  }}
+                />
               ))}
+            </div>
+
+            {/* Category Cards */}
+            <div className="flex-1 space-y-3">
+              {pieData.map((item, index) => {
+                const revenue = item.value || 0;
+                return (
+                  <div
+                    key={index}
+                    className="group relative p-4 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-gray-200 hover:bg-white hover:shadow-sm transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
+                          style={{ backgroundColor: item.color }}
+                        >
+                          {(() => {
+                            const name = (item.name || "").toLowerCase();
+                            const iconProps = { size: 16, strokeWidth: 2.5, color: "white" };
+                            if (name.includes("ขนม") || name.includes("snack")) return <Cookie {...iconProps} />;
+                            if (name.includes("เครื่องดื่ม") || name.includes("drink") || name.includes("น้ำ")) return <Coffee {...iconProps} />;
+                            if (name.includes("อาหารแห้ง") || name.includes("dry")) return <Wheat {...iconProps} />;
+                            if (name.includes("ของใช้") || name.includes("ของชำ") || name.includes("household")) return <ShoppingBag {...iconProps} />;
+                            if (name.includes("แช่แข็ง") || name.includes("frozen")) return <Snowflake {...iconProps} />;
+                            if (name.includes("ผัก") || name.includes("ผลไม้") || name.includes("fresh")) return <Apple {...iconProps} />;
+                            if (name.includes("นม") || name.includes("dairy")) return <Milk {...iconProps} />;
+                            if (name.includes("อื่น") || name.includes("other")) return <MoreHorizontal {...iconProps} />;
+                            return <Tag {...iconProps} />;
+                          })()}
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-gray-900 tracking-tighter">
+                          {item.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${item.percentage || 0}%`,
+                            backgroundColor: item.color,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-inactive tracking-tight min-w-[60px] text-right">
+                        ฿{Math.ceil(revenue).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
