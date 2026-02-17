@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Box, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
+import {
+  Box,
+  BarChart3,
+  TrendingUp,
+  Lock,
+  Loader2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { authService } from "../services/authService";
 
@@ -9,6 +17,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -144,14 +153,27 @@ const LoginPage = () => {
               <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
                 รหัสผ่าน
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 pr-12 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-primary transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} strokeWidth={2} />
+                  ) : (
+                    <Eye size={18} strokeWidth={2} />
+                  )}
+                </button>
+              </div>
               <div className="text-right mt-3 mr-2">
                 <Link
                   to="/reset-password"
