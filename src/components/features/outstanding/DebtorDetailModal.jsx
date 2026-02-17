@@ -181,11 +181,10 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                 <div className="flex gap-8">
                   <button
                     onClick={() => setActiveTab("info")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${
-                      activeTab === "info"
-                        ? "text-primary"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${activeTab === "info"
+                      ? "text-primary"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     ข้อมูลทั่วไป
                     {activeTab === "info" && (
@@ -194,19 +193,17 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                   </button>
                   <button
                     onClick={() => setActiveTab("bills")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${
-                      activeTab === "bills"
-                        ? "text-primary"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${activeTab === "bills"
+                      ? "text-primary"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     รายการใบแจ้งหนี้
                     <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${
-                        activeTab === "bills"
-                          ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${activeTab === "bills"
+                        ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
+                        : "bg-gray-200 text-gray-600"
+                        }`}
                     >
                       {bills.length}
                     </span>
@@ -262,9 +259,9 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                           {!isEditing &&
                             getStatusBadge(
                               item.status ||
-                                (item.maxOverdueDays > 0
-                                  ? "เกินกำหนด"
-                                  : "ค้างชำระ"),
+                              (item.maxOverdueDays > 0
+                                ? "เกินกำหนด"
+                                : "ค้างชำระ"),
                               item.overdueDays || item.maxOverdueDays,
                             )}
                         </div>
@@ -304,8 +301,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                             </div>
                             {item.phone
                               ? item.phone
-                                  .replace(/\D/g, "")
-                                  .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
+                                .replace(/\D/g, "")
+                                .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
                               : "-"}
                           </div>
                         )}
@@ -415,19 +412,16 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                         bills.map((bill, index) => (
                           <div
                             key={bill.id}
-                            className="p-6 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent transition-all duration-300 flex items-center justify-between group"
+                            onClick={() => setSelectedBill(bill)}
+                            className="p-6 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent transition-all duration-300 flex items-center justify-between group cursor-pointer"
                           >
                             <div className="flex items-center gap-5">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedBill(bill);
-                                }}
-                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 group-hover:from-orange-50 group-hover:to-orange-100 group-hover:text-primary transition-all duration-300 border border-gray-200/60 group-hover:border-orange-200/60 shadow-md group-hover:shadow-lg group-hover:scale-110 cursor-pointer"
+                              <div
+                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 group-hover:from-orange-50 group-hover:to-orange-100 group-hover:text-primary transition-all duration-300 border border-gray-200/60 group-hover:border-orange-200/60 shadow-md group-hover:shadow-lg group-hover:scale-110"
                                 title="ดูใบเสร็จ"
                               >
                                 <Calendar size={22} strokeWidth={2.5} />
-                              </button>
+                              </div>
                               <div>
                                 <p className="text-base font-black text-gray-900 mb-1">
                                   #{bill.orderNo}
@@ -479,31 +473,31 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
         transaction={
           selectedBill
             ? {
-                receiptNo: selectedBill.orderNo || "-",
-                date: new Date(
-                  selectedBill.createdAt || selectedBill.dueDate,
-                ).toLocaleDateString("th-TH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                }),
-                paymentMethod: "เครดิต",
-                items: [
-                  {
-                    name: `รายการ #${selectedBill.orderNo}`,
-                    quantity: 1,
-                    price: Number(selectedBill.amount),
-                  },
-                ],
-                total: Number(selectedBill.amount),
-                received: 0,
-                change: 0,
-                store: {
-                  name: item?.name || "ลูกค้า",
-                  address: "-",
-                  phone: item?.phone || "-",
+              receiptNo: selectedBill.orderNo || "-",
+              date: new Date(
+                selectedBill.createdAt || selectedBill.dueDate,
+              ).toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+              paymentMethod: "เครดิต",
+              items: [
+                {
+                  name: `รายการ #${selectedBill.orderNo}`,
+                  quantity: 1,
+                  price: Number(selectedBill.amount),
                 },
-              }
+              ],
+              total: Number(selectedBill.amount),
+              received: 0,
+              change: 0,
+              store: {
+                name: item?.name || "ลูกค้า",
+                address: "-",
+                phone: item?.phone || "-",
+              },
+            }
             : null
         }
         onClose={() => setSelectedBill(null)}
