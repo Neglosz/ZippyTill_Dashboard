@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Upload } from "lucide-react";
+import { X, Calendar, Upload, Plus, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 
@@ -19,6 +19,8 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
 
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +85,59 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === "__add_new__") {
+      setIsAddingCategory(true);
+      setFormData((prev) => ({ ...prev, category: "" }));
+    } else {
+      setIsAddingCategory(false);
+      setFormData((prev) => ({ ...prev, category: value }));
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    console.log("handleCreateCategory called");
+    console.log("newCategoryName:", newCategoryName);
+    console.log("activeBranchId:", activeBranchId);
+
+    if (!newCategoryName.trim()) {
+      alert("กรุณากรอกชื่อหมวดหมู่");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log("Creating category...");
+      const newCategory = await productService.createCategory(
+        newCategoryName.trim(),
+        activeBranchId,
+      );
+      console.log("Category created:", newCategory);
+
+      // Refresh categories list
+      await fetchCategories();
+
+      // Auto-select the newly created category
+      setFormData((prev) => ({ ...prev, category: newCategory.id }));
+
+      // Reset and close inline form
+      setNewCategoryName("");
+      setIsAddingCategory(false);
+      console.log("Category creation completed successfully");
+    } catch (err) {
+      console.error("Error creating category:", err);
+      alert("ไม่สามารถสร้างหมวดหมู่ได้: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setIsAddingCategory(false);
+    setNewCategoryName("");
   };
 
   return createPortal(
@@ -182,8 +237,8 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
                 <div className="relative group">
                   <select
                     name="category"
-                    value={formData.category}
-                    onChange={handleChange}
+                    value={isAddingCategory ? "__add_new__" : formData.category}
+                    onChange={handleCategoryChange}
                     className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
                   >
                     <option value="">เลือกหมวดหมู่</option>
@@ -192,6 +247,12 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
                         {cat.name}
                       </option>
                     ))}
+                    <option
+                      value="__add_new__"
+                      className="text-primary font-black"
+                    >
+                      + เพิ่มหมวดหมู่ใหม่
+                    </option>
                   </select>
                   <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 transition-transform group-hover:translate-y-[-40%]">
                     <svg
@@ -211,6 +272,58 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
                     </svg>
                   </div>
                 </div>
+
+                {/* Inline Category Creation Form */}
+                {isAddingCategory && (
+                  <div className="relative z-50 mt-3 p-4 bg-gradient-to-br from-primary/5 to-orange-50/30 rounded-[18px] border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="text-sm font-bold text-[#1B2559] block mb-2">
+                      ชื่อหมวดหมู่ใหม่
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleCreateCategory();
+                          }
+                        }}
+                        className="flex-1 bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-gray-400"
+                        placeholder="พิมพ์ชื่อหมวดหมู่..."
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log("Save button clicked!");
+                          handleCreateCategory();
+                        }}
+                        disabled={isLoading}
+                        className="pointer-events-auto p-2.5 bg-primary text-white rounded-[14px] hover:bg-primary/90 transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="บันทึก"
+                      >
+                        <Check size={18} strokeWidth={3} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log("Cancel button clicked!");
+                          handleCancelAddCategory();
+                        }}
+                        className="pointer-events-auto p-2.5 bg-gray-200 text-gray-600 rounded-[14px] hover:bg-gray-300 transition-all shadow-sm hover:shadow-md active:scale-95"
+                        title="ยกเลิก"
+                      >
+                        <X size={18} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Quantity */}
