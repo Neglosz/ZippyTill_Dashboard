@@ -12,6 +12,7 @@ import AIPromotionPage from "./pages/AIPromotionPage";
 import SalesPage from "./pages/salesPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingPage from "./pages/SettingPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { BranchProvider } from "./contexts/BranchContext";
 
@@ -21,6 +22,7 @@ function App() {
       <BranchProvider>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/select-branch"
             element={
