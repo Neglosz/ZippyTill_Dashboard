@@ -65,6 +65,7 @@ const AIPromotionPage = () => {
     }
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [isRecLoading, setIsRecLoading] = useState(true);
   const [activePromotions, setActivePromotions] = useState([]);
@@ -270,32 +271,37 @@ const AIPromotionPage = () => {
     return { label: "ใช้งาน", color: "bg-emerald-500" };
   };
 
-  const getTimeRemaining = (endDate) => {
+  const getTimeRemaining = (startDate, endDate) => {
     const now = new Date();
+    const start = new Date(startDate);
     const end = new Date(endDate);
-    const diff = end - now;
+    const total = end - start;
+    const remaining = end - now;
 
-    if (diff <= 0) {
+    if (remaining <= 0) {
       return {
         text: "หมดเวลา",
-        percentage: 0,
+        percentage: 100,
         color: "from-red-500 to-red-600",
       };
     }
 
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(
+      (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
 
-    // Calculate percentage (assuming max 30 days)
-    const maxDays = 30;
-    const percentage = Math.min(100, ((maxDays - days) / maxDays) * 100);
+    // Calculate percentage based on actual duration
+    const elapsed = now - start;
+    const percentage = Math.max(0, Math.min(100, (elapsed / total) * 100));
 
-    // Determine color based on urgency
+    // Determine color based on urgency (remaining percentage)
+    const remainingPercentage = 100 - percentage;
     let color;
-    if (days > 7) {
+    if (remainingPercentage > 50) {
       color = "from-emerald-500 to-emerald-600"; // Green
-    } else if (days > 3) {
+    } else if (remainingPercentage > 20) {
       color = "from-yellow-500 to-yellow-600"; // Yellow
     } else {
       color = "from-red-500 to-red-600"; // Red
@@ -481,7 +487,10 @@ const AIPromotionPage = () => {
                 <h3 className="text-xl font-black text-gray-900 tracking-tight">
                   โปรโมชั่นที่ใช้งานอยู่
                 </h3>
-                <button className="text-xs font-bold text-primary bg-primary/5 px-4 py-2 rounded-xl hover:bg-primary/10 transition-colors">
+                <button
+                  onClick={() => setIsViewAllOpen(true)}
+                  className="text-xs font-bold text-primary bg-primary/5 px-4 py-2 rounded-xl hover:bg-primary/10 transition-colors"
+                >
                   ดูทั้งหมด
                 </button>
               </div>
@@ -495,7 +504,7 @@ const AIPromotionPage = () => {
                     ยังไม่มีโปรโมชั่นที่ใช้งานอยู่
                   </div>
                 ) : (
-                  activePromotions.map((promo) => {
+                  activePromotions.slice(0, 4).map((promo) => {
                     const status = getStatusInfo(
                       promo.is_active,
                       promo.end_date,
@@ -503,52 +512,61 @@ const AIPromotionPage = () => {
                     return (
                       <div
                         key={promo.id}
-                        className="bg-gray-50 p-6 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
+                        className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
                       >
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h4 className="font-black text-gray-900 mb-1 group-hover:text-primary transition-colors">
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-black text-gray-900 text-sm truncate group-hover:text-primary transition-colors">
                               {promo.name}
                             </h4>
-                            <p className="text-[10px] font-bold text-inactive uppercase tracking-wider">
+                            <p className="text-[9px] font-bold text-inactive uppercase tracking-wider">
                               ID: {promo.id.slice(0, 8)}
                             </p>
                           </div>
                           <span
-                            className={`text-[10px] font-bold px-2 py-1 rounded-lg text-white ${status.color}`}
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-lg text-white ${status.color} shrink-0 ml-2`}
                           >
                             {status.label}
                           </span>
                         </div>
 
-                        <div className="space-y-3 mb-5">
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                            <Target size={14} className="text-inactive" />
-                            <span>{getPromotionLabel(promo)}</span>
+                        <div className="grid grid-cols-1 gap-1.5 mb-4">
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                            <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                              <Target size={12} className="text-primary" />
+                            </div>
+                            <span className="truncate">
+                              {getPromotionLabel(promo)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                            <Calendar size={14} className="text-inactive" />
-                            <span>
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                            <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                              <Calendar size={12} className="text-blue-500" />
+                            </div>
+                            <span className="truncate">
                               {formatDateRange(
                                 promo.start_date,
                                 promo.end_date,
                               )}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                            <Package size={14} className="text-inactive" />
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                            <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                              <Package size={12} className="text-emerald-500" />
+                            </div>
                             <span>{promo.itemCount} สินค้า</span>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5 pt-3 border-t border-gray-200/50">
                           {(() => {
                             const timeRemaining = getTimeRemaining(
+                              promo.start_date,
                               promo.end_date,
                             );
                             return (
                               <>
-                                <div className="flex justify-between text-[10px] font-bold">
+                                <div className="flex justify-between text-[9px] font-black uppercase tracking-wider">
                                   <span className="text-inactive">
                                     เวลาที่เหลือ
                                   </span>
@@ -556,7 +574,7 @@ const AIPromotionPage = () => {
                                     {timeRemaining.text}
                                   </span>
                                 </div>
-                                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full bg-gradient-to-r ${timeRemaining.color} rounded-full transition-all duration-1000 ease-out`}
                                     style={{
@@ -664,6 +682,131 @@ const AIPromotionPage = () => {
           </div>
         </div>
       </div>
+
+      {/* View All Promotions Modal */}
+      {isViewAllOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+          <div
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            onClick={() => setIsViewAllOpen(false)}
+          />
+          <div className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Modal Header */}
+            <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tighter mb-1">
+                  โปรโมชั่นทั้งหมด
+                  <span className="text-primary">.</span>
+                </h2>
+                <p className="text-xs font-medium text-inactive">
+                  รายการโปรโมชั่นทั้งหมดที่กำลังใช้งานและเคยสร้างไว้
+                </p>
+              </div>
+              <button
+                onClick={() => setIsViewAllOpen(false)}
+                className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm"
+              >
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable Grid */}
+            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activePromotions.map((promo) => {
+                  const status = getStatusInfo(promo.is_active, promo.end_date);
+                  return (
+                    <div
+                      key={promo.id}
+                      className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-black text-gray-900 text-sm truncate group-hover:text-primary transition-colors">
+                            {promo.name}
+                          </h4>
+                          <p className="text-[9px] font-bold text-inactive uppercase tracking-wider">
+                            ID: {promo.id.slice(0, 8)}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[9px] font-black px-2 py-0.5 rounded-lg text-white ${status.color} shrink-0 ml-2`}
+                        >
+                          {status.label}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-1.5 mb-4">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                          <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                            <Target size={12} className="text-primary" />
+                          </div>
+                          <span className="truncate">
+                            {getPromotionLabel(promo)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                          <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                            <Calendar size={12} className="text-blue-500" />
+                          </div>
+                          <span className="truncate">
+                            {formatDateRange(promo.start_date, promo.end_date)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                          <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                            <Package size={12} className="text-emerald-500" />
+                          </div>
+                          <span>{promo.itemCount} สินค้า</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-3 border-t border-gray-200/50">
+                        {(() => {
+                          const timeRemaining = getTimeRemaining(
+                            promo.start_date,
+                            promo.end_date,
+                          );
+                          return (
+                            <>
+                              <div className="flex justify-between text-[9px] font-black uppercase tracking-wider">
+                                <span className="text-inactive">
+                                  เวลาที่เหลือ
+                                </span>
+                                <span className="text-gray-900">
+                                  {timeRemaining.text}
+                                </span>
+                              </div>
+                              <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full bg-gradient-to-r ${timeRemaining.color} rounded-full transition-all duration-1000 ease-out`}
+                                  style={{
+                                    width: `${100 - timeRemaining.percentage}%`,
+                                  }}
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setIsViewAllOpen(false)}
+                className="px-8 py-3 bg-white text-gray-900 font-bold rounded-2xl border border-gray-200 hover:bg-gray-100 transition-all shadow-sm"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

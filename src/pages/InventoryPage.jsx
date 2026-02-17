@@ -34,6 +34,7 @@ const InventoryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     if (activeBranchId) {
@@ -148,6 +149,34 @@ const InventoryPage = () => {
     } catch (err) {
       console.error("Error saving product:", err);
       alert("ไม่สามารถบันทึกข้อมูลได้: " + err.message);
+    }
+  };
+
+  const handleDeleteProduct = async (product) => {
+    try {
+      if (!activeBranchId) throw new Error("Branch ID is required");
+
+      // Call delete service
+      await productService.deleteProduct(product.id, activeBranchId);
+
+      // Record stock removal history
+      await productService.recordStockRemoval(
+        {
+          productId: product.id,
+          productName: product.name,
+          qty: product.stock_qty,
+          reason: "ลบสินค้าออกจากระบบ",
+          imageUrl: product.image_url,
+        },
+        activeBranchId,
+      );
+
+      // Refresh product list
+      await fetchProducts();
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      alert("ไม่สามารถลบสินค้าได้: " + err.message);
     }
   };
 
@@ -526,15 +555,23 @@ const InventoryPage = () => {
                                   #{product.barcode || product.id.slice(0, 8)}
                                 </span>
                               </div>
-                              <button
-                                onClick={() => {
-                                  setEditingProduct(product);
-                                  setIsEditModalOpen(true);
-                                }}
-                                className="p-3 bg-[#F8FAFD] border border-indigo-50/50 hover:border-primary/20 hover:bg-primary/10 rounded-[20px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm active:scale-90 shrink-0"
-                              >
-                                <Edit size={22} strokeWidth={2.5} />
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingProduct(product);
+                                    setIsEditModalOpen(true);
+                                  }}
+                                  className="p-3 bg-[#F8FAFD] border border-indigo-50/50 hover:border-primary/20 hover:bg-primary/10 rounded-[20px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm active:scale-90 shrink-0"
+                                >
+                                  <Edit size={22} strokeWidth={2.5} />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm(product)}
+                                  className="p-3 bg-[#F8FAFD] border border-rose-50/50 hover:border-rose-500/20 hover:bg-rose-50 rounded-[20px] text-[#1B2559]/40 hover:text-rose-500 transition-all shadow-sm active:scale-90 shrink-0"
+                                >
+                                  <Trash2 size={22} strokeWidth={2.5} />
+                                </button>
+                              </div>
                             </div>
 
                             {/* Middle Area: Meta Chips */}
@@ -662,6 +699,64 @@ const InventoryPage = () => {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="pt-8 pb-6 px-8 text-center">
+              <div className="inline-flex p-4 bg-rose-500 rounded-full text-white shadow-lg shadow-rose-200 mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-2">
+                ยืนยันการลบสินค้า?
+              </h2>
+              <p className="text-sm font-medium text-inactive">
+                การลบสินค้าไม่สามารถกู้คืนได้
+              </p>
+            </div>
+
+            {/* Product Info */}
+            <div className="px-8 pb-6">
+              <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
+                <img
+                  src={deleteConfirm.image_url}
+                  alt={deleteConfirm.name}
+                  className="w-16 h-16 rounded-xl object-cover"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/150";
+                  }}
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 truncate">
+                    {deleteConfirm.name}
+                  </h3>
+                  <p className="text-xs font-medium text-inactive">
+                    คงเหลือ: {deleteConfirm.stock_qty} ชิ้น
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-6 py-3 bg-white text-gray-700 font-bold rounded-2xl hover:bg-gray-100 transition-all border border-gray-200"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => handleDeleteProduct(deleteConfirm)}
+                className="flex-1 px-6 py-3 bg-rose-500 text-white font-bold rounded-2xl hover:bg-rose-600 transition-all shadow-lg shadow-rose-200"
+              >
+                ยืนยันลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

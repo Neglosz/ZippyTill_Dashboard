@@ -19,6 +19,7 @@ export const productService = {
       `,
       )
       .eq("store_id", branchId)
+      .is("deleted_at", null)
       .order("name");
 
     if (error) throw error;
@@ -96,13 +97,14 @@ export const productService = {
     return data;
   },
 
-  // Delete product (scoped to branch)
+  // Soft delete product (scoped to branch)
   async deleteProduct(id, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
+    // Use soft delete instead of hard delete to preserve order history
     const { error } = await supabase
       .from("products")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
       .eq("store_id", branchId);
 
@@ -282,13 +284,86 @@ export const productService = {
         note: "เพิ่มสินค้าใหม่",
       }));
 
-      const allMovements = [...movements, ...productMovements];
+      // Fetch inventory transactions (including deletions)
+      const { data: inventoryTxns, error: txnError } = await supabase
+        .from("inventory_transactions")
+        .select(
+          `
+          id,
+          qty,
+          trans_type,
+          reference_type,
+          notes,
+          created_at,
+          products (name, image_url)
+        `,
+        )
+        .eq("products.store_id", branchId)
+        .order("created_at", { ascending: false });
+
+      if (txnError) {
+        console.warn("Could not fetch inventory transactions:", txnError);
+      }
+
+      const inventoryMovements = (inventoryTxns || []).map((item) => ({
+        id: `TXN-${item.id}`,
+        created_at: item.created_at,
+        product: item.products?.name || "ได้ลบสินค้าแล้ว",
+        imageUrl: item.products?.image_url,
+        type: item.trans_type?.toUpperCase() || "OUT",
+        qty: item.qty,
+        reference_type: item.reference_type,
+        note:
+          item.notes ||
+          (item.reference_type === "product_deletion"
+            ? "ลบสินค้าออกจากระบบ"
+            : "ปรับสต็อก"),
+      }));
+
+      const allMovements = [
+        ...movements,
+        ...productMovements,
+        ...inventoryMovements,
+      ];
       return allMovements.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );
     } catch (error) {
       console.error("Error in getStockMovements:", error);
       throw error;
+    }
+  },
+
+  // Record stock removal (for deleted products)
+  async recordStockRemoval(removalData, branchId) {
+    if (!branchId) throw new Error("Branch ID is required");
+
+    try {
+      // Get current user
+      const { data: userData } = await supabase.auth.getUser();
+
+      // Record as inventory transaction (OUT type)
+      const { data, error } = await supabase
+        .from("inventory_transactions")
+        .insert({
+          product_id: removalData.productId,
+          trans_type: "out",
+          qty: removalData.qty,
+          reference_type: "product_deletion",
+          notes: removalData.reason,
+          created_by: userData?.user?.id,
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.warn("Could not record inventory transaction:", error.message);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.warn("Could not record stock removal:", error);
+      return null;
     }
   },
 };

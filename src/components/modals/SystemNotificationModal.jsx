@@ -12,7 +12,7 @@ const SystemNotificationModal = ({ isOpen, onClose, data }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div
-        className="bg-white w-full max-w-4xl rounded-[40px] shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300"
+        className="bg-white w-full max-w-6xl rounded-[40px] shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -37,7 +37,7 @@ const SystemNotificationModal = ({ isOpen, onClose, data }) => {
         </div>
 
         {/* Content Section */}
-        <div className="px-8 pb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="px-8 pb-12 grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Expired Items */}
           <NotificationCategory
             title="สินค้าหมดอายุแล้ว"
@@ -49,7 +49,7 @@ const SystemNotificationModal = ({ isOpen, onClose, data }) => {
 
           {/* Expiring Soon Items */}
           <NotificationCategory
-            title="สินค้าใกล้หมดอายุภายใน 7 วัน"
+            title="ใกล้หมดอายุภายใน 7 วัน"
             count={expiringSoon.length}
             icon={Clock}
             items={expiringSoon}
@@ -120,30 +120,32 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
         >
           <Icon size={20} />
         </div>
-        <h3 className={`text-sm font-black ${theme.text} leading-tight`}>
+        <h3
+          className={`text-sm font-black ${theme.text} leading-tight break-words`}
+        >
           {title} ({count} รายการ)
         </h3>
       </div>
 
-      <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
         {items.length > 0 ? (
           items.map((item, idx) => (
             <div
               key={idx}
-              className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100/50 flex flex-col gap-2"
+              className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100/50"
             >
-              <div className="flex justify-between items-start gap-2">
-                <p className="text-sm font-bold text-gray-800 truncate">
+              <div className="flex justify-between items-center gap-4 mb-3">
+                <p className="text-sm font-bold text-gray-800 leading-relaxed flex-1">
                   {item.name}
                 </p>
                 <span
-                  className={`${theme.tag} text-[8px] font-black text-white px-2 py-0.5 rounded-full whitespace-nowrap uppercase`}
+                  className={`${theme.tag} text-[9px] font-black text-white px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide flex-shrink-0`}
                 >
                   {theme.tagLabel} {item.days}{" "}
                   {item.days !== undefined ? "วัน" : ""}
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-inactive tracking-wide">
+              <p className="text-[11px] font-bold text-inactive tracking-wide">
                 วันหมดอายุ : {item.expiryDate}
               </p>
             </div>
