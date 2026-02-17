@@ -115,6 +115,7 @@ const ResetPasswordPage = () => {
 
               <Link
                 to="/"
+                replace
                 className="w-full flex items-center justify-center gap-3 bg-primary text-white font-bold py-5 rounded-2xl transition-all duration-300 hover:bg-[#d66515] active:scale-[0.98]"
               >
                 <ArrowLeft size={18} strokeWidth={2.5} />
@@ -186,6 +187,7 @@ const ResetPasswordPage = () => {
               <div className="mt-8 text-center">
                 <Link
                   to="/"
+                  replace
                   className="inline-flex items-center gap-2 text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
                 >
                   <ArrowLeft size={14} />
