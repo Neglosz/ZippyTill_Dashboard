@@ -220,17 +220,17 @@ const TaxCalculationPage = () => {
               ].map((item, idx) => (
                 <div
                   key={idx}
-                  className="bg-gray-50/40 backdrop-blur-sm rounded-[24px] p-6 border border-gray-100 hover:border-primary/10 transition-all shadow-sm group/item flex flex-col gap-4"
+                  className="bg-gray-50/40 backdrop-blur-sm rounded-[24px] p-4 border border-gray-100 hover:border-primary/10 transition-all shadow-sm group/item flex flex-col gap-2"
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.iconBg} ${item.iconColor}`}>
                       {item.icon}
                     </div>
-                    <span className="text-[11px] font-bold text-inactive uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-inactive uppercase tracking-wider">
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-3xl font-black tracking-tighter text-gray-900 break-all line-clamp-2">
+                  <div className="text-2xl font-black tracking-tighter text-gray-900 break-all line-clamp-2">
                     ฿{formatCurrency(item.val)}
                   </div>
                 </div>
@@ -244,37 +244,37 @@ const TaxCalculationPage = () => {
               ].map((item, idx) => (
                 <div
                   key={idx + 3}
-                  className="bg-[#FFF5EB] rounded-[24px] p-6 border border-orange-200/50 transition-all shadow-sm group/item flex flex-col gap-4"
+                  className="bg-[#FFF5EB] rounded-[24px] p-5 border border-orange-200/50 transition-all shadow-sm group/item flex flex-col gap-3"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500/10 text-orange-600">
                       {item.icon}
                     </div>
-                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-4xl font-black tracking-tighter text-orange-600 break-all line-clamp-2">
+                  <div className="text-3xl font-black tracking-tighter text-orange-600 break-all line-clamp-2">
                     {item.isRate ? item.val : `฿${formatCurrency(item.val)}`}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-[#FF5C00] rounded-[24px] p-8 md:p-10 relative z-10 shadow-premium transition-all cursor-default overflow-hidden">
+            <div className="bg-[#FF5C00] rounded-[24px] p-6 md:p-8 relative z-10 shadow-premium transition-all cursor-default overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-[80px]" />
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <span className="text-[12px] font-bold text-white/90 uppercase tracking-[0.1em] block mb-2">
+                  <span className="text-[11px] font-bold text-white/90 uppercase tracking-[0.1em] block mb-2">
                     ภาษีที่ต้องชำระ (ประเมินเบื้องต้น)
                   </span>
-                  <div className="text-6xl md:text-7xl font-black text-white tracking-tighter flex items-baseline gap-3">
+                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2">
                     ฿{formatCurrency(pitResult.totalTax)}
-                    <span className="text-2xl font-bold text-white/80 tracking-normal uppercase">บาท</span>
+                    <span className="text-xl font-bold text-white/80 tracking-normal uppercase">บาท</span>
                   </div>
                 </div>
-                <div className="bg-white/20 h-20 w-20 rounded-[20px] flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
-                  <Calculator className="w-10 h-10 text-white" strokeWidth={2.5} />
+                <div className="bg-white/20 h-16 w-16 rounded-[18px] flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
+                  <Calculator className="w-8 h-8 text-white" strokeWidth={2.5} />
                 </div>
               </div>
             </div>
