@@ -303,7 +303,7 @@ const DashboardPage = () => {
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
                   <TrendingUp size={14} strokeWidth={3} />{" "}
                   {weeklyAnalytics.growth > 0 ? "+" : ""}
-                  {(weeklyAnalytics.growth * 0.8).toFixed(1)}%
+                  {Math.round(weeklyAnalytics.growth * 0.8)}%
                 </div>
               </div>
 
@@ -332,7 +332,7 @@ const DashboardPage = () => {
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
                   <TrendingUp size={14} strokeWidth={3} />{" "}
                   {weeklyAnalytics.growth > 0 ? "+" : ""}
-                  {(weeklyAnalytics.growth * 0.1).toFixed(1)}%
+                  {Math.round(weeklyAnalytics.growth * 0.1)}%
                 </div>
               </div>
 
@@ -701,7 +701,7 @@ const DashboardPage = () => {
                 <p className="text-xl font-black text-gray-900 tracking-tight">
                   <span className="text-xs opacity-30 mr-0.5 font-bold">฿</span>
                   {metrics.totalRevenue > 1000
-                    ? (metrics.totalRevenue / 1000).toFixed(1) + "k"
+                    ? Math.round(metrics.totalRevenue / 1000) + "k"
                     : metrics.totalRevenue}
                 </p>
               </div>

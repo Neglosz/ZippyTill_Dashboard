@@ -48,15 +48,17 @@ const StockReportPage = () => {
 
       // Calculate simple summary from movements
       const out = movements
-        .filter((m) => m.type === "OUT")
+        .filter(
+          (m) => m.type === "OUT" && m.reference_type !== "product_deletion",
+        )
         .reduce((sum, m) => sum + m.qty, 0);
       const in_move = movements
         .filter((m) => m.type === "IN")
         .reduce((sum, m) => sum + m.qty, 0);
 
       setSummary({
-        totalOut: out,
-        totalIn: in_move,
+        totalOut: Math.round(out),
+        totalIn: Math.round(in_move),
         lowStockCount: notifications.lowStock?.length || 0,
       });
     } catch (err) {
@@ -270,7 +272,7 @@ const StockReportPage = () => {
                       {tx.type === "OUT" || (tx.type === "ADJUST" && tx.qty < 0)
                         ? "-"
                         : "+"}
-                      {Math.abs(tx.qty).toLocaleString()}
+                      {Math.round(Math.abs(tx.qty)).toLocaleString()}
                     </td>
                     <td className="py-4 px-4 text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px]">
                       {tx.note}

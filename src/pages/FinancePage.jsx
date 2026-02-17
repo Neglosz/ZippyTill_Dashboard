@@ -582,7 +582,7 @@ const FinancePage = () => {
                   tickLine={false}
                   tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 900 }}
                   tickFormatter={(value) =>
-                    `฿${value >= 1000 ? (value / 1000).toFixed(1) + "K" : value}`
+                    `฿${value >= 1000 ? Math.round(value / 1000) + "K" : value}`
                   }
                   allowDecimals={false}
                   dx={-10}
