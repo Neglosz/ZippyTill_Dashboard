@@ -124,6 +124,24 @@ export const productService = {
     return data;
   },
 
+  // Create a new category for a specific branch
+  async createCategory(categoryName, branchId) {
+    if (!branchId) throw new Error("Branch ID is required");
+    if (!categoryName) throw new Error("Category name is required");
+
+    const { data, error } = await supabase
+      .from("product_categories")
+      .insert({
+        name: categoryName,
+        store_id: branchId,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Get batches for a product (scoped via product_id which is checked via RLS or subquery if needed, but here simple filter)
   async getProductBatches(productId) {
     // Note: Implicitly isolated if the user only has access to this product
