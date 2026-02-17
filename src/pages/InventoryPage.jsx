@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Package,
   Truck,
@@ -30,12 +30,34 @@ const InventoryPage = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef(null);
 
   useEffect(() => {
     if (activeBranchId) {
       fetchProducts();
+      fetchCategories();
     }
   }, [activeBranchId]);
+
+  // Click outside handler for filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
 
   const fetchProducts = async () => {
     try {
@@ -48,6 +70,15 @@ const InventoryPage = () => {
       setError(err.message || "An error occurred while fetching products");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await productService.getAllCategories(activeBranchId);
+      setCategories(data);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
     }
   };
 
@@ -330,7 +361,7 @@ const InventoryPage = () => {
         ) : (
           <>
             {/* Filters Section */}
-            <div className="bg-white rounded-[24px] p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative overflow-hidden">
+            <div className="bg-white rounded-[24px] p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10">
               {/* Search & Filter */}
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <div className="relative w-full lg:w-[320px]">
@@ -346,10 +377,57 @@ const InventoryPage = () => {
                     className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-inactive"
                   />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-100 text-inactive rounded-2xl font-black hover:text-gray-900 hover:bg-gray-50 transition-all text-[10px] uppercase tracking-widest">
-                  <Filter size={16} />
-                  ตัวกรอง
-                </button>
+                <div className="relative" ref={filterRef}>
+                  <button
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${
+                      selectedCategory
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Filter size={16} />
+                    {selectedCategory
+                      ? categories.find((c) => c.id === selectedCategory)
+                          ?.name || "ตัวกรอง"
+                      : "ตัวกรอง"}
+                  </button>
+
+                  {/* Filter Dropdown */}
+                  {isFilterOpen && (
+                    <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-float border border-gray-100 p-2 min-w-[200px] z-50 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          setSelectedCategory(null);
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                          !selectedCategory
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        ทั้งหมด
+                      </button>
+                      {categories.map((category) => (
+                        <button
+                          key={category.id}
+                          onClick={() => {
+                            setSelectedCategory(category.id);
+                            setIsFilterOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                            selectedCategory === category.id
+                              ? "bg-primary text-white"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {category.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -366,7 +444,9 @@ const InventoryPage = () => {
                   const matchesSearch =
                     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (p.barcode && p.barcode.includes(searchQuery));
-                  return matchesSearch;
+                  const matchesCategory =
+                    !selectedCategory || p.category_id === selectedCategory;
+                  return matchesSearch && matchesCategory;
                 }).length === 0 ? (
                 <div className="col-span-full bg-white rounded-[32px] p-20 text-center shadow-premium border border-gray-100">
                   <Package
@@ -385,7 +465,9 @@ const InventoryPage = () => {
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase()) ||
                       (p.barcode && p.barcode.includes(searchQuery));
-                    return matchesSearch;
+                    const matchesCategory =
+                      !selectedCategory || p.category_id === selectedCategory;
+                    return matchesSearch && matchesCategory;
                   })
                   .map((product) => {
                     // Find earliest expiry date
@@ -515,7 +597,9 @@ const InventoryPage = () => {
                           {/* Left: Stock (Outside) */}
                           <div className="flex flex-col gap-1 min-w-[70px]">
                             <p className="text-[10px] font-black text-inactive uppercase tracking-tighter">
-                              {product.is_weightable ? "คงเหลือ (KG)" : "คงเหลือ"}
+                              {product.is_weightable
+                                ? "คงเหลือ (KG)"
+                                : "คงเหลือ"}
                             </p>
                             <div className="flex items-center gap-1.5">
                               <span
