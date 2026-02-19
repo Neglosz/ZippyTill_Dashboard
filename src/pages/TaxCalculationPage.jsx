@@ -159,7 +159,7 @@ const TaxCalculationPage = () => {
                   placeholder="0.00"
                   onChange={(e) => handleFormattedInput(e, setIncome)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
               </div>
 
@@ -176,7 +176,7 @@ const TaxCalculationPage = () => {
                   placeholder="0.00"
                   onChange={(e) => handleFormattedInput(e, setExpenses)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
               </div>
 
@@ -193,7 +193,7 @@ const TaxCalculationPage = () => {
                   placeholder="0.00"
                   onChange={(e) => handleFormattedInput(e, setDeductions)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
               </div>
             </div>
@@ -230,7 +230,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-2xl font-black tracking-tighter text-gray-900 break-all line-clamp-2">
+                  <div className="text-2xl font-black tracking-tighter text-gray-900 break-all overflow-hidden line-clamp-2">
                     ฿{formatCurrency(item.val)}
                   </div>
                 </div>
@@ -254,7 +254,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-3xl font-black tracking-tighter text-orange-600 break-all line-clamp-2">
+                  <div className="text-3xl font-black tracking-tighter text-orange-600 break-all overflow-hidden line-clamp-2">
                     {item.isRate ? item.val : `฿${formatCurrency(item.val)}`}
                   </div>
                 </div>
@@ -268,7 +268,7 @@ const TaxCalculationPage = () => {
                   <span className="text-[11px] font-bold text-white/90 uppercase tracking-[0.1em] block mb-2">
                     ภาษีที่ต้องชำระ (ประเมินเบื้องต้น)
                   </span>
-                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2">
+                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2 break-all overflow-hidden flex-wrap">
                     ฿{formatCurrency(pitResult.totalTax)}
                     <span className="text-xl font-bold text-white/80 tracking-normal uppercase">บาท</span>
                   </div>
@@ -281,6 +281,39 @@ const TaxCalculationPage = () => {
 
             <div className="mt-auto px-6 py-4 bg-[#F0F7FF] rounded-[20px] border border-blue-100/50 text-[11px] font-bold text-blue-400/80 text-center relative z-10">
               หมายเหตุ: การคำนวณนี้เป็นเพียงการประมาณการเบื้องต้น
+            </div>
+          </div>
+        </div>
+
+        {/* VAT Section Header - Wrapped in Premium Card */}
+        <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group mb-2">
+          {/* Decorative background element */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-sm group-hover:rotate-3 transition-transform duration-500">
+                <ReceiptText className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                  VAT 7% <span className="text-primary/60 text-lg font-bold">(ภาษีมูลค่าเพิ่ม)</span>
+                </h2>
+                <p className="text-sm font-medium text-inactive">
+                  คำนวณภาษีซื้อและภาษีขายเพื่อสรุปยอดภาษีที่ต้องนำส่ง
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 bg-emerald-50/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-emerald-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">ภาษีซื้อ = ภาษีจากยอดซื้อ</span>
+              </div>
+              <div className="flex items-center gap-2 bg-blue-50/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-blue-100 shadow-sm animate-in fade-in slide-in-from-right-8 duration-700">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-wider">ภาษีขาย = ภาษีจากยอดขาย</span>
+              </div>
             </div>
           </div>
         </div>
@@ -305,12 +338,12 @@ const TaxCalculationPage = () => {
                   placeholder="0"
                   onChange={(e) => handleFormattedInput(e, setBuyVatAmount)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
               </div>
-              <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100">
-                <span className="text-[10px] font-black text-emerald-600 uppercase">VAT 7%</span>
-                <span className="text-2xl font-black text-emerald-600 tracking-tighter">฿{formatCurrency(buyVat)}</span>
+              <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100 overflow-hidden">
+                <span className="text-[10px] font-black text-emerald-600 uppercase shrink-0">VAT 7%</span>
+                <span className="text-2xl font-black text-emerald-600 tracking-tighter break-all text-right ml-2">฿{formatCurrency(buyVat)}</span>
               </div>
             </div>
           </div>
@@ -333,12 +366,12 @@ const TaxCalculationPage = () => {
                   placeholder="0"
                   onChange={(e) => handleFormattedInput(e, setSellVatAmount)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
               </div>
-              <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100">
-                <span className="text-[10px] font-black text-blue-600 uppercase">VAT 7%</span>
-                <span className="text-2xl font-black text-blue-600 tracking-tighter">฿{formatCurrency(sellVat)}</span>
+              <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100 overflow-hidden">
+                <span className="text-[10px] font-black text-blue-600 uppercase shrink-0">VAT 7%</span>
+                <span className="text-2xl font-black text-blue-600 tracking-tighter break-all text-right ml-2">฿{formatCurrency(sellVat)}</span>
               </div>
             </div>
           </div>
@@ -355,20 +388,20 @@ const TaxCalculationPage = () => {
             </div>
 
             <div className="space-y-4 relative z-10">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-[10px] font-black text-inactive uppercase">ภาษีขาย</span>
-                <span className="text-lg font-black text-blue-600 leading-none">฿{formatCurrency(sellVat)}</span>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                <span className="text-[10px] font-black text-inactive uppercase shrink-0">ภาษีขาย</span>
+                <span className="text-lg font-black text-blue-600 leading-none break-all text-right ml-2">฿{formatCurrency(sellVat)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-[10px] font-black text-inactive uppercase">ภาษีซื้อ</span>
-                <span className="text-lg font-black text-rose-500 leading-none">฿{formatCurrency(buyVat)}</span>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                <span className="text-[10px] font-black text-inactive uppercase shrink-0">ภาษีซื้อ</span>
+                <span className="text-lg font-black text-rose-500 leading-none break-all text-right ml-2">฿{formatCurrency(buyVat)}</span>
               </div>
 
               <div className="pt-4 mt-2">
                 <div className="bg-primary rounded-2xl p-6 text-center shadow-lg hover:scale-[1.02] transition-transform overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
                   <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">ยอดสุทธิที่ต้องนำส่ง</span>
-                  <div className="text-4xl font-black text-white tracking-tighter relative z-10">
+                  <div className="text-4xl font-black text-white tracking-tighter relative z-10 break-all">
                     ฿{formatCurrency(netVat)}
                   </div>
                 </div>
