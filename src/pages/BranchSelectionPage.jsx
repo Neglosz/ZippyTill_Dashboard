@@ -25,6 +25,7 @@ const BranchSelectionPage = () => {
   const scrollRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState([]);
+  const [storeStats, setStoreStats] = useState({});
   const [scrollPosition, setScrollPosition] = useState(0);
   const [lastAccessedBranchId, setLastAccessedBranchId] = useState(() => {
     return localStorage.getItem("last_accessed_branch_id");
@@ -89,7 +90,6 @@ const BranchSelectionPage = () => {
   const [summary, setSummary] = useState({
     totalSales: 0,
     totalOrders: 0,
-    totalStaff: 0,
   });
 
   useEffect(() => {
@@ -109,12 +109,22 @@ const BranchSelectionPage = () => {
 
           setStores(sortedStores);
 
-          // Fetch aggregate summary if any stores exist
+          // Fetch aggregate summary + per-store stats
           if (sortedStores.length > 0) {
-            const stats = await storeService.getStoresSummary(
-              sortedStores.map((s) => s.id),
-            );
-            if (stats) setSummary(stats);
+            const storeIds = sortedStores.map((s) => s.id);
+
+            const [aggregateStats, ...perStoreResults] = await Promise.all([
+              storeService.getStoresSummary(storeIds),
+              ...storeIds.map((id) => storeService.getStoreStats(id)),
+            ]);
+
+            if (aggregateStats) setSummary(aggregateStats);
+
+            const statsMap = {};
+            storeIds.forEach((id, idx) => {
+              statsMap[id] = perStoreResults[idx];
+            });
+            setStoreStats(statsMap);
           }
         }
       } catch (error) {
@@ -142,11 +152,6 @@ const BranchSelectionPage = () => {
       icon: <ShoppingCart size={24} />,
       title: "คำสั่งซื้อทั้งหมด",
       value: `${summary.totalOrders} รายการ`,
-    },
-    {
-      icon: <Users size={24} />,
-      title: "พนักงานทั้งหมด",
-      value: `${summary.totalStaff} คน`,
     },
   ];
 
@@ -184,7 +189,7 @@ const BranchSelectionPage = () => {
         ) : stores.length > 0 ? (
           <>
             {/* Summary Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-8 max-w-3xl mx-auto">
               {summaryData.map((item, index) => (
                 <SummaryCard key={index} {...item} isDark={false} />
               ))}
@@ -243,10 +248,9 @@ const BranchSelectionPage = () => {
                     <BranchCard
                       branchName={branch.name}
                       address={branch.address}
-                      salesToday={0}
-                      ordersToday={0}
-                      staffCount={0}
-                      growth={0}
+                      salesToday={storeStats[branch.id]?.salesToday ?? 0}
+                      ordersToday={storeStats[branch.id]?.ordersToday ?? 0}
+                      growth={storeStats[branch.id]?.growth ?? 0}
                       imageUrl={
                         branch.image_url ||
                         "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
