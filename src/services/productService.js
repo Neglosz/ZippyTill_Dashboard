@@ -74,6 +74,7 @@ export const productService = {
       .from("products")
       .select("*, product_categories(name)")
       .eq("store_id", branchId)
+      .is("deleted_at", null)
       .order("stock_qty", { ascending: false })
       .limit(limit);
 
@@ -169,9 +170,10 @@ export const productService = {
     // 1. Expired Products
     const { data: expiredData, error: expiredError } = await supabase
       .from("product_batches")
-      .select("*, products(name, store_id, image_url)")
+      .select("*, products!inner(name, store_id, image_url, deleted_at)")
       .lt("expire_date", today)
       .gt("remaining_qty", 0)
+      .is("products.deleted_at", null)
       .returns();
 
     if (expiredError) throw expiredError;
@@ -184,9 +186,10 @@ export const productService = {
     // 2. Expiring Soon (within 7 days)
     const { data: soonData, error: soonError } = await supabase
       .from("product_batches")
-      .select("*, products(name, store_id, image_url)")
+      .select("*, products!inner(name, store_id, image_url, deleted_at)")
       .gte("expire_date", today)
       .lte("expire_date", sevenDaysStr)
+      .is("products.deleted_at", null)
       .gt("remaining_qty", 0);
 
     if (soonError) throw soonError;
@@ -197,7 +200,11 @@ export const productService = {
 
     // 3. Low Stock
     const { data: productsWithThreshold, error: thresholdError } =
-      await supabase.from("products").select("*").eq("store_id", branchId);
+      await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", branchId)
+        .is("deleted_at", null);
 
     if (thresholdError) throw thresholdError;
 
@@ -269,6 +276,7 @@ export const productService = {
         .from("products")
         .select("id, name, image_url, stock_qty, created_at")
         .eq("store_id", branchId)
+        .is("deleted_at", null)
         .gt("stock_qty", 0)
         .order("created_at", { ascending: false });
 
