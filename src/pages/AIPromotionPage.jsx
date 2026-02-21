@@ -172,6 +172,7 @@ const AIPromotionPage = () => {
         setRecommendations(cachedData);
         setIsRecLoading(false); // Show cached data immediately
       } else {
+        setRecommendations([]); // Clear old state for new branch
         setIsRecLoading(true);
       }
 
@@ -223,6 +224,7 @@ const AIPromotionPage = () => {
   const fetchPromos = async () => {
     if (!activeBranchId) return;
     try {
+      setActivePromotions([]); // Clear old state
       setIsPromosLoading(true);
       const data = await promotionService.getPromotions(activeBranchId);
       setActivePromotions(data);
@@ -427,6 +429,17 @@ const AIPromotionPage = () => {
                     <Sparkles className="w-8 h-8 text-primary animate-spin" />
                     <p className="text-sm font-bold text-inactive">
                       กำลังวิเคราะห์ข้อมูล...
+                    </p>
+                  </div>
+                ) : recommendations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 py-10 opacity-60">
+                    <Sparkles className="w-8 h-8 text-inactive" />
+                    <p className="text-sm font-bold text-inactive text-center px-4">
+                      ไม่มีข้อมูลเพียงพอสำหรับสร้างโปรโมชั่นในขณะนี้
+                      <br />
+                      <span className="text-[10px] font-medium">
+                        (ลองเพิ่มสินค้าหรือขายสินค้าก่อนนะคะ)
+                      </span>
                     </p>
                   </div>
                 ) : (

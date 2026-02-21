@@ -17,7 +17,8 @@ export const saleService = {
                     order_items (qty, subtotal)
                 `,
         )
-        .eq("store_id", branchId);
+        .eq("store_id", branchId)
+        .is("deleted_at", null);
 
       if (prodError) throw prodError;
 
@@ -57,6 +58,7 @@ export const saleService = {
         .from("products")
         .select(`*, product_categories (name)`)
         .eq("store_id", branchId)
+        .is("deleted_at", null)
         .order("name", { ascending: true });
 
       if (error) throw error;
@@ -79,7 +81,8 @@ export const saleService = {
                     order_items (qty, subtotal)
                 `,
         )
-        .eq("store_id", branchId);
+        .eq("store_id", branchId)
+        .is("deleted_at", null);
 
       if (prodError) throw prodError;
 
@@ -134,7 +137,8 @@ export const saleService = {
       const { data: products, error: prodError } = await supabase
         .from("products")
         .select("stock_qty")
-        .eq("store_id", branchId);
+        .eq("store_id", branchId)
+        .is("deleted_at", null);
 
       if (prodError) throw prodError;
 

@@ -14,6 +14,9 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import StatusModal from "../components/common/StatusModal";
 import SummaryStats from "../components/features/outstanding/SummaryStats";
 import EditDebtorModal from "../components/features/outstanding/EditDebtorModal";
@@ -139,6 +142,15 @@ const OverduePage = () => {
     return diffDays <= 7;
   }).length;
 
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "";
+    const cleaned = phone.toString().replace(/\D/g, "");
+    if (cleaned.length === 10) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  };
+
   const handleSaveEdit = async (updatedItem) => {
     try {
       const result = await creditService.updateDebtor(
@@ -212,6 +224,90 @@ const OverduePage = () => {
     );
 
     setShowEditSuccess(true);
+  };
+
+  const handleExportExcel = () => {
+    try {
+      if (groupedCustomers.length === 0) return;
+
+      const data = groupedCustomers.map((customer) => ({
+        ชื่อลูกค้า: customer.name,
+        เบอร์โทรศัพท์: formatPhoneNumber(customer.phone),
+        จำนวนบิลที่ค้าง: customer.totalCount,
+        "ยอดค้างชำระทั้งหมด (บาท)": customer.totalAmount,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Overdue Debtors");
+      XLSX.writeFile(
+        wb,
+        `Overdue_Debtors_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
+      setShowExportModal(false);
+    } catch (err) {
+      console.error("Export Excel error:", err);
+      alert("Failed to export Excel");
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      if (groupedCustomers.length === 0) return;
+
+      // Ensure jsPDF is global for the font script
+      window.jsPDF = { API: jsPDF.API };
+      await import("../assets/font/th-sarabun-normal.js");
+
+      const doc = new jsPDF();
+
+      // Set Thai Font
+      doc.setFont("THSarabunNew", "normal");
+
+      // Add Title
+      doc.setFontSize(22);
+      doc.text("รายงานลูกหนี้ค้างชำระ", 105, 15, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.text(
+        `วันที่ออกรายงาน: ${new Date().toLocaleDateString("th-TH")}`,
+        14,
+        25,
+      );
+      doc.text(
+        `ยอดค้างรวมทั้งหมด: ${totalOverdueAmount.toLocaleString()} บาท`,
+        14,
+        32,
+      );
+
+      const tableData = groupedCustomers.map((c) => [
+        c.name,
+        formatPhoneNumber(c.phone),
+        c.totalCount.toString(),
+        c.totalAmount.toLocaleString(),
+      ]);
+
+      autoTable(doc, {
+        startY: 40,
+        head: [["ชื่อลูกค้า", "เบอร์โทร", "จำนวนบิล", "ยอดเงินค้าง (บาท)"]],
+        body: tableData,
+        headStyles: {
+          fillColor: [255, 102, 0],
+          font: "THSarabunNew",
+          fontStyle: "normal",
+        },
+        styles: {
+          font: "THSarabunNew",
+          fontSize: 14,
+        },
+      });
+
+      doc.save(`Overdue_Debtors_${new Date().toISOString().split("T")[0]}.pdf`);
+      setShowExportModal(false);
+    } catch (err) {
+      console.error("Export PDF details:", err);
+      alert(`Failed to export PDF: ${err.message || err.toString()}`);
+    }
   };
 
   // --- MAIN VIEW ---
@@ -363,7 +459,7 @@ const OverduePage = () => {
                             className="text-primary/60"
                           />
                           <span className="text-sm font-bold tracking-tight">
-                            {customer.phone}
+                            {formatPhoneNumber(customer.phone)}
                           </span>
                         </div>
                       </td>
@@ -400,8 +496,8 @@ const OverduePage = () => {
         <ExportModal
           isOpen={showExportModal}
           onClose={() => setShowExportModal(false)}
-          onExportPDF={() => setShowExportModal(false)}
-          onExportExcel={() => setShowExportModal(false)}
+          onExportPDF={handleExportPDF}
+          onExportExcel={handleExportExcel}
         />
 
         <DebtorDetailModal
