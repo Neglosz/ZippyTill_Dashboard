@@ -1,9 +1,8 @@
 import React from "react";
 import { CreditCard, Calendar, AlertCircle, TrendingUp } from "lucide-react";
 
-const SummaryStats = ({ totalCount, totalAmount, recentCount }) => {
-  // Mock data for Payment Rate (since it's not in props yet)
-  const paymentRate = 87;
+const SummaryStats = ({ totalCount, totalAmount, recentCount, recoveryRate }) => {
+  const paymentRate = recoveryRate !== null && recoveryRate !== undefined ? recoveryRate : 0;
 
   return (
     <div className="mb-8">
