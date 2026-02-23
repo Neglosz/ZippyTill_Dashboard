@@ -20,6 +20,8 @@ const EditProductModal = ({
     price: "",
     exp: "",
     image: "",
+    unit: "ชิ้น",
+    productType: "general",
   });
 
   const [categories, setCategories] = useState([]);
@@ -62,6 +64,7 @@ const EditProductModal = ({
           exp: expDate,
           image: product.image_url || product.image || "",
           unit: product.unit_type || "ชิ้น",
+          productType: product.unit_type === "กก." ? "weighted" : "general",
         });
       }
     } catch (err) {
@@ -77,6 +80,11 @@ const EditProductModal = ({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Filter categories based on current product type
+  const filteredCategories = categories.filter(
+    (cat) => !cat.category_type || cat.category_type === formData.productType,
+  );
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -121,6 +129,60 @@ const EditProductModal = ({
           >
             <X size={24} />
           </button>
+        </div>
+
+        {/* Product Type Switch Bar */}
+        <div className="px-8 pt-6">
+          <div className="bg-[#F8FAFD] p-1.5 rounded-[20px] flex gap-1 items-center max-w-fit shadow-sm border border-gray-100">
+            <button
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  productType: "general",
+                  unit: "ชิ้น",
+                  category: "",
+                }))
+              }
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${
+                formData.productType === "general"
+                  ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  formData.productType === "general"
+                    ? "bg-primary animate-pulse"
+                    : "bg-gray-300"
+                }`}
+              />
+              สินค้าทั่วไป
+            </button>
+            <button
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  productType: "weighted",
+                  unit: "กก.",
+                  category: "",
+                }))
+              }
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${
+                formData.productType === "weighted"
+                  ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  formData.productType === "weighted"
+                    ? "bg-primary animate-pulse"
+                    : "bg-gray-300"
+                }`}
+              />
+              สินค้าชั่งขาย
+            </button>
+          </div>
         </div>
 
         <div className="p-8 flex flex-col lg:flex-row gap-8">
@@ -201,7 +263,7 @@ const EditProductModal = ({
                     className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
                   >
                     <option value="">เลือกหมวดหมู่</option>
-                    {categories.map((cat) => (
+                    {filteredCategories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>

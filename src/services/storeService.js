@@ -51,6 +51,17 @@ export const storeService = {
       }
     });
 
+    // Sort by last_accessed_at descending (most recently used first)
+    allStores.sort((a, b) => {
+      const ta = a.last_accessed_at
+        ? new Date(a.last_accessed_at).getTime()
+        : 0;
+      const tb = b.last_accessed_at
+        ? new Date(b.last_accessed_at).getTime()
+        : 0;
+      return tb - ta;
+    });
+
     return allStores;
   },
 
@@ -162,5 +173,20 @@ export const storeService = {
           : 0;
 
     return { salesToday, ordersToday, staffCount, growth };
+  },
+  /**
+   * Update last_accessed_at for a store (cross-device sorting)
+   * @param {string} storeId
+   */
+  async updateLastAccessed(storeId) {
+    if (!storeId) return;
+    try {
+      await supabase
+        .from("stores")
+        .update({ last_accessed_at: new Date().toISOString() })
+        .eq("id", storeId);
+    } catch (err) {
+      console.warn("updateLastAccessed error:", err);
+    }
   },
 };

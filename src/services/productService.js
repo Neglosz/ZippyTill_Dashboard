@@ -119,7 +119,7 @@ export const productService = {
 
     const { data, error } = await supabase
       .from("product_categories")
-      .select("*")
+      .select("id, name, category_type")
       .eq("store_id", branchId)
       .order("name");
 
@@ -128,7 +128,7 @@ export const productService = {
   },
 
   // Create a new category for a specific branch
-  async createCategory(categoryName, branchId) {
+  async createCategory(categoryName, branchId, categoryType = "general") {
     if (!branchId) throw new Error("Branch ID is required");
     if (!categoryName) throw new Error("Category name is required");
 
@@ -137,6 +137,7 @@ export const productService = {
       .insert({
         name: categoryName,
         store_id: branchId,
+        category_type: categoryType,
       })
       .select()
       .single();
@@ -306,7 +307,7 @@ export const productService = {
           products (name, image_url)
         `,
         )
-        .eq("products.store_id", branchId)
+        .eq("store_id", branchId)
         .order("created_at", { ascending: false });
 
       if (txnError) {
@@ -359,6 +360,7 @@ export const productService = {
           qty: removalData.qty,
           reference_type: "product_deletion",
           notes: removalData.reason,
+          store_id: branchId,
           created_by: userData?.user?.id,
           created_at: new Date().toISOString(),
         });
