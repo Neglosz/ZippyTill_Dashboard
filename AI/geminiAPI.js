@@ -145,6 +145,11 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
        - Regular promotions: 7-14 days
        - Best sellers: 30 days (long-term)
     
+    6. **EMPTY DATA RULE** (CRITICAL):
+       - If topSellingItems, stockIssues, and highStockItems are ALL empty or provide no specific products, DO NOT invent any products.
+       - In this case, return exactly an empty array: []
+       - Do not suggest generic promotions for "Green Tea", "Noodles", or any common items if they are not in the provided data.
+    
     OUTPUT REQUIREMENTS:
     - Use Thai language for title and description
     - Explain WHY each promotion is recommended
@@ -183,13 +188,67 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
   }
 };
 
+// ============================================================
+// CHATBOT SYSTEM PROMPT — แก้ Persona ของ AI ได้ที่นี่
+// ============================================================
+const CHATBOT_SYSTEM_PROMPT = `
+คุณคือ AI ผู้ช่วยเจ้าของร้านค้า ชื่อ "น้องเช็คกี้"
+นิสัย: ร่าเริง สุภาพ เป็นกันเอง (ใช้ ครับ/ค่ะ) เหมือนเพื่อนคู่คิดเจ้าของร้าน
+
+กฏการตอบ:
+1. สั้น กระชับ: ตอบไม่เกิน 2-3 ประโยค (ยกเว้นถูกถามรายละเอียด)
+2. Context Aware:
+   - ถ้า user บ่นเหนื่อย → ให้กำลังใจก่อน
+   - ถ้า user ถามเรื่องทั่วไป → ชวนคุยสั้นๆ แล้ววกเข้าเรื่องร้านนิดหน่อย
+3. ห้ามวิชาการ: ใช้ภาษาพูดที่เข้าใจง่าย ไม่ใช้ศัพท์เทคนิค
+4. Emoji: ใส่อิโมจิประกอบอารมณ์เสมอ 😊✌️
+`;
+
+// ============================================================
+// QUICK-ACTION PROMPT TEMPLATES — แก้ Prompt ของแต่ละปุ่มได้ที่นี่
+// ============================================================
+export const CHAT_PROMPT_TEMPLATES = {
+  bundling: `รับบทเป็นผู้จัดการร้านมืออาชีพ ช่วยคิด '3 ไอเดียจับคู่สินค้า (Bundling)' จากข้อมูลสินค้าขายดีไว้ด้านบน
+
+คำสั่ง:
+1. วิเคราะห์สินค้าที่ยอดขายพุ่งสูง หรือกำไรดี จากรายการ 'สินค้าขายดี' ที่ส่งให้เท่านั้น
+2. (สำคัญมาก) ห้ามแนะนำสินค้าที่ไม่มีชื่ออยู่ในรายการ 'สินค้าขายดี' ด้านบนเด็ดขาด หากในรายการมีสินค้าไม่พอ ให้แนะนำเท่าที่มี
+3. ระบุ 'เหตุผลความปัง': อธิบายว่าทำไมถึงจับคู่แบบนี้
+4. คิดชื่อโปรโมชั่นให้น่ารัก จำง่าย
+
+รูปแบบคำตอบ: ขอ 3 ข้อ แยกเป็นหัวข้อ: ชื่อโปร, 💡 เหตุผลที่แนะนำ, 📦 จัดเซต
+และ (สำคัญมาก) ทันทีที่จบคำอธิบายของแต่ละข้อ ให้สรุปข้อมูลโปรโมชั่นของข้อนั้นในรูปแบบ JSON ไว้ใน Tag [PROMO_JSON]{...}[/PROMO_JSON] เสมอ (สรุปคือจะมี Tag นี้ 3 ครั้งในหนึ่งคำตอบ)
+ตัวอย่าง JSON: {"title": "ชื่อโปร", "desc": "เหตุผล", "target_products": [{"name": "สินค้า A", "id": "uuid"}, {"name": "สินค้า B", "id": "uuid"}], "promotion_type": "discount_percent", "discount_value": 15, "duration_days": 14}`,
+
+  clearStock: `รับบทเป็นผู้เชี่ยวชาญด้านบริหารสต็อก ช่วยคิดกลยุทธ์ระบายสินค้า (Dead Stock) จากข้อมูลด้านบน
+
+คำสั่ง:
+1. เสนอวิธีระบายสินค้าเหล่านี้ให้เร็วที่สุด (เช่น 1 แถม 1, ลดราคา, หรือจับคู่)
+2. (สำคัญ) ระบุ 'ระดับความเร่งด่วน': บอกเหตุผลชัดเจนว่าทำไมต้องรีบระบาย (เช่น หมดอายุเดือนหน้า, เงินจมมา 3 เดือนแล้ว)
+
+รูปแบบคำตอบ: แยกรายสินค้า: ชื่อกลยุทธ์, ⚠️ สถานะความเร่งด่วน, 🛠 วิธีจัดโปร`,
+
+  weeklySales: `รับบทเป็นที่ปรึกษาธุรกิจส่วนตัว สรุปยอดขายสัปดาห์นี้เทียบกับสัปดาห์ก่อน จากข้อมูลด้านบน
+
+คำสั่ง:
+1. สรุปยอดขายรวมว่า 'ขึ้น' หรือ 'ลง' กี่ %
+2. (สำคัญ) วิเคราะห์ 'สาเหตุ': เชื่อมโยงตัวเลขกับบริบท (เช่น ยอดตกเพราะฝนตก, ยอดขึ้นเพราะหวยออก)
+3. ระบุช่วงเวลาที่ขายดีที่สุด (Peak Hour)
+4. แนะนำกลยุทธ์สำหรับสัปดาห์หน้า 1 ข้อ
+
+รูปแบบคำตอบ: พาดหัวสรุป, 🔍 เจาะลึกสาเหตุ, ⏰ ช่วงเวลาทอง, 💡 คำแนะนำสัปดาห์หน้า`,
+};
+
 export const chatWithAI = async (
   message,
   history = [],
   modelName = "gemini-3-pro-preview",
 ) => {
   try {
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: CHATBOT_SYSTEM_PROMPT,
+    });
     const chat = model.startChat({
       history: history,
     });
