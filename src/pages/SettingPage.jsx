@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useBranch } from "../contexts/BranchContext";
 
 const Toggle = ({ enabled, onToggle }) => (
   <button
@@ -30,26 +31,39 @@ const Toggle = ({ enabled, onToggle }) => (
 );
 
 const SettingPage = () => {
+  const { activeBranchId } = useBranch();
+
   const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem("setting_notifications");
+    const saved = localStorage.getItem(`setting_notifications_${activeBranchId}`);
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [stockAlert, setStockAlert] = useState(() => {
-    const saved = localStorage.getItem("setting_stockAlert");
+    const saved = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  // Re-read settings when branch changes
+  useEffect(() => {
+    if (!activeBranchId) return;
+    const savedNotif = localStorage.getItem(`setting_notifications_${activeBranchId}`);
+    setNotifications(savedNotif !== null ? JSON.parse(savedNotif) : true);
+    const savedStock = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
+    setStockAlert(savedStock !== null ? JSON.parse(savedStock) : true);
+  }, [activeBranchId]);
+
   // Persist settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem("setting_notifications", JSON.stringify(notifications));
+    if (!activeBranchId) return;
+    localStorage.setItem(`setting_notifications_${activeBranchId}`, JSON.stringify(notifications));
     window.dispatchEvent(new Event("settingsChanged"));
-  }, [notifications]);
+  }, [notifications, activeBranchId]);
 
   useEffect(() => {
-    localStorage.setItem("setting_stockAlert", JSON.stringify(stockAlert));
+    if (!activeBranchId) return;
+    localStorage.setItem(`setting_stockAlert_${activeBranchId}`, JSON.stringify(stockAlert));
     window.dispatchEvent(new Event("settingsChanged"));
-  }, [stockAlert]);
+  }, [stockAlert, activeBranchId]);
 
   // Change password modal state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);

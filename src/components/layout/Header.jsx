@@ -16,10 +16,10 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Read notification settings from localStorage
+  // Read notification settings from localStorage (per branch)
   const getNotificationSettings = () => {
-    const notifEnabled = localStorage.getItem("setting_notifications");
-    const stockEnabled = localStorage.getItem("setting_stockAlert");
+    const notifEnabled = localStorage.getItem(`setting_notifications_${activeBranchId}`);
+    const stockEnabled = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
     return {
       notifications: notifEnabled !== null ? JSON.parse(notifEnabled) : true,
       stockAlert: stockEnabled !== null ? JSON.parse(stockEnabled) : true,
@@ -138,7 +138,7 @@ const Header = () => {
 
     // Listen for settings changes from SettingPage
     const handleStorageChange = (e) => {
-      if (e.key === "setting_notifications" || e.key === "setting_stockAlert") {
+      if (e.key?.startsWith("setting_notifications_") || e.key?.startsWith("setting_stockAlert_")) {
         fetchNotifications();
       }
     };
