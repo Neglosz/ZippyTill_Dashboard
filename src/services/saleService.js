@@ -490,4 +490,105 @@ export const saleService = {
       throw error;
     }
   },
+
+  getSalesHistory: async (branchId, timeRange) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    try {
+      const now = new Date();
+      let startDate;
+      let groupBy = "day"; // "hour", "day", "month"
+
+      switch (timeRange) {
+        case "1D":
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          groupBy = "hour";
+          break;
+        case "1W":
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          groupBy = "day";
+          break;
+        case "1M":
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 30);
+          groupBy = "day";
+          break;
+        case "1Y":
+        case "Max":
+          startDate = new Date(now.getFullYear(), 0, 1);
+          groupBy = "month";
+          break;
+        default:
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          groupBy = "hour";
+      }
+
+      const { data: orders, error } = await supabase
+        .from("orders")
+        .select("total_amount, created_at")
+        .eq("store_id", branchId)
+        .gte("created_at", startDate.toISOString())
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const historyData = [];
+
+      if (groupBy === "hour") {
+        const hourlyMap = {};
+        for (let i = 0; i < 24; i++) {
+          const label = `${i.toString().padStart(2, "0")}:00`;
+          hourlyMap[label] = 0;
+        }
+        (orders || []).forEach((o) => {
+          const hour = new Date(o.created_at).getHours();
+          const label = `${hour.toString().padStart(2, "0")}:00`;
+          hourlyMap[label] += o.total_amount || 0;
+        });
+        Object.keys(hourlyMap).forEach((name) => {
+          historyData.push({ name, totalSales: hourlyMap[name] });
+        });
+      } else if (groupBy === "day") {
+        const dailyMap = {};
+        const daysToFetch = timeRange === "1W" ? 7 : 30;
+        for (let i = daysToFetch - 1; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          const label = d.toISOString().split("T")[0];
+          dailyMap[label] = { label: d.getDate().toString(), value: 0 };
+        }
+        (orders || []).forEach((o) => {
+          const label = new Date(o.created_at).toISOString().split("T")[0];
+          if (dailyMap[label]) {
+            dailyMap[label].value += o.total_amount || 0;
+          }
+        });
+        Object.keys(dailyMap).sort().forEach((key) => {
+          historyData.push({
+            name: dailyMap[key].label,
+            totalSales: dailyMap[key].value,
+            fullDate: key,
+          });
+        });
+      } else if (groupBy === "month") {
+        const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const monthlyMap = {};
+        months.forEach((m) => (monthlyMap[m] = 0));
+        (orders || []).forEach((o) => {
+          const monthIndex = new Date(o.created_at).getMonth();
+          monthlyMap[months[monthIndex]] += o.total_amount || 0;
+        });
+        months.forEach((name) => {
+          historyData.push({ name, totalSales: monthlyMap[name] });
+        });
+      }
+
+      return historyData;
+    } catch (error) {
+      console.error("saleService getSalesHistory error:", error);
+      throw error;
+    }
+  },
 };
