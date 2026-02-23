@@ -257,11 +257,10 @@ ${text}`;
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-primary text-white rounded-tr-none shadow-orange-200"
-                      : "bg-white text-gray-800 rounded-tl-none border border-gray-100 markdown-content"
-                  }`}
+                  className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${msg.role === "user"
+                    ? "bg-primary text-white rounded-tr-none shadow-orange-200"
+                    : "bg-white text-gray-800 rounded-tl-none border border-gray-100 markdown-content"
+                    }`}
                 >
                   {msg.role === "assistant" ? (
                     <div className="flex flex-col">

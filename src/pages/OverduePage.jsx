@@ -40,7 +40,7 @@ const OverduePage = () => {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const [overdueItems, setOverdueItems] = useState([]);
-  const [totalSalesAmount, setTotalSalesAmount] = useState(0);
+  const [recoveryRate, setRecoveryRate] = useState(null);
 
   useEffect(() => {
     if (!activeBranchId) return;
@@ -75,8 +75,12 @@ const OverduePage = () => {
     if (!activeBranchId) return;
     try {
       if (!isBackground) setIsLoading(true);
-      const data = await creditService.getOverdueItems(activeBranchId);
+      const [data, rate] = await Promise.all([
+        creditService.getOverdueItems(activeBranchId),
+        creditService.getRecoveryRate(activeBranchId),
+      ]);
       setOverdueItems(data);
+      setRecoveryRate(rate);
     } catch (err) {
       console.error("Error fetching items:", err);
       if (!isBackground) setError("Failed to load data.");
@@ -372,7 +376,7 @@ const OverduePage = () => {
           totalCount={overdueItems.length}
           totalAmount={totalOverdueAmount}
           recentCount={totalOverdueCount}
-          overdueRate={overdueRate}
+          recoveryRate={recoveryRate}
         />
 
         <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group/container">

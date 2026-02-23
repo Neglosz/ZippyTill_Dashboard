@@ -161,6 +161,33 @@ export const creditService = {
     if (error) throw error;
     return true;
   },
+
+  // Get recovery rate for a specific branch
+  async getRecoveryRate(storeId) {
+    if (!storeId) return 0;
+
+    const { data, error } = await supabase
+      .from("credit_accounts")
+      .select("total_debt, remaining_amount, customers_info!inner(store_id)")
+      .eq("customers_info.store_id", storeId);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return 100;
+
+    const totalDebt = data.reduce(
+      (sum, item) => sum + Number(item.total_debt || 0),
+      0,
+    );
+    const totalRemaining = data.reduce(
+      (sum, item) => sum + Number(item.remaining_amount || 0),
+      0,
+    );
+
+    if (totalDebt === 0) return 100;
+
+    const rate = Math.round(((totalDebt - totalRemaining) / totalDebt) * 100);
+    return Math.max(0, Math.min(100, rate));
+  },
 };
 
 // Helper function

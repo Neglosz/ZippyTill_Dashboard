@@ -1,12 +1,9 @@
 import React from "react";
 import { CreditCard, Calendar, AlertCircle, TrendingUp } from "lucide-react";
 
-const SummaryStats = ({
-  totalCount,
-  totalAmount,
-  recentCount,
-  overdueRate,
-}) => {
+const SummaryStats = ({ totalCount, totalAmount, recentCount, recoveryRate }) => {
+  const paymentRate = recoveryRate !== null && recoveryRate !== undefined ? recoveryRate : 0;
+
   return (
     <div className="mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

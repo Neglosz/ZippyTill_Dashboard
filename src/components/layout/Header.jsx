@@ -16,9 +16,28 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Read notification settings from localStorage (per branch)
+  const getNotificationSettings = () => {
+    const notifEnabled = localStorage.getItem(`setting_notifications_${activeBranchId}`);
+    const stockEnabled = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
+    return {
+      notifications: notifEnabled !== null ? JSON.parse(notifEnabled) : true,
+      stockAlert: stockEnabled !== null ? JSON.parse(stockEnabled) : true,
+    };
+  };
+
   // Fetch notifications
   const fetchNotifications = async () => {
     if (!activeBranchId) return;
+
+    const settings = getNotificationSettings();
+
+    // If all notifications are disabled, show nothing
+    if (!settings.notifications) {
+      setNotifications([]);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -41,25 +60,37 @@ const Header = () => {
         link: "/finance/overdue", // Potential future use
       }));
 
-      // Transform Expiring Items
-      const expiringNotifications = [
-        ...dashboardNotifs.expired.map((item) => ({
-          id: `expired-${item.name}-${Math.random()}`, // Ensure unique ID
-          type: "alert", // Use alert for expired
-          title: `Expired: ${item.name}`,
-          message: `Product expired on ${item.expiryDate}`,
-          time: "Expired",
-          created_at: new Date().toISOString(),
-        })),
-        ...dashboardNotifs.expiringSoon.map((item) => ({
-          id: `expiring-${item.name}-${Math.random()}`,
-          type: "expiring",
-          title: `Expiring Soon: ${item.name}`,
-          message: `Expires in ${item.days} days (${item.expiryDate})`,
-          time: `${item.days} days left`,
-          created_at: new Date().toISOString(),
-        })),
-      ];
+      // Transform Expiring Items (only if stockAlert is enabled)
+      const expiringNotifications = settings.stockAlert
+        ? [
+            ...dashboardNotifs.expired.map((item) => ({
+              id: `expired-${item.name}-${Math.random()}`, // Ensure unique ID
+              type: "alert", // Use alert for expired
+              title: `Expired: ${item.name}`,
+              message: `Product expired on ${item.expiryDate}`,
+              time: "Expired",
+              created_at: new Date().toISOString(),
+            })),
+            ...dashboardNotifs.expiringSoon.map((item) => ({
+              id: `expiring-${item.name}-${Math.random()}`,
+              type: "expiring",
+              title: `Expiring Soon: ${item.name}`,
+              message: `Expires in ${item.days} days (${item.expiryDate})`,
+              time: `${item.days} days left`,
+              created_at: new Date().toISOString(),
+            })),
+            ...(settings.stockAlert
+              ? dashboardNotifs.lowStock.map((item) => ({
+                  id: `lowstock-${item.name}-${Math.random()}`,
+                  type: "stock",
+                  title: `Low Stock: ${item.name}`,
+                  message: `Only ${item.remaining} left in stock`,
+                  time: "Low stock",
+                  created_at: new Date().toISOString(),
+                }))
+              : []),
+          ]
+        : [];
 
       // 2. Fetch manual notifications from Supabase
       const { data: manualNotifications, error } = await supabase
@@ -105,8 +136,22 @@ const Header = () => {
       )
       .subscribe();
 
+    // Listen for settings changes from SettingPage
+    const handleStorageChange = (e) => {
+      if (e.key?.startsWith("setting_notifications_") || e.key?.startsWith("setting_stockAlert_")) {
+        fetchNotifications();
+      }
+    };
+    const handleSettingsChanged = () => {
+      fetchNotifications();
+    };
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("settingsChanged", handleSettingsChanged);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("settingsChanged", handleSettingsChanged);
     };
   }, [activeBranchId]);
 

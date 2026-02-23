@@ -123,7 +123,9 @@ const InventoryPage = () => {
           stockQty: parseFloat(updatedFormData.qty),
           costPrice: parseFloat(updatedFormData.cost),
           price: parseFloat(updatedFormData.price),
-          image_url: updatedFormData.image, // Pass image directly if service supports it now
+          image_url: updatedFormData.image,
+          unitType: updatedFormData.unit || "ชิ้น",
+          isWeightable: updatedFormData.isWeightable || false,
         };
 
         const newProduct = await productService.createProduct(
@@ -263,6 +265,23 @@ const InventoryPage = () => {
                 </p>
               </div>
             </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-primary hover:bg-primary/95 rounded-[20px] px-6 py-4 flex items-center justify-center gap-4 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 group/btn relative overflow-hidden border border-white/10 active:scale-95 shrink-0 z-10"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+              <div className="bg-white/20 p-2.5 rounded-[15px] text-white shadow-inner group-hover/btn:rotate-90 transition-transform duration-500">
+                <Plus size={16} strokeWidth={3} />
+              </div>
+              <div className="text-left">
+                <p className="text-[8px] font-black text-white/70 uppercase tracking-[0.1em] mb-0.5">
+                  จัดการสต็อก
+                </p>
+                <h3 className="text-[12px] font-black tracking-widest text-white uppercase leading-none">
+                  เพิ่มสินค้า
+                </h3>
+              </div>
+            </button>
           </div>
         )}
 
