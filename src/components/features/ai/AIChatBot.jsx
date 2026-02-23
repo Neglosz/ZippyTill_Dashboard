@@ -405,18 +405,6 @@ ${text}`;
         </div>
       )}
 
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-500 shadow-2xl transform hover:scale-105 active:scale-95 overflow-hidden group relative ${isOpen
-            ? "bg-gray-900 rotate-90"
-            : "bg-gradient-to-br from-primary via-orange-500 to-orange-600"
-          }`}
-      >
-        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        {isOpen ? (
-          <X className="text-white" size={28} strokeWidth={2.5} />
-        ) : (
       {/* Promotion Modal Integration */}
       {isPromoModalOpen && (
         <CreatePromotionModal
