@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Settings,
   Bell,
   Lock,
   Key,
   ChevronRight,
-  Shield,
   X,
   Save,
   Eye,
@@ -31,9 +30,26 @@ const Toggle = ({ enabled, onToggle }) => (
 );
 
 const SettingPage = () => {
-  const [notifications, setNotifications] = useState(true);
-  const [emailNotif, setEmailNotif] = useState(true);
-  const [stockAlert, setStockAlert] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem("setting_notifications");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const [stockAlert, setStockAlert] = useState(() => {
+    const saved = localStorage.getItem("setting_stockAlert");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Persist settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("setting_notifications", JSON.stringify(notifications));
+    window.dispatchEvent(new Event("settingsChanged"));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem("setting_stockAlert", JSON.stringify(stockAlert));
+    window.dispatchEvent(new Event("settingsChanged"));
+  }, [stockAlert]);
 
   // Change password modal state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -166,27 +182,6 @@ const SettingPage = () => {
               />
             </div>
 
-            {/* Email Notifications */}
-            <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
-                  <Bell size={18} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    แจ้งเตือนทางอีเมล
-                  </p>
-                  <p className="text-xs text-inactive">
-                    รับสรุปรายงานประจำวันทางอีเมล
-                  </p>
-                </div>
-              </div>
-              <Toggle
-                enabled={emailNotif}
-                onToggle={() => setEmailNotif(!emailNotif)}
-              />
-            </div>
-
             {/* Stock Alert */}
             <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
               <div className="flex items-center gap-4">
@@ -232,25 +227,7 @@ const SettingPage = () => {
               />
             </div>
 
-            {/* Two Factor */}
-            <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all group/item cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
-                  <Shield size={18} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    การยืนยันตัวตน 2 ขั้นตอน
-                  </p>
-                  <p className="text-xs text-inactive">
-                    เพิ่มความปลอดภัยด้วย 2FA
-                  </p>
-                </div>
-              </div>
-              <span className="text-[10px] font-black text-inactive bg-gray-100 px-3 py-1 rounded-lg uppercase tracking-widest">
-                ปิดอยู่
-              </span>
-            </div>
+
           </div>
         </div>
       </div>
