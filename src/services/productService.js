@@ -303,7 +303,7 @@ export const productService = {
           reference_type,
           notes,
           created_at,
-          products (name, image_url)
+          products!inner(name, image_url, store_id)
         `,
         )
         .eq("products.store_id", branchId)

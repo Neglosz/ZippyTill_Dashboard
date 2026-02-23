@@ -163,7 +163,6 @@ export const creditService = {
   },
 
   // Get recovery rate for a specific branch
-  // Recovery Rate = (total paid / total debt) * 100
   async getRecoveryRate(storeId) {
     if (!storeId) return 0;
 
@@ -173,7 +172,7 @@ export const creditService = {
       .eq("customers_info.store_id", storeId);
 
     if (error) throw error;
-    if (!data || data.length === 0) return 100; // No debt = 100% recovery
+    if (!data || data.length === 0) return 100;
 
     const totalDebt = data.reduce(
       (sum, item) => sum + Number(item.total_debt || 0),
@@ -186,9 +185,8 @@ export const creditService = {
 
     if (totalDebt === 0) return 100;
 
-    const paidAmount = totalDebt - totalRemaining;
-    const rate = Math.round((paidAmount / totalDebt) * 100);
-    return Math.max(0, Math.min(100, rate)); // Clamp between 0-100
+    const rate = Math.round(((totalDebt - totalRemaining) / totalDebt) * 100);
+    return Math.max(0, Math.min(100, rate));
   },
 };
 
