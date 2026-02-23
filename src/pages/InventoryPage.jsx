@@ -517,6 +517,30 @@ const InventoryPage = () => {
                       !selectedCategory || p.category_id === selectedCategory;
                     return matchesSearch && matchesCategory;
                   })
+                  .sort((a, b) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const sevenDays = new Date(today);
+                    sevenDays.setDate(today.getDate() + 7);
+
+                    const getScore = (p) => {
+                      const batches = p.product_batches || [];
+                      const isExpired = batches.some(
+                        (b) => new Date(b.expire_date) < today,
+                      );
+                      const isExpiringSoon = batches.some(
+                        (b) =>
+                          new Date(b.expire_date) >= today &&
+                          new Date(b.expire_date) <= sevenDays,
+                      );
+                      const isOutOfStock = p.stock_qty <= 0;
+                      if (isExpired) return 0;
+                      if (isExpiringSoon) return 1;
+                      if (isOutOfStock) return 2;
+                      return 3;
+                    };
+                    return getScore(a) - getScore(b);
+                  })
                   .map((product) => {
                     // Find earliest expiry date
                     const sortedBatches =
@@ -534,7 +558,27 @@ const InventoryPage = () => {
 
                     // Low stock threshold check (default to 10 if not set)
                     const isLowStock =
-                      product.stock_qty <= (product.low_stock_threshold || 10);
+                      product.stock_qty <=
+                        (product.low_stock_threshold || 10) &&
+                      product.stock_qty > 0;
+                    const isOutOfStock = product.stock_qty <= 0;
+
+                    // Expiry status
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const sevenDaysFromNow = new Date(today);
+                    sevenDaysFromNow.setDate(today.getDate() + 7);
+
+                    const isExpired = sortedBatches.some(
+                      (b) => new Date(b.expire_date) < today,
+                    );
+                    const isExpiringSoon =
+                      !isExpired &&
+                      sortedBatches.some(
+                        (b) =>
+                          new Date(b.expire_date) >= today &&
+                          new Date(b.expire_date) <= sevenDaysFromNow,
+                      );
 
                     return (
                       <div
@@ -554,9 +598,25 @@ const InventoryPage = () => {
                                   "https://via.placeholder.com/150";
                               }}
                             />
-                            {isLowStock && (
-                              <div className="absolute top-2 left-2 z-20 bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                            {/* Status Badges */}
+                            {isOutOfStock && (
+                              <div className="absolute top-2 left-2 z-20 bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                🚫 หมดสต็อก
+                              </div>
+                            )}
+                            {!isOutOfStock && isLowStock && (
+                              <div className="absolute top-2 left-2 z-20 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
                                 ⚠️ ใกล้หมด
+                              </div>
+                            )}
+                            {isExpired && (
+                              <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                ❌ หมดอายุ
+                              </div>
+                            )}
+                            {!isExpired && isExpiringSoon && (
+                              <div className="absolute top-2 right-2 z-20 bg-orange-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                                🕒 ใกล้หมดอายุ
                               </div>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -640,7 +700,15 @@ const InventoryPage = () => {
                                     <line x1="3" x2="21" y1="10" y2="10"></line>
                                   </svg>
                                 </span>
-                                <span className="text-sm font-bold text-[#1B2559]">
+                                <span
+                                  className={`text-sm font-bold ${
+                                    isExpired
+                                      ? "text-rose-600"
+                                      : isExpiringSoon
+                                        ? "text-orange-500"
+                                        : "text-[#1B2559]"
+                                  }`}
+                                >
                                   หมดอายุ: {expDate}
                                 </span>
                               </div>

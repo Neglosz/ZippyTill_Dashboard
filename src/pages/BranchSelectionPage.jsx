@@ -61,9 +61,10 @@ const BranchSelectionPage = () => {
   };
 
   const handleSelect = (branch) => {
-    if (dragMoved) return; // Prevent click if we were dragging
+    if (dragMoved) return;
 
-    // Save last accessed branch ID and timestamp to localStorage
+    // Update last accessed in Supabase (cross-device) + localStorage (fast local fallback)
+    storeService.updateLastAccessed(branch.id);
     localStorage.setItem("last_accessed_branch_id", branch.id);
     localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
 
@@ -99,19 +100,12 @@ const BranchSelectionPage = () => {
         if (user) {
           const userStores = await storeService.getUserStores(user.id);
 
-          // Sort stores: last accessed branch first
-          const lastBranchId = localStorage.getItem("last_accessed_branch_id");
-          const sortedStores = [...userStores].sort((a, b) => {
-            if (a.id === lastBranchId) return -1;
-            if (b.id === lastBranchId) return 1;
-            return 0;
-          });
-
-          setStores(sortedStores);
+          // storeService sorts by last_accessed_at already — no manual sort needed
+          setStores(userStores);
 
           // Fetch aggregate summary + per-store stats
-          if (sortedStores.length > 0) {
-            const storeIds = sortedStores.map((s) => s.id);
+          if (userStores.length > 0) {
+            const storeIds = userStores.map((s) => s.id);
 
             const [aggregateStats, ...perStoreResults] = await Promise.all([
               storeService.getStoresSummary(storeIds),

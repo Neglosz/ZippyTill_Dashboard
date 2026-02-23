@@ -27,6 +27,7 @@ import CreatePromotionModal from "../components/modals/CreatePromotionModal";
 import { useBranch } from "../contexts/BranchContext";
 import { getPromotionRecommendations } from "../../AI/geminiAPI";
 import { promotionService } from "../services/promotionService";
+import { supabase } from "../lib/supabase";
 
 const AIPromotionPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
@@ -71,6 +72,8 @@ const AIPromotionPage = () => {
   const [activePromotions, setActivePromotions] = useState([]);
   const [isPromosLoading, setIsPromosLoading] = useState(true);
   const [aiPromoData, setAiPromoData] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [isChartLoading, setIsChartLoading] = useState(true);
 
   const handleCreateFromAI = (rec) => {
     // Transform AI recommendation into modal-compatible format
@@ -237,11 +240,99 @@ const AIPromotionPage = () => {
 
   useEffect(() => {
     fetchPromos();
+    fetchChartData();
   }, [activeBranchId]);
 
   const handlePromotionCreated = () => {
     fetchPromos();
+    fetchChartData();
     setIsModalOpen(false);
+  };
+
+  // Fetch real chart data: orders this year split by whether a promotion was active
+  const fetchChartData = async () => {
+    if (!activeBranchId) return;
+    try {
+      setIsChartLoading(true);
+      const year = new Date().getFullYear();
+      const startOfYear = new Date(year, 0, 1).toISOString();
+
+      // Fetch all orders this year
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("total_amount, created_at")
+        .eq("store_id", activeBranchId)
+        .gte("created_at", startOfYear);
+      if (ordersError) throw ordersError;
+
+      // Fetch all promotions for this branch
+      const { data: promos, error: promosError } = await supabase
+        .from("promotions")
+        .select("start_date, end_date, is_active")
+        .eq("store_id", activeBranchId)
+        .eq("is_active", true);
+      if (promosError) throw promosError;
+
+      // Build monthly buckets for last 6 months
+      const thaiMonths = [
+        "ม.ค.",
+        "ก.พ.",
+        "มี.ค.",
+        "เม.ย.",
+        "พ.ค.",
+        "มิ.ย.",
+        "ก.ค.",
+        "ส.ค.",
+        "ก.ย.",
+        "ต.ค.",
+        "พ.ย.",
+        "ธ.ค.",
+      ];
+      const now = new Date();
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push({
+          month: d.getMonth(),
+          year: d.getFullYear(),
+          name: thaiMonths[d.getMonth()],
+          withPromo: 0,
+          noPromo: 0,
+        });
+      }
+
+      // Helper: check if a given date falls within any promotion period
+      const isInPromo = (dateStr) => {
+        const d = new Date(dateStr);
+        return promos.some((p) => {
+          const start = p.start_date ? new Date(p.start_date) : null;
+          const end = p.end_date ? new Date(p.end_date) : null;
+          if (start && d < start) return false;
+          if (end && d > end) return false;
+          return true;
+        });
+      };
+
+      // Bucket each order
+      (orders || []).forEach((o) => {
+        const d = new Date(o.created_at);
+        const bucket = months.find(
+          (m) => m.month === d.getMonth() && m.year === d.getFullYear(),
+        );
+        if (!bucket) return;
+        if (isInPromo(o.created_at)) {
+          bucket.withPromo += o.total_amount || 0;
+        } else {
+          bucket.noPromo += o.total_amount || 0;
+        }
+      });
+
+      setChartData(months);
+    } catch (err) {
+      console.error("fetchChartData error:", err);
+    } finally {
+      setIsChartLoading(false);
+    }
   };
 
   const getPromotionLabel = (promo) => {
@@ -321,16 +412,6 @@ const AIPromotionPage = () => {
 
     return { text, percentage, color };
   };
-
-  // Mock Data for Chart
-  const chartData = [
-    { name: "ก.ค.", withPromo: 85000, noPromo: 65000 },
-    { name: "ส.ค.", withPromo: 92000, noPromo: 68000 },
-    { name: "ก.ย.", withPromo: 88000, noPromo: 70000 },
-    { name: "ต.ค.", withPromo: 95000, noPromo: 72000 },
-    { name: "พ.ย.", withPromo: 105000, noPromo: 75000 },
-    { name: "ธ.ค.", withPromo: 118000, noPromo: 78000 },
-  ];
 
   return (
     <>
@@ -634,62 +715,87 @@ const AIPromotionPage = () => {
               </div>
 
               <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    barGap={8}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#E5E7EB"
-                    />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#9CA3AF", fontSize: 12, fontWeight: 600 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#9CA3AF", fontSize: 11, fontWeight: 500 }}
-                      tickFormatter={(value) => `${value / 1000}k`}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "transparent" }}
-                      contentStyle={{
-                        borderRadius: "16px",
-                        border: "none",
-                        boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)",
-                        fontFamily: "inherit",
-                      }}
-                    />
-                    <Legend
-                      formatter={(value) =>
-                        value === "withPromo" ? "มีโปรโมชั่น" : "ไม่มีโปรโมชั่น"
-                      }
-                    />
-                    <Bar
-                      dataKey="withPromo"
-                      name="มีโปรโมชั่น"
-                      fill="#ED7117" // Primary Orange
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={50}
-                      animationDuration={1500}
-                    />
-                    <Bar
-                      dataKey="noPromo"
-                      name="ไม่มีโปรโมชั่น"
-                      fill="#9CA3AF" // Inactive Gray
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={50}
-                      animationDuration={1500}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                {isChartLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                      <p className="text-xs font-bold text-inactive uppercase tracking-widest animate-pulse">
+                        กำลังโหลดข้อมูล...
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      barGap={8}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#E5E7EB"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#9CA3AF",
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#9CA3AF",
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
+                        tickFormatter={(value) => `${value / 1000}k`}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "transparent" }}
+                        contentStyle={{
+                          borderRadius: "16px",
+                          border: "none",
+                          boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)",
+                          fontFamily: "inherit",
+                        }}
+                        formatter={(value) => [
+                          `฿${value.toLocaleString()}`,
+                          "",
+                        ]}
+                      />
+                      <Legend
+                        formatter={(value) =>
+                          value === "withPromo"
+                            ? "มีโปรโมชั่น"
+                            : "ไม่มีโปรโมชั่น"
+                        }
+                      />
+                      <Bar
+                        dataKey="withPromo"
+                        name="มีโปรโมชั่น"
+                        fill="#ED7117"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={50}
+                        animationDuration={1500}
+                      />
+                      <Bar
+                        dataKey="noPromo"
+                        name="ไม่มีโปรโมชั่น"
+                        fill="#9CA3AF"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={50}
+                        animationDuration={1500}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
           </div>

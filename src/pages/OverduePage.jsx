@@ -46,6 +46,7 @@ const OverduePage = () => {
     if (!activeBranchId) return;
 
     fetchItems();
+    fetchTotalSales();
 
     // Setup Realtime Subscription - Isolated by branch_id
     const channel = supabase
@@ -85,6 +86,24 @@ const OverduePage = () => {
       if (!isBackground) setError("Failed to load data.");
     } finally {
       if (!isBackground) setIsLoading(false);
+    }
+  };
+
+  const fetchTotalSales = async () => {
+    if (!activeBranchId) return;
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("store_id", activeBranchId);
+      if (error) throw error;
+      const total = (data || []).reduce(
+        (sum, o) => sum + Number(o.total_amount || 0),
+        0,
+      );
+      setTotalSalesAmount(total);
+    } catch (err) {
+      console.error("Error fetching total sales:", err);
     }
   };
 
@@ -138,6 +157,15 @@ const OverduePage = () => {
     (sum, item) => sum + Number(item.amount),
     0,
   );
+  const totalDebtAmount = overdueItems.reduce(
+    (sum, item) => sum + Number(item.totalAmount || item.amount),
+    0,
+  );
+  // % ค้าง = ยอดเงินที่ค้าง / ยอดขายทั้งหมด × 100
+  const overdueRate =
+    totalSalesAmount > 0
+      ? Math.round((totalOverdueAmount / totalSalesAmount) * 100)
+      : 0;
   const totalOverdueCount = groupedCustomers.length;
   const recentOverdueCount = overdueItems.filter((item) => {
     const createdDate = new Date(item.createdAt);

@@ -6,7 +6,6 @@ const SummaryStats = ({ totalCount, totalAmount, recentCount, recoveryRate }) =>
 
   return (
     <div className="mb-8">
-  
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: Total Amount (Orange/Primary) */}
         <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
@@ -95,12 +94,15 @@ const SummaryStats = ({ totalCount, totalAmount, recentCount, recoveryRate }) =>
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
-              อัตราชำระ
+              อัตราค้างชำระ
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              {paymentRate}
+              {overdueRate ?? 0}
               <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
             </h3>
+            <p className="text-[10px] font-medium text-inactive mt-1.5">
+              ของยอดซื้อขายทั้งหมด
+            </p>
           </div>
         </div>
       </div>
