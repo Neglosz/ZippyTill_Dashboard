@@ -91,7 +91,9 @@ const SalesPage = () => {
     totalSold: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isChartLoading, setIsChartLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
   const hasAnimated = useRef(false);
 
   const colors = [
@@ -104,18 +106,22 @@ const SalesPage = () => {
     "#06B6D4", // cyan-500
     "#F97316", // orange-500
   ];
+
+  // Initial data fetch (one-time)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       if (!activeBranchId) return;
       try {
         setIsLoading(true);
-        const [topData, catData, summaryData] = await Promise.all([
+        const [topData, catData, summaryData, histData] = await Promise.all([
           saleService.getTopSellingProducts(activeBranchId),
           saleService.getSalesByCategory(activeBranchId),
           saleService.getSalesSummary(activeBranchId),
+          saleService.getSalesHistory(activeBranchId, timeRange),
         ]);
         setTopProducts(topData);
         setSalesSummary(summaryData);
+        setHistoryData(histData);
 
         const totalRevenue = catData.reduce(
           (sum, c) => sum + (c.revenue || 0),
@@ -135,15 +141,33 @@ const SalesPage = () => {
 
         setCategorySales(processedCatData);
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+        console.error("Failed to fetch initial data:", error);
         setFetchError("ไม่สามารถดึงข้อมูลได้");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchInitialData();
   }, [activeBranchId]);
+
+  // Chart data fetch (whenever timeRange changes)
+  useEffect(() => {
+    const fetchChartData = async () => {
+      if (!activeBranchId || isLoading) return;
+      try {
+        setIsChartLoading(true);
+        const histData = await saleService.getSalesHistory(activeBranchId, timeRange);
+        setHistoryData(histData);
+      } catch (error) {
+        console.error("Failed to fetch chart data:", error);
+      } finally {
+        setIsChartLoading(false);
+      }
+    };
+
+    fetchChartData();
+  }, [timeRange, activeBranchId]);
 
   const stats = [
     {
@@ -192,33 +216,8 @@ const SalesPage = () => {
   ];
 
   const chartData = useMemo(() => {
-    let rawData = [];
-    switch (timeRange) {
-      case "1D":
-        rawData = data1D;
-        break;
-      case "1M":
-        rawData = data1M;
-        break;
-      case "1Y":
-        rawData = data1Y;
-        break;
-      case "Max":
-        rawData = data1Y;
-        break;
-      default:
-        rawData = data1D;
-    }
-
-    return rawData.map((item) => ({
-      ...item,
-      totalSales:
-        (item.general || 0) +
-        (item.home || 0) +
-        (item.fresh || 0) +
-        (item.snack || 0),
-    }));
-  }, [timeRange]);
+    return historyData;
+  }, [historyData]);
 
   // Pie Chart Data
   const pieData =
@@ -354,7 +353,7 @@ const SalesPage = () => {
                 </p>
               </div>
               <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
-                {["1D", "1M", "1Y", "Max"].map((range) => (
+                {["1D", "1W", "1M", "Max"].map((range) => (
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
@@ -369,7 +368,12 @@ const SalesPage = () => {
               </div>
             </div>
 
-            <div className="h-[350px] w-full">
+            <div className="h-[350px] w-full relative">
+              {isChartLoading && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[32px]">
+                  <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              )}
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={chartData}
