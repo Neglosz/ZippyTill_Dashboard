@@ -56,6 +56,7 @@ export const productService = {
           cost_price: productData.costPrice,
           stock_qty: productData.stockQty || 0,
           unit_type: productData.unitType || "ชิ้น",
+          is_weightable: productData.isWeightable || false,
           store_id: branchId,
         },
       ])
