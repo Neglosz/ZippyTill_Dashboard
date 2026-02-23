@@ -41,6 +41,7 @@ const OverduePage = () => {
 
   const [overdueItems, setOverdueItems] = useState([]);
   const [recoveryRate, setRecoveryRate] = useState(null);
+  const [totalSalesAmount, setTotalSalesAmount] = useState(0);
 
   useEffect(() => {
     if (!activeBranchId) return;
@@ -377,6 +378,7 @@ const OverduePage = () => {
           totalAmount={totalOverdueAmount}
           recentCount={totalOverdueCount}
           recoveryRate={recoveryRate}
+          overdueRate={overdueRate}
         />
 
         <div className="bg-white rounded-[40px] p-8 shadow-premium border border-gray-100 relative overflow-hidden group/container">

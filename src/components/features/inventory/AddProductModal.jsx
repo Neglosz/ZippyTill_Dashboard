@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Upload, Plus, Check, Scale } from "lucide-react";
+import { X, Calendar, Upload, Plus, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 
@@ -16,6 +16,7 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
     image: "",
     unit: "ชิ้น",
     isWeightable: false,
+    productType: "general",
   });
 
   const [categories, setCategories] = useState([]);
@@ -38,6 +39,7 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
         image: "",
         unit: "ชิ้น",
         isWeightable: false,
+        productType: "general",
       });
     }
   }, [isOpen, activeBranchId]);
@@ -407,32 +409,6 @@ const AddProductModal = ({ isOpen, onClose, onSave, activeBranchId }) => {
                   <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">
                     {formData.unit || "ชิ้น"}
                   </span>
-                </div>
-              </div>
-
-              {/* Weightable Toggle */}
-              <div className="col-span-1 md:col-span-2 space-y-2">
-                <div className="flex items-center justify-between bg-[#F8FAFD] rounded-[18px] px-5 py-4 shadow-sm shadow-indigo-100/20">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                      <Scale size={18} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#1B2559]">สินค้าชั่งน้ำหนัก (กิโลกรัม)</p>
-                      <p className="text-[11px] text-gray-400 font-medium">เปิดใช้สำหรับสินค้าที่ขายเป็นกิโลกรัม</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      isWeightable: !prev.isWeightable,
-                      unit: !prev.isWeightable ? "กก." : "ชิ้น",
-                    }))}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 ${formData.isWeightable ? "bg-primary" : "bg-gray-200"}`}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${formData.isWeightable ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
                 </div>
               </div>
 

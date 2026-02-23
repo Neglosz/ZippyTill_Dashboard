@@ -1,8 +1,15 @@
 import React from "react";
 import { CreditCard, Calendar, AlertCircle, TrendingUp } from "lucide-react";
 
-const SummaryStats = ({ totalCount, totalAmount, recentCount, recoveryRate }) => {
-  const paymentRate = recoveryRate !== null && recoveryRate !== undefined ? recoveryRate : 0;
+const SummaryStats = ({
+  totalCount,
+  totalAmount,
+  recentCount,
+  recoveryRate,
+  overdueRate,
+}) => {
+  const paymentRate =
+    recoveryRate !== null && recoveryRate !== undefined ? recoveryRate : 0;
 
   return (
     <div className="mb-8">
