@@ -77,10 +77,14 @@ const TaxCalculationPage = () => {
     return parts.join(".");
   };
 
-  const handleFormattedInput = (e, setter) => {
+  const handleFormattedInput = (e, setter, maxValue = Infinity) => {
     const rawValue = e.target.value.replace(/,/g, "");
     if (rawValue === "" || /^\d*\.?\d*$/.test(rawValue)) {
-      setter(rawValue);
+      if (maxValue !== Infinity && Number(rawValue) > maxValue) {
+        setter(maxValue.toString());
+      } else {
+        setter(rawValue);
+      }
     }
   };
 
@@ -128,7 +132,7 @@ const TaxCalculationPage = () => {
           <div className="lg:col-span-4 bg-white rounded-[32px] p-8 shadow-premium border border-gray-100 flex flex-col gap-6 relative overflow-hidden h-full">
             <div className="flex items-center gap-3 relative z-10 border-b border-gray-50 pb-4">
               <ReceiptText className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 ข้อมูลการคำนวณ
               </h2>
             </div>
@@ -157,7 +161,7 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(income)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setIncome)}
+                  onChange={(e) => handleFormattedInput(e, setIncome, 10000000)}
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
@@ -174,7 +178,7 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(expenses)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setExpenses)}
+                  onChange={(e) => handleFormattedInput(e, setExpenses, 1000000)}
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
@@ -191,7 +195,7 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(deductions)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setDeductions)}
+                  onChange={(e) => handleFormattedInput(e, setDeductions, 1000000)}
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
@@ -336,7 +340,7 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(buyVatAmount)}
                   placeholder="0"
-                  onChange={(e) => handleFormattedInput(e, setBuyVatAmount)}
+                  onChange={(e) => handleFormattedInput(e, setBuyVatAmount, 1000000)}
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
@@ -364,7 +368,7 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(sellVatAmount)}
                   placeholder="0"
-                  onChange={(e) => handleFormattedInput(e, setSellVatAmount)}
+                  onChange={(e) => handleFormattedInput(e, setSellVatAmount, 1000000)}
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
