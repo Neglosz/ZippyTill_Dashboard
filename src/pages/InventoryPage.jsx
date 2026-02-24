@@ -290,8 +290,8 @@ const InventoryPage = () => {
           <button
             onClick={() => setActiveTab("products")}
             className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "products"
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "text-gray-500 hover:text-primary hover:bg-primary/5"
+              ? "bg-primary text-white shadow-lg shadow-primary/20"
+              : "text-gray-500 hover:text-primary hover:bg-primary/5"
               }`}
           >
             รายการสินค้า
@@ -299,8 +299,8 @@ const InventoryPage = () => {
           <button
             onClick={() => setActiveTab("report")}
             className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "report"
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "text-gray-500 hover:text-primary hover:bg-primary/5"
+              ? "bg-primary text-white shadow-lg shadow-primary/20"
+              : "text-gray-500 hover:text-primary hover:bg-primary/5"
               }`}
           >
             รายงานสต็อก
@@ -427,8 +427,8 @@ const InventoryPage = () => {
                   <button
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
                     className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${selectedCategory
-                        ? "border-primary text-primary bg-primary/5"
-                        : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
+                      ? "border-primary text-primary bg-primary/5"
+                      : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
                       }`}
                   >
                     <Filter size={16} />
@@ -448,8 +448,8 @@ const InventoryPage = () => {
                           setIsFilterOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${!selectedCategory
-                            ? "bg-primary text-white"
-                            : "text-gray-700 hover:bg-gray-50"
+                          ? "bg-primary text-white"
+                          : "text-gray-700 hover:bg-gray-50"
                           }`}
                       >
                         ทั้งหมด
@@ -460,8 +460,8 @@ const InventoryPage = () => {
                           setIsFilterOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === "no-category"
-                            ? "bg-primary text-white"
-                            : "text-gray-700 hover:bg-gray-50"
+                          ? "bg-primary text-white"
+                          : "text-gray-700 hover:bg-gray-50"
                           }`}
                       >
                         ทั่วไป
@@ -474,8 +474,8 @@ const InventoryPage = () => {
                             setIsFilterOpen(false);
                           }}
                           className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === category.id
-                              ? "bg-primary text-white"
-                              : "text-gray-700 hover:bg-gray-50"
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
                             }`}
                         >
                           {category.name}
@@ -542,16 +542,21 @@ const InventoryPage = () => {
                       const isExpired = batches.some(
                         (b) => new Date(b.expire_date) < today,
                       );
+                      const isOutOfStock = p.stock_qty <= 0;
+                      const isLowStock =
+                        p.low_stock_threshold &&
+                        p.stock_qty <= p.low_stock_threshold;
                       const isExpiringSoon = batches.some(
                         (b) =>
                           new Date(b.expire_date) >= today &&
                           new Date(b.expire_date) <= thirtyDays,
                       );
-                      const isOutOfStock = p.stock_qty <= 0;
+
                       if (isExpired) return 0;
-                      if (isExpiringSoon) return 1;
-                      if (isOutOfStock) return 2;
-                      return 3;
+                      if (isOutOfStock) return 1;
+                      if (isLowStock) return 2;
+                      if (isExpiringSoon) return 3;
+                      return 4;
                     };
                     return getScore(a) - getScore(b);
                   })
@@ -716,10 +721,10 @@ const InventoryPage = () => {
                                 </span>
                                 <span
                                   className={`text-sm font-bold ${isExpired
-                                      ? "text-rose-600"
-                                      : isExpiringSoon
-                                        ? "text-orange-500"
-                                        : "text-[#1B2559]"
+                                    ? "text-rose-600"
+                                    : isExpiringSoon
+                                      ? "text-orange-500"
+                                      : "text-[#1B2559]"
                                     }`}
                                 >
                                   หมดอายุ: {expDate}

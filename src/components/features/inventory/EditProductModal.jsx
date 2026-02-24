@@ -64,7 +64,9 @@ const EditProductModal = ({
           exp: expDate,
           image: product.image_url || product.image || "",
           unit: product.unit_type || "ชิ้น",
-          productType: product.unit_type === "กก." ? "weighted" : "general",
+          productType: ["กก.", "กรัม", "ขีด", "กิโลกรัม", "กิโล"].includes(product.unit_type)
+            ? "weighted"
+            : "general",
         });
       }
     } catch (err) {
@@ -131,57 +133,64 @@ const EditProductModal = ({
           </button>
         </div>
 
-        {/* Product Type Switch Bar */}
+        {/* Product Type Display (Locked for Editing) */}
         <div className="px-8 pt-6">
           <div className="bg-[#F8FAFD] p-1.5 rounded-[20px] flex gap-1 items-center max-w-fit shadow-sm border border-gray-100">
-            <button
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  productType: "general",
-                  unit: "ชิ้น",
-                  category: "",
-                }))
-              }
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${
-                formData.productType === "general"
-                  ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  formData.productType === "general"
-                    ? "bg-primary animate-pulse"
-                    : "bg-gray-300"
-                }`}
-              />
-              สินค้าทั่วไป
-            </button>
-            <button
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  productType: "weighted",
-                  unit: "กก.",
-                  category: "",
-                }))
-              }
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${
-                formData.productType === "weighted"
-                  ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  formData.productType === "weighted"
-                    ? "bg-primary animate-pulse"
-                    : "bg-gray-300"
-                }`}
-              />
-              สินค้าชั่งขาย
-            </button>
+            {product ? (
+              <div className="flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5 cursor-default">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                {formData.productType === "weighted"
+                  ? "สินค้าชั่งขาย"
+                  : "สินค้าทั่วไป"}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      productType: "general",
+                      unit: "ชิ้น",
+                      category: "",
+                    }))
+                  }
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${formData.productType === "general"
+                    ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                    : "text-gray-400 hover:text-gray-600"
+                    }`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${formData.productType === "general"
+                      ? "bg-primary animate-pulse"
+                      : "bg-gray-300"
+                      }`}
+                  />
+                  สินค้าทั่วไป
+                </button>
+                <button
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      productType: "weighted",
+                      unit: "กก.",
+                      category: "",
+                    }))
+                  }
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${formData.productType === "weighted"
+                    ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                    : "text-gray-400 hover:text-gray-600"
+                    }`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${formData.productType === "weighted"
+                      ? "bg-primary animate-pulse"
+                      : "bg-gray-300"
+                      }`}
+                  />
+                  สินค้าชั่งขาย
+                </button>
+              </>
+            )}
           </div>
         </div>
 
