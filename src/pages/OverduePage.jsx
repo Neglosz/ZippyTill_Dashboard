@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import StatusModal from "../components/common/StatusModal";
@@ -27,7 +28,7 @@ import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
 
 const OverduePage = () => {
-  const { activeBranchId } = useBranch();
+  const { activeBranchId, activeBranchName } = useBranch();
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -260,28 +261,82 @@ const OverduePage = () => {
     setShowEditSuccess(true);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       if (groupedCustomers.length === 0) return;
 
-      const data = groupedCustomers.map((customer) => ({
-        ชื่อลูกค้า: customer.name,
-        เบอร์โทรศัพท์: formatPhoneNumber(customer.phone),
-        จำนวนบิลที่ค้าง: customer.totalCount,
-        "ยอดค้างชำระทั้งหมด (บาท)": customer.totalAmount,
-      }));
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Overdue Debtors");
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Overdue Debtors");
-      XLSX.writeFile(
-        wb,
-        `Overdue_Debtors_${new Date().toISOString().split("T")[0]}.xlsx`,
-      );
+      // Define Columns
+      worksheet.columns = [
+        { header: "ชื่อลูกค้า", key: "name", width: 25 },
+        { header: "เบอร์โทรศัพท์", key: "phone", width: 20 },
+        { header: "จำนวนบิลที่ค้าง", key: "count", width: 15 },
+        { header: "ยอดค้างชำระทั้งหมด (บาท)", key: "amount", width: 25 },
+      ];
+
+      // Styling Header Row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: "FF000000" }, size: 12 };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      // Add Table Borders to header
+      headerRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      // Add Data Rows
+      groupedCustomers.forEach((customer) => {
+        const row = worksheet.addRow({
+          name: customer.name,
+          phone: formatPhoneNumber(customer.phone),
+          count: customer.totalCount,
+          amount: customer.totalAmount,
+        });
+
+        // Cell Styling for data
+        row.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.alignment = { vertical: "middle" };
+
+          // Center count
+          if (colNumber === 3) {
+            cell.alignment = { vertical: "middle", horizontal: "center" };
+          }
+          // Right align amount
+          if (colNumber === 4) {
+            cell.alignment = { vertical: "middle", horizontal: "right" };
+            cell.numFmt = "#,##0.00";
+            cell.font = { color: { argb: "FFE11D48" } }; // Rose (Overdue)
+          }
+        });
+      });
+
+
+      // Sanitize branch name for filename
+      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const filename = `Overdue_Debtors_${safeBranchName}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, filename);
+
       setShowExportModal(false);
     } catch (err) {
       console.error("Export Excel error:", err);
-      alert("Failed to export Excel");
+      alert("ไม่สามารถส่งออก Excel ได้: " + (err.message || "เกิดข้อผิดพลาดภายใน"));
     }
   };
 
