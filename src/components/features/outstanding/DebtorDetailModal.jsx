@@ -14,7 +14,13 @@ import {
 import { orderService } from "../../../services/orderService";
 import ReceiptModal from "../../ReceiptModal";
 
-const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) => {
+const DebtorDetailModal = ({
+  item,
+  isOpen,
+  onClose,
+  onSave,
+  activeBranchId,
+}) => {
   const [activeTab, setActiveTab] = useState("info"); // "info" or "bills"
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +56,10 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
     if (!orderId || !activeBranchId) return;
     setIsLoadingDetails(true);
     try {
-      const details = await orderService.getOrderDetails(orderId, activeBranchId);
+      const details = await orderService.getOrderDetails(
+        orderId,
+        activeBranchId,
+      );
       setFullOrderData(details);
     } catch (err) {
       console.error("Error fetching order details:", err);
@@ -205,10 +214,11 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
                 <div className="flex gap-8">
                   <button
                     onClick={() => setActiveTab("info")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${activeTab === "info"
-                      ? "text-primary"
-                      : "text-gray-500 hover:text-gray-700"
-                      }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${
+                      activeTab === "info"
+                        ? "text-primary"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
                   >
                     ข้อมูลทั่วไป
                     {activeTab === "info" && (
@@ -217,17 +227,19 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
                   </button>
                   <button
                     onClick={() => setActiveTab("bills")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${activeTab === "bills"
-                      ? "text-primary"
-                      : "text-gray-500 hover:text-gray-700"
-                      }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${
+                      activeTab === "bills"
+                        ? "text-primary"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
                   >
                     รายการใบแจ้งหนี้
                     <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${activeTab === "bills"
-                        ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
-                        : "bg-gray-200 text-gray-600"
-                        }`}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${
+                        activeTab === "bills"
+                          ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
                     >
                       {bills.length}
                     </span>
@@ -283,9 +295,9 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
                           {!isEditing &&
                             getStatusBadge(
                               item.status ||
-                              (item.maxOverdueDays > 0
-                                ? "เกินกำหนด"
-                                : "ค้างชำระ"),
+                                (item.maxOverdueDays > 0
+                                  ? "เกินกำหนด"
+                                  : "ค้างชำระ"),
                               item.overdueDays || item.maxOverdueDays,
                             )}
                         </div>
@@ -325,8 +337,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
                             </div>
                             {item.phone
                               ? item.phone
-                                .replace(/\D/g, "")
-                                .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
+                                  .replace(/\D/g, "")
+                                  .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
                               : "-"}
                           </div>
                         )}
@@ -339,8 +351,10 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
                           <label className="text-[9px] font-bold text-orange-700/80 mb-1.5 block uppercase tracking-[0.15em] relative z-10">
                             ยอดค้างชำระ
                           </label>
-                          <div className="text-2xl font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent leading-none relative z-10">
-                            ฿
+                          <div className="text-2xl font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent leading-none relative z-10 flex items-baseline">
+                            <span className="text-sm mr-1.5 font-bold opacity-70">
+                              ฿
+                            </span>
                             {(item.totalAmount || item.amount).toLocaleString()}
                           </div>
                         </div>
@@ -497,41 +511,48 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) =>
         transaction={
           selectedBill
             ? {
-              receiptNo: selectedBill.orderNo || "-",
-              date: new Date(
-                selectedBill.createdAt || selectedBill.dueDate,
-              ).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }),
-              paymentMethod: "เครดิต",
-              items: isLoadingDetails
-                ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }]
-                : (fullOrderData?.order_items?.map((detail) => ({
-                  name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                  quantity: detail.qty,
-                  unit: detail.products?.unit_type,
-                  price: detail.price_per_unit,
-                  subtotal: detail.subtotal,
-                })) || [
-                    {
-                      name: `รายการ #${selectedBill.orderNo}`,
-                      quantity: 1,
-                      unit: "ชิ้น",
-                      price: Number(selectedBill.amount),
-                      subtotal: Number(selectedBill.amount),
-                    },
-                  ]),
-              total: Number(selectedBill.amount),
-              received: 0,
-              change: 0,
-              store: {
-                name: item?.name || "ลูกค้า",
-                address: "-",
-                phone: item?.phone || "-",
-              },
-            }
+                receiptNo: selectedBill.orderNo || "-",
+                date: new Date(
+                  selectedBill.createdAt || selectedBill.dueDate,
+                ).toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+                paymentMethod: "เครดิต",
+                items: isLoadingDetails
+                  ? [
+                      {
+                        name: "กำลังโหลด...",
+                        quantity: 0,
+                        price: 0,
+                        subtotal: 0,
+                      },
+                    ]
+                  : fullOrderData?.order_items?.map((detail) => ({
+                      name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                      quantity: detail.qty,
+                      unit: detail.products?.unit_type,
+                      price: detail.price_per_unit,
+                      subtotal: detail.subtotal,
+                    })) || [
+                      {
+                        name: `รายการ #${selectedBill.orderNo}`,
+                        quantity: 1,
+                        unit: "ชิ้น",
+                        price: Number(selectedBill.amount),
+                        subtotal: Number(selectedBill.amount),
+                      },
+                    ],
+                total: Number(selectedBill.amount),
+                received: 0,
+                change: 0,
+                store: {
+                  name: item?.name || "ลูกค้า",
+                  address: "-",
+                  phone: item?.phone || "-",
+                },
+              }
             : null
         }
         onClose={() => setSelectedBill(null)}

@@ -24,15 +24,15 @@ const SummaryStats = ({
               <CreditCard size={22} strokeWidth={2.5} />
             </div>
             <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
-              Total Balance
+              ยอดคงค้างทั้งหมด
             </div>
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
               ยอดค้างชำระทั้งหมด
             </p>
-            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              <span className="text-xl mr-1 opacity-40 italic">฿</span>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none flex items-baseline">
+              <span className="text-lg mr-1.5 opacity-50 font-bold">฿</span>
               {Math.floor(totalAmount).toLocaleString()}
             </h3>
           </div>
@@ -48,7 +48,7 @@ const SummaryStats = ({
               <Calendar size={22} strokeWidth={2.5} />
             </div>
             <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 shadow-inner-light">
-              Active Invoices
+              ใบแจ้งหนี้ที่ยังค้าง
             </div>
           </div>
           <div className="relative z-10">
@@ -72,7 +72,7 @@ const SummaryStats = ({
               <AlertCircle size={22} strokeWidth={2.5} />
             </div>
             <div className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50 shadow-inner-light">
-              Urgent Attention
+              ต้องติดตามด่วน
             </div>
           </div>
           <div className="relative z-10">
@@ -96,7 +96,7 @@ const SummaryStats = ({
               <TrendingUp size={22} strokeWidth={2.5} />
             </div>
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/50 shadow-inner-light">
-              Recovery Rate
+              อัตราการชำระคืน
             </div>
           </div>
           <div className="relative z-10">
@@ -107,7 +107,6 @@ const SummaryStats = ({
               {overdueRate ?? 0}
               <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
             </h3>
-          
           </div>
         </div>
       </div>

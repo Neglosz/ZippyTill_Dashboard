@@ -17,7 +17,7 @@ const ExportModal = ({ isOpen, onClose, onExportPDF, onExportExcel }) => {
         </button>
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-[#1B2559] mb-1">Export Data</h3>
+        <h3 className="text-xl font-bold text-[#1B2559] mb-1">ส่งออกข้อมูล</h3>
         <p className="text-gray-400 text-xs mb-8">เลือกรูปแบบไฟล์ที่ต้องการ</p>
 
         {/* Options */}

@@ -122,13 +122,15 @@ const NotificationDropdown = ({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
-      <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-[0_4px_20px_0px_rgba(0,0,0,0.08)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="absolute right-0 top-12 w-[420px] bg-white rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-[#1B2559]">Notifications</h3>
+            <h3 className="text-lg font-black text-[#1B2559] tracking-tight">
+              การแจ้งเตือน
+            </h3>
             {notifications.length > 0 && (
-              <span className="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">
-                {notifications.length} New
+              <span className="text-[10px] font-black text-white bg-gradient-to-r from-red-500 to-rose-500 px-3 py-1 rounded-full shadow-sm shadow-red-200">
+                ใหม่ {notifications.length} รายการ
               </span>
             )}
           </div>
@@ -137,19 +139,19 @@ const NotificationDropdown = ({
               onClick={onClearAll}
               className="text-[10px] font-black text-inactive hover:text-red-500 transition-colors uppercase tracking-widest"
             >
-              Clear All
+              ล้างทั้งหมด
             </button>
           )}
         </div>
 
-        <div className="max-h-[300px] overflow-y-auto">
+        <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
           {loading ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              Loading...
+              กำลังโหลด...
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              No notifications
+              ไม่มีการแจ้งเตือน
             </div>
           ) : (
             notifications.map((notif) => {
@@ -159,21 +161,24 @@ const NotificationDropdown = ({
               return (
                 <div
                   key={notif.id}
-                  className="p-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-default group relative"
+                  className="p-5 hover:bg-gray-50/50 transition-all duration-300 border-b border-gray-50 last:border-0 cursor-default group relative"
                 >
                   <div className="flex gap-3 pr-6">
                     <div
-                      className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      className={`mt-1 shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm ${
                         style.bgClass
                       } ${style.textClass}`}
                     >
-                      {style.icon}
+                      {React.cloneElement(style.icon, {
+                        size: 20,
+                        strokeWidth: 2.5,
+                      })}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-[#1B2559] group-hover:text-primary transition-colors truncate">
+                      <h4 className="text-[15px] font-black text-[#1B2559] group-hover:text-primary transition-colors truncate tracking-tight">
                         {notif.title}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">
+                      <p className="text-sm text-gray-500 mt-1.5 whitespace-pre-line leading-relaxed font-medium">
                         {notif.message}
                       </p>
                       <div className="flex items-center justify-between mt-2">
@@ -195,7 +200,7 @@ const NotificationDropdown = ({
                       onDelete(notif.id);
                     }}
                     className="absolute right-2 top-4 p-1.5 text-inactive hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                    title="Dismiss"
+                    title="ปิด"
                   >
                     <X size={14} strokeWidth={3} />
                   </button>
