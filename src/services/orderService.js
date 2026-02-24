@@ -88,7 +88,7 @@ export const orderService = {
       .select(
         `
         *,
-        customers_info (name),
+        customers_info (name, phone),
         order_items (
           *,
           products (name, image_url)
@@ -114,9 +114,9 @@ export const orderService = {
         *,
         order_items (
           *,
-          products (name, barcode)
+          products (name, barcode, unit_type, is_weightable)
         ),
-        customers (name, phone)
+        customers_info (name, phone)
       `,
       )
       .eq("id", orderId)

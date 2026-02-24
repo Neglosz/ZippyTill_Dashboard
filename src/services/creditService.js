@@ -42,6 +42,7 @@ export const creditService = {
       createdAt: item.created_at, // Add creation date
       status: item.status || "ค้างชำระ",
       overdueDays: calculateOverdueDays(item.due_date),
+      orderId: item.order_id, // Add orderId for fetching details
       orderNo: item.orders?.order_no || item.order_id, // Map order_no
     }));
   },

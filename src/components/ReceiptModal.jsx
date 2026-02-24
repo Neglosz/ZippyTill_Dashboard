@@ -138,6 +138,14 @@ const styles = {
     display: "flex",
     flexDirection: "column",
   },
+  itemHeader: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#333",
+    paddingBottom: 8,
+    marginBottom: 10,
+    borderBottom: "1px dashed #E0E0E0",
+  },
   itemRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -396,13 +404,21 @@ export default function ReceiptModal({
 
         {/* Items */}
         <div className="receipt-items-container" style={styles.itemsContainer}>
+          <div style={styles.itemHeader}>รายการสินค้า</div>
           <div style={styles.itemsList}>
             {items.map((item, index) => (
               <div key={index} style={styles.itemRow}>
                 <span style={styles.itemName}>
-                  {item.name} x{item.quantity}
+                  {item.name} {item.quantity !== 0 && `x${item.quantity}`} {item.unit && item.unit !== "ชิ้น" && `(${item.unit})`}
+                  {item.price && item.quantity > 0 && (
+                    <span style={{ fontSize: "10px", color: "#888", marginLeft: "4px" }}>
+                      ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
+                    </span>
+                  )}
                 </span>
-                <span style={styles.itemPrice}>฿{item.price.toFixed(2)}</span>
+                <span style={styles.itemPrice}>
+                  ฿{(item.subtotal || (item.price * item.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
               </div>
             ))}
           </div>
