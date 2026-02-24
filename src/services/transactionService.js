@@ -127,6 +127,22 @@ export const transactionService = {
         totalPayments += amount;
       });
 
+      // 3. Get overdue (credit_sale) orders
+      const { data: creditOrders, error: creditError } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("store_id", storeId)
+        .eq("payment_type", "credit_sale");
+
+      let overdueTotal = 0;
+      if (!creditError && creditOrders) {
+        creditOrders.forEach((o) => {
+          overdueTotal += Number(o.total_amount || 0);
+        });
+      }
+
+      const totalWithOverdue = totalPayments + overdueTotal;
+
       const paymentChannels = Object.keys(paymentStats).map((method) => ({
         method:
           method === "cash"
@@ -138,10 +154,22 @@ export const transactionService = {
                 : method,
         amount: paymentStats[method],
         percent:
-          totalPayments > 0
-            ? Math.round((paymentStats[method] / totalPayments) * 100)
+          totalWithOverdue > 0
+            ? Math.round((paymentStats[method] / totalWithOverdue) * 100)
             : 0,
       }));
+
+      // Add overdue channel if there are any credit_sale orders
+      if (overdueTotal > 0) {
+        paymentChannels.push({
+          method: "credit_sale",
+          amount: overdueTotal,
+          percent:
+            totalWithOverdue > 0
+              ? Math.round((overdueTotal / totalWithOverdue) * 100)
+              : 0,
+        });
+      }
 
       return {
         totalRevenue,

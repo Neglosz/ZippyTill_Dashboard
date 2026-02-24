@@ -67,11 +67,13 @@ const AIPromotionPage = () => {
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
+  const [selectedPromo, setSelectedPromo] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [isRecLoading, setIsRecLoading] = useState(true);
   const [activePromotions, setActivePromotions] = useState([]);
   const [isPromosLoading, setIsPromosLoading] = useState(true);
   const [aiPromoData, setAiPromoData] = useState(null);
+  const [usedRecId, setUsedRecId] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(true);
 
@@ -87,6 +89,7 @@ const AIPromotionPage = () => {
       min_qty_required: rec.min_qty_required || 2,
       free_qty: rec.free_qty || 1,
     };
+    setUsedRecId(rec.id); // Track which recommendation is being used
     setAiPromoData(transformedData);
     setIsModalOpen(true);
   };
@@ -244,6 +247,11 @@ const AIPromotionPage = () => {
   }, [activeBranchId]);
 
   const handlePromotionCreated = () => {
+    // Remove the used recommendation from the list
+    if (usedRecId !== null) {
+      setRecommendations((prev) => prev.filter((r) => r.id !== usedRecId));
+      setUsedRecId(null);
+    }
     fetchPromos();
     fetchChartData();
     setIsModalOpen(false);
@@ -350,24 +358,44 @@ const AIPromotionPage = () => {
     }
   };
 
+  // Parse date string as LOCAL midnight to avoid UTC +7 offset issues
+  // new Date("2026-02-24") → UTC midnight → 07:00 Thailand → loses 7 hours
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    // If it's a date-only string YYYY-MM-DD, parse as local midnight
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      return new Date(year, month - 1, day, 23, 59, 59); // Local end of day
+    }
+    return new Date(dateStr);
+  };
+
   const formatDateRange = (start, end) => {
     if (!start && !end) return "ไม่มีกำหนด";
-    const s = start ? new Date(start).toLocaleDateString("th-TH") : "...";
-    const e = end ? new Date(end).toLocaleDateString("th-TH") : "ไม่มีกำหนด";
+    const s = start ? parseLocalDate(start).toLocaleDateString("th-TH") : "...";
+    const e = end
+      ? parseLocalDate(end).toLocaleDateString("th-TH")
+      : "ไม่มีกำหนด";
     return `${s} - ${e}`;
   };
 
   const getStatusInfo = (isActive, endDate) => {
     if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
-    if (new Date(endDate) < new Date())
+    if (parseLocalDate(endDate) < new Date())
       return { label: "หมดอายุ", color: "bg-red-500" };
     return { label: "ใช้งาน", color: "bg-emerald-500" };
   };
 
   const getTimeRemaining = (startDate, endDate) => {
     const now = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = parseLocalDate(startDate) || now;
+    const end = parseLocalDate(endDate);
+    if (!end)
+      return {
+        text: "ไม่มีกำหนด",
+        percentage: 0,
+        color: "from-emerald-500 to-emerald-600",
+      };
     const total = end - start;
     const remaining = end - now;
 
@@ -606,7 +634,8 @@ const AIPromotionPage = () => {
                     return (
                       <div
                         key={promo.id}
-                        className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
+                        onClick={() => setSelectedPromo(promo)}
+                        className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group cursor-pointer"
                       >
                         <div className="flex justify-between items-center mb-3">
                           <div className="min-w-0 flex-1">
@@ -837,7 +866,11 @@ const AIPromotionPage = () => {
                   return (
                     <div
                       key={promo.id}
-                      className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group"
+                      onClick={() => {
+                        setSelectedPromo(promo);
+                        setIsViewAllOpen(false);
+                      }}
+                      className="bg-gray-50 p-4 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group cursor-pointer"
                     >
                       <div className="flex justify-between items-center mb-3">
                         <div className="min-w-0 flex-1">
@@ -921,6 +954,147 @@ const AIPromotionPage = () => {
                 className="px-8 py-3 bg-white text-gray-900 font-bold rounded-2xl border border-gray-200 hover:bg-gray-100 transition-all shadow-sm"
               >
                 ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promotion Detail Modal */}
+      {selectedPromo && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6">
+          <div
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            onClick={() => setSelectedPromo(null)}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-primary/10 to-orange-50 p-8 border-b border-gray-100">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className={`text-[10px] font-black px-2 py-0.5 rounded-lg text-white ${
+                        getStatusInfo(
+                          selectedPromo.is_active,
+                          selectedPromo.end_date,
+                        ).color
+                      }`}
+                    >
+                      {
+                        getStatusInfo(
+                          selectedPromo.is_active,
+                          selectedPromo.end_date,
+                        ).label
+                      }
+                    </span>
+                    <span className="text-[10px] font-bold text-inactive uppercase tracking-wider">
+                      ID: {selectedPromo.id.slice(0, 8)}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
+                    {selectedPromo.name}
+                  </h2>
+                  {selectedPromo.description && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {selectedPromo.description}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedPromo(null)}
+                  className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm shrink-0"
+                >
+                  <Plus size={20} className="rotate-45" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-8 space-y-4">
+              {/* Discount Type */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Target size={18} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
+                    ประเภทส่วนลด
+                  </p>
+                  <p className="text-sm font-black text-gray-900">
+                    {getPromotionLabel(selectedPromo)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                  <Calendar size={18} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
+                    ระยะเวลา
+                  </p>
+                  <p className="text-sm font-black text-gray-900">
+                    {formatDateRange(
+                      selectedPromo.start_date,
+                      selectedPromo.end_date,
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Products Count */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <Package size={18} className="text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
+                    สินค้าที่ร่วมรายการ
+                  </p>
+                  <p className="text-sm font-black text-gray-900">
+                    {selectedPromo.itemCount || 0} สินค้า
+                  </p>
+                </div>
+              </div>
+
+              {/* Time Remaining */}
+              {selectedPromo.end_date &&
+                (() => {
+                  const tr = getTimeRemaining(
+                    selectedPromo.start_date,
+                    selectedPromo.end_date,
+                  );
+                  return (
+                    <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                      <div className="flex justify-between mb-3">
+                        <p className="text-[10px] font-black text-inactive uppercase tracking-wider">
+                          เวลาที่เหลือ
+                        </p>
+                        <p className="text-[10px] font-black text-gray-900">
+                          {tr.text}
+                        </p>
+                      </div>
+                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full bg-gradient-to-r ${tr.color} rounded-full transition-all duration-1000`}
+                          style={{ width: `${100 - tr.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 pb-8">
+              <button
+                onClick={() => setSelectedPromo(null)}
+                className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200 transition-all text-sm"
+              >
+                ปิด
               </button>
             </div>
           </div>

@@ -67,13 +67,6 @@ const BranchCard = ({
         <div
           className={`absolute inset-0 bg-gradient-to-t opacity-40 group-hover:opacity-60 transition-opacity duration-500 ${isDark ? "from-black/80 to-transparent" : "from-gray-900/60 to-transparent"}`}
         ></div>
-
-        {/* Branch Initials Overlay - Enhanced Depth */}
-        <div className="absolute bottom-6 left-6 z-20 scale-110">
-          <div className="bg-white/20 backdrop-blur-xl border border-white/40 text-white w-12 h-12 rounded-[20px] flex items-center justify-center font-black text-xl shadow-float transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
-            {branchName.split(" ").pop().charAt(0)}
-          </div>
-        </div>
       </div>
 
       {/* Content Area */}
