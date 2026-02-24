@@ -185,6 +185,7 @@ const AIPromotionPage = () => {
       console.log("📦 Loading recommendations from cache");
       setRecommendations(cachedData);
       setIsRecLoading(false); // Show cached data immediately
+      return; // Stop here and don't fetch fresh data if cache is valid
     } else {
       setRecommendations([]); // Clear old state for new branch or refresh
       setIsRecLoading(true);

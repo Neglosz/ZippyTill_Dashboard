@@ -253,9 +253,8 @@ export const productService = {
       lowStock: filteredLowStock.map((p) => ({
         name: p.name,
         imageUrl: p.image_url,
-        expiryDate: "N/A",
-        days: 0,
         qty: p.stock_qty,
+        unit: p.unit_type || "ชิ้น",
       })),
     };
   },
