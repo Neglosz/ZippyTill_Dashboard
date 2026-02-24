@@ -187,8 +187,6 @@ const SalesPage = () => {
         );
         return "฿" + roundedRevenue.toLocaleString();
       })(),
-      subtext: "+8% จาก สัปดาห์ที่แล้ว",
-      subtextColor: "text-[#4079ED]",
       color: "bg-rose-50",
       iconBg: "bg-rose-500",
       icon: BarChart3,
@@ -197,8 +195,6 @@ const SalesPage = () => {
       id: 2,
       title: "จำนวนสินค้าทั้งหมด",
       amount: Math.ceil(salesSummary.totalProducts).toLocaleString(),
-      subtext: "+5% จาก เมื่อวาน",
-      subtextColor: "text-[#4079ED]",
       color: "bg-amber-50",
       iconBg: "bg-amber-500",
       icon: FileText,
@@ -207,8 +203,6 @@ const SalesPage = () => {
       id: 3,
       title: "จำนวนสินค้าที่ขายไปแล้ว",
       amount: Math.ceil(salesSummary.totalSold).toLocaleString(),
-      subtext: "+1.2% จาก สัปดาห์ที่แล้ว",
-      subtextColor: "text-[#4079ED]",
       color: "bg-emerald-50",
       iconBg: "bg-emerald-500",
       icon: Tag,
@@ -310,12 +304,6 @@ const SalesPage = () => {
                     <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
                       {topic.amount}
                     </h3>
-                    <p
-                      className={`text-[11px] font-black mt-1 flex items-center gap-1.5 ${topic.subtextColor}`}
-                    >
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-50" />
-                      {topic.subtext}
-                    </p>
                   </div>
                 </div>
 

@@ -409,7 +409,7 @@ export default function ReceiptModal({
             {items.map((item, index) => (
               <div key={index} style={styles.itemRow}>
                 <span style={styles.itemName}>
-                  {item.name} {item.quantity !== 0 && `x${item.quantity}`} {item.unit && item.unit !== "ชิ้น" && `(${item.unit})`}
+                  {item.name} {item.unit && item.unit !== "ชิ้น" ? `${item.quantity}${item.unit}` : item.quantity !== 0 && `x${item.quantity}`}
                   {item.price && item.quantity > 0 && (
                     <span style={{ fontSize: "10px", color: "#888", marginLeft: "4px" }}>
                       ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
