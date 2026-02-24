@@ -211,20 +211,6 @@ const SalesPage = () => {
       iconBg: "bg-emerald-500",
       icon: Tag,
     },
-    {
-      id: 4,
-      title: "ค้างชำระ",
-      amount:
-        "฿" +
-        (salesSummary.overdueAmount
-          ? Math.ceil(salesSummary.overdueAmount).toLocaleString()
-          : "0"),
-      subtext: "ยอดที่ยังไม่ได้ชำระ",
-      subtextColor: "text-rose-500",
-      color: "bg-rose-50",
-      iconBg: "bg-rose-500",
-      icon: AlarmClockOff,
-    },
   ];
 
   const chartData = useMemo(() => {
@@ -282,7 +268,7 @@ const SalesPage = () => {
         </div>
 
         {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((topic) => (
             <div
               key={topic.id}
@@ -363,11 +349,10 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      timeRange === range
-                        ? "bg-white shadow-sm text-primary border border-gray-100"
-                        : "text-inactive hover:text-gray-900"
-                    }`}
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
+                      ? "bg-white shadow-sm text-primary border border-gray-100"
+                      : "text-inactive hover:text-gray-900"
+                      }`}
                   >
                     {range}
                   </button>
@@ -721,15 +706,14 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${
-                              rank === 1
+                            ${rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                            }`}
+                              }`}
                           >
                             {rank}
                           </div>

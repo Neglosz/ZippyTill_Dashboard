@@ -70,7 +70,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                 </span>
               </div>
               <span className="text-sm font-black text-gray-900 tabular-nums">
-                ฿{entry.value.toLocaleString()}
+                <span className="text-xs mr-0.5">฿</span>{entry.value.toLocaleString()}
               </span>
             </div>
           ))}
@@ -708,7 +708,7 @@ const FinancePage = () => {
 
                   <div className="flex flex-col gap-1">
                     <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-                      <span className="text-lg mr-1 opacity-40 italic">฿</span>
+                      <span className="text-2xl mr-1">฿</span>
                       {topic.amount}
                     </h3>
                     <p
@@ -894,7 +894,7 @@ const FinancePage = () => {
                         </span>
                         <div className="text-right">
                           <p className="text-gray-900 font-black tracking-tighter">
-                            ฿{channel.amount}
+                            <span className="text-sm mr-0.5">฿</span>{channel.amount}
                           </p>
                         </div>
                       </div>
@@ -972,7 +972,8 @@ const FinancePage = () => {
                       <td
                         className={`py-4 px-4 text-sm font-black ${tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
                       >
-                        {tx.isIncome ? "+" : "-"}฿
+                        {tx.isIncome ? "+" : "-"}
+                        <span className="text-xs mr-0.5">฿</span>
                         {tx.displayAmount.toLocaleString()}
                       </td>
                       <td className="py-4 px-4">
