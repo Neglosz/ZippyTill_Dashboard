@@ -11,9 +11,10 @@ import {
   Pencil,
   Save,
 } from "lucide-react";
+import { orderService } from "../../../services/orderService";
 import ReceiptModal from "../../ReceiptModal";
 
-const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
+const DebtorDetailModal = ({ item, isOpen, onClose, onSave, activeBranchId }) => {
   const [activeTab, setActiveTab] = useState("info"); // "info" or "bills"
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,6 +24,8 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
     customerDueDate: "",
   });
   const [selectedBill, setSelectedBill] = useState(null);
+  const [fullOrderData, setFullOrderData] = useState(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -34,6 +37,27 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
       setIsEditing(false);
     }
   }, [item]);
+
+  useEffect(() => {
+    if (selectedBill && activeBranchId) {
+      fetchOrderDetails(selectedBill.orderId);
+    } else {
+      setFullOrderData(null);
+    }
+  }, [selectedBill, activeBranchId]);
+
+  const fetchOrderDetails = async (orderId) => {
+    if (!orderId || !activeBranchId) return;
+    setIsLoadingDetails(true);
+    try {
+      const details = await orderService.getOrderDetails(orderId, activeBranchId);
+      setFullOrderData(details);
+    } catch (err) {
+      console.error("Error fetching order details:", err);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
 
   const handlePhoneChange = (e) => {
     const rawValue = e.target.value.replace(/\D/g, "");
@@ -482,13 +506,23 @@ const DebtorDetailModal = ({ item, isOpen, onClose, onSave }) => {
                 day: "numeric",
               }),
               paymentMethod: "เครดิต",
-              items: [
-                {
-                  name: `รายการ #${selectedBill.orderNo}`,
-                  quantity: 1,
-                  price: Number(selectedBill.amount),
-                },
-              ],
+              items: isLoadingDetails
+                ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }]
+                : (fullOrderData?.order_items?.map((detail) => ({
+                  name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                  quantity: detail.qty,
+                  unit: detail.products?.unit_type,
+                  price: detail.price_per_unit,
+                  subtotal: detail.subtotal,
+                })) || [
+                    {
+                      name: `รายการ #${selectedBill.orderNo}`,
+                      quantity: 1,
+                      unit: "ชิ้น",
+                      price: Number(selectedBill.amount),
+                      subtotal: Number(selectedBill.amount),
+                    },
+                  ]),
               total: Number(selectedBill.amount),
               received: 0,
               change: 0,

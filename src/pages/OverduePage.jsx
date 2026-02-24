@@ -230,11 +230,11 @@ const OverduePage = () => {
       prev.map((item) =>
         item.customerId === customerId
           ? {
-              ...item,
-              name: result.name,
-              phone: result.phone,
-              customerDueDate: result.customerDueDate,
-            }
+            ...item,
+            name: result.name,
+            phone: result.phone,
+            customerDueDate: result.customerDueDate,
+          }
           : item,
       ),
     );
@@ -243,17 +243,17 @@ const OverduePage = () => {
     setSelectedCustomer((prev) =>
       prev
         ? {
-            ...prev,
+          ...prev,
+          name: result.name,
+          phone: result.phone,
+          customerDueDate: result.customerDueDate,
+          items: prev.items.map((i) => ({
+            ...i,
             name: result.name,
             phone: result.phone,
             customerDueDate: result.customerDueDate,
-            items: prev.items.map((i) => ({
-              ...i,
-              name: result.name,
-              phone: result.phone,
-              customerDueDate: result.customerDueDate,
-            })),
-          }
+          })),
+        }
         : prev,
     );
 
@@ -541,6 +541,7 @@ const OverduePage = () => {
           isOpen={!!selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
           onSave={handleSaveCustomerInfo}
+          activeBranchId={activeBranchId}
         />
 
         <EditDebtorModal

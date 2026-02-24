@@ -30,6 +30,7 @@ import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import CustomDatePicker from "../components/common/CustomDatePicker";
+import ReceiptModal from "../components/ReceiptModal";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -88,6 +89,10 @@ const FinancePage = () => {
   const [dailyGraphData, setDailyGraphData] = useState([]);
   const [monthlyChartData, setMonthlyChartData] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [fullOrderData, setFullOrderData] = useState(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   // Cache State
   const dataCache = React.useRef({});
@@ -186,7 +191,7 @@ const FinancePage = () => {
           .then((data) => {
             dataCache.current[prevKey] = data;
           })
-          .catch(() => {}); // Ignore prefetch errors
+          .catch(() => { }); // Ignore prefetch errors
       }
 
       // Fetch Next if not cached
@@ -196,7 +201,7 @@ const FinancePage = () => {
           .then((data) => {
             dataCache.current[nextKey] = data;
           })
-          .catch(() => {}); // Ignore prefetch errors
+          .catch(() => { }); // Ignore prefetch errors
       }
     } catch (error) {
       // Silently fail prefetch
@@ -235,6 +240,22 @@ const FinancePage = () => {
     return `${String(d.getDate()).padStart(2, "0")}/${String(
       d.getMonth() + 1,
     ).padStart(2, "0")}/${d.getFullYear()}`;
+  };
+
+  const handleTransactionClick = async (tx) => {
+    setSelectedTransaction(tx);
+    setIsReceiptModalOpen(true);
+    setIsLoadingDetails(true);
+    try {
+      if (tx.id) {
+        const orderDetails = await orderService.getOrderDetails(tx.id, activeBranchId);
+        setFullOrderData(orderDetails);
+      }
+    } catch (error) {
+      console.error("Failed to fetch order details:", error);
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
   const formatSelectedDate = () => {
@@ -521,11 +542,10 @@ const FinancePage = () => {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      viewMode === mode
-                        ? "bg-white text-primary shadow-sm"
-                        : "text-inactive hover:text-gray-600"
-                    }`}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-inactive hover:text-gray-600"
+                      }`}
                   >
                     {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
                   </button>
@@ -698,7 +718,8 @@ const FinancePage = () => {
                   {transactions.map((tx, index) => (
                     <tr
                       key={index}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                      onClick={() => handleTransactionClick(tx)}
                     >
                       <td className="py-4 px-4 text-xs font-bold text-gray-900">
                         {tx.order_no}
@@ -744,6 +765,58 @@ const FinancePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Receipt Modal */}
+      <ReceiptModal
+        visible={isReceiptModalOpen}
+        transaction={
+          selectedTransaction
+            ? {
+              receiptNo: selectedTransaction.order_no || "-",
+              date: new Date(selectedTransaction.created_at).toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+              paymentMethod: selectedTransaction.payment_type === "credit_sale" ? "เครดิต" : "เงินสด",
+              items: isLoadingDetails
+                ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }]
+                : (fullOrderData?.order_items?.map((detail) => ({
+                  name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                  quantity: detail.qty,
+                  unit: detail.products?.unit_type,
+                  price: detail.price_per_unit,
+                  subtotal: detail.subtotal,
+                })) || [
+                    {
+                      name: `รายการ #${selectedTransaction.order_no}`,
+                      quantity: 1,
+                      unit: "ชิ้น",
+                      price: Number(selectedTransaction.total_amount),
+                      subtotal: Number(selectedTransaction.total_amount),
+                    },
+                  ]),
+              total: isLoadingDetails
+                ? Number(selectedTransaction.total_amount)
+                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount)),
+              received: 0,
+              change: 0,
+              store: {
+                name: selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
+                address: "-",
+                phone: fullOrderData?.customers_info?.phone || selectedTransaction.customers_info?.phone || "-",
+              },
+            }
+            : null
+        }
+        onClose={() => {
+          setIsReceiptModalOpen(false);
+          setSelectedTransaction(null);
+          setFullOrderData(null);
+        }}
+        onPrint={() => window.print()}
+        onNewTransaction={() => setIsReceiptModalOpen(false)}
+      />
     </>
   );
 };
