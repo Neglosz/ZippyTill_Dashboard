@@ -33,7 +33,8 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import CustomDatePicker from "../components/common/CustomDatePicker";
 import ReceiptModal from "../components/ReceiptModal";
 import ExportModal from "../components/features/outstanding/ExportModal";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -141,16 +142,18 @@ const FinancePage = () => {
         clickable: true,
       }));
 
-      const normalizedManual = (recentManual || []).map((m) => ({
-        ...m,
-        source: "manual",
-        displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
-        displayAmount: Number(m.amount),
-        displayName: m.description || m.category || "ไม่ระบุรายการ",
-        displaySubtitle: m.category,
-        isIncome: m.trans_type === "income",
-        clickable: !!m.reference_order_id, // Clickable if linked to an order
-      }));
+      const normalizedManual = (recentManual || [])
+        .filter((m) => !(m.category === "sales" && m.reference_order_id)) // Filter out duplicates from store sales
+        .map((m) => ({
+          ...m,
+          source: "manual",
+          displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+          displayAmount: Number(m.amount),
+          displayName: m.description || m.category || "ไม่ระบุรายการ",
+          displaySubtitle: m.category,
+          isIncome: m.trans_type === "income",
+          clickable: true, // All manual transactions are now clickable
+        }));
 
       const combined = [...normalizedOrders, ...normalizedManual].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
@@ -277,13 +280,17 @@ const FinancePage = () => {
   };
 
   const handleTransactionClick = async (tx) => {
-    // Only clickable if it has an id (order) or reference_order_id (manual)
-    const targetOrderId = tx.source === "manual" ? tx.reference_order_id : tx.id;
-    if (!targetOrderId) return;
-
-    setFullOrderData(null);
+    // Open modal first for immediate feedback
     setSelectedTransaction(tx);
     setIsReceiptModalOpen(true);
+
+    const targetOrderId = tx.source === "manual" ? tx.reference_order_id : tx.id;
+    if (!targetOrderId) {
+      // Manual transaction without linked order - no details to fetch
+      setFullOrderData(null);
+      setIsLoadingDetails(false);
+      return;
+    }
     setIsLoadingDetails(true);
 
     try {
@@ -301,35 +308,90 @@ const FinancePage = () => {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       if (!transactions || transactions.length === 0) {
         alert("ไม่มีข้อมูลที่จะส่งออก");
         return;
       }
 
-      if (!XLSX) {
-        throw new Error("XLSX library not loaded");
-      }
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Financial Transactions");
 
-      const data = transactions.map((tx) => ({
-        "เลขที่รายการ": tx.displayName || "-",
-        "ผู้ติดต่อ/คำอธิบาย": tx.displaySubtitle || "-",
-        วันที่: tx.created_at ? new Date(tx.created_at).toLocaleDateString("th-TH") : "-",
-        ประเภท: tx.displayType || "-",
-        จำนวน: tx.isIncome ? (tx.displayAmount || 0) : -(tx.displayAmount || 0),
-        สถานะ: tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
-      }));
+      // Define Columns
+      worksheet.columns = [
+        { header: "เลขที่รายการ", key: "id", width: 20 },
+        { header: "ผู้ติดต่อ/คำอธิบาย", key: "subtitle", width: 30 },
+        { header: "วันที่", key: "date", width: 15 },
+        { header: "ประเภท", key: "type", width: 15 },
+        { header: "จำนวนเงิน", key: "amount", width: 15 },
+        { header: "สถานะ", key: "status", width: 12 },
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Financial Transactions");
+      // Styling Header Row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: "FF000000" }, size: 12 };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      // Add Table Borders to header
+      headerRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      // Add Data Rows
+      transactions.forEach((tx) => {
+        const row = worksheet.addRow({
+          id: tx.displayName || "-",
+          subtitle: tx.displaySubtitle || "-",
+          date: tx.created_at ? new Date(tx.created_at).toLocaleDateString("th-TH") : "-",
+          type: tx.displayType || "-",
+          amount: tx.isIncome ? (tx.displayAmount || 0) : -(tx.displayAmount || 0),
+          status: tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
+        });
+
+        // Cell Styling for data
+        row.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.alignment = { vertical: "middle" };
+
+          // Center type and status
+          if (colNumber === 4 || colNumber === 6) {
+            cell.alignment = { vertical: "middle", horizontal: "center" };
+          }
+          // Right align amount
+          if (colNumber === 5) {
+            cell.alignment = { vertical: "middle", horizontal: "right" };
+            cell.numFmt = "#,##0.00";
+            // Color code amount
+            if (cell.value > 0) {
+              cell.font = { color: { argb: "FF10B981" } }; // Emerald
+            } else if (cell.value < 0) {
+              cell.font = { color: { argb: "FFE11D48" } }; // Rose
+            }
+          }
+        });
+      });
+
 
       // Sanitize branch name for filename
       const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
       const filename = `Finance_Report_${safeBranchName}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
-      XLSX.writeFile(wb, filename);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, filename);
+
       setIsExportModalOpen(false);
     } catch (err) {
       console.error("Export Excel error:", err);
@@ -916,7 +978,7 @@ const FinancePage = () => {
                       <td className="py-4 px-4">
                         <span
                           className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
-                            ? "bg-gray-100 text-gray-600"
+                            ? "bg-emerald-50 text-emerald-600"
                             : tx.payment_status === "paid"
                               ? "bg-emerald-50 text-emerald-600"
                               : "bg-orange-50 text-orange-600"
@@ -924,7 +986,9 @@ const FinancePage = () => {
                         >
                           {tx.source === "manual"
                             ? "สำเร็จ"
-                            : tx.payment_status || "สำเร็จ"}
+                            : tx.payment_status === "paid"
+                              ? "จ่ายแล้ว"
+                              : "กำลังรอ"}
                         </span>
                       </td>
                     </tr>
@@ -946,10 +1010,20 @@ const FinancePage = () => {
       {/* Receipt Modal */}
       <ReceiptModal
         visible={isReceiptModalOpen}
+        title={
+          selectedTransaction?.source === "manual"
+            ? selectedTransaction.isIncome
+              ? "ใบรับเงิน"
+              : "ใบสำคัญจ่าย"
+            : "ใบเสร็จรับเงิน"
+        }
         transaction={
           selectedTransaction
             ? {
-              receiptNo: selectedTransaction.order_no || "-",
+              receiptNo:
+                selectedTransaction.source === "manual"
+                  ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
+                  : selectedTransaction.order_no || "-",
               date: new Date(selectedTransaction.created_at).toLocaleDateString("th-TH", {
                 year: "numeric",
                 month: "long",
@@ -958,24 +1032,34 @@ const FinancePage = () => {
               paymentMethod: selectedTransaction.payment_type === "credit_sale" ? "เครดิต" : "เงินสด",
               items: isLoadingDetails
                 ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }]
-                : (fullOrderData?.order_items?.map((detail) => ({
-                  name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                  quantity: detail.qty,
-                  unit: detail.products?.unit_type,
-                  price: detail.price_per_unit,
-                  subtotal: detail.subtotal,
-                })) || [
+                : selectedTransaction.source === "manual" && !fullOrderData
+                  ? [
                     {
-                      name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || "-"}`,
+                      name: selectedTransaction.displayName || "รายรับอื่น",
                       quantity: 1,
-                      unit: "ชิ้น",
-                      price: Number(selectedTransaction.total_amount || selectedTransaction.amount || 0),
-                      subtotal: Number(selectedTransaction.total_amount || selectedTransaction.amount || 0),
+                      unit: "รายการ",
+                      price: Number(selectedTransaction.displayAmount || 0),
+                      subtotal: Number(selectedTransaction.displayAmount || 0),
                     },
-                  ]),
+                  ]
+                  : (fullOrderData?.order_items?.map((detail) => ({
+                    name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                    quantity: detail.qty,
+                    unit: detail.products?.unit_type,
+                    price: detail.price_per_unit,
+                    subtotal: detail.subtotal,
+                  })) || [
+                      {
+                        name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
+                        quantity: 1,
+                        unit: "ชิ้น",
+                        price: Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0),
+                        subtotal: Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0),
+                      },
+                    ]),
               total: isLoadingDetails
-                ? Number(selectedTransaction.total_amount || selectedTransaction.amount || 0)
-                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount || selectedTransaction.amount || 0)),
+                ? Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)
+                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)),
               received: 0,
               change: 0,
               store: {
