@@ -32,6 +32,10 @@ import { transactionService } from "../services/transactionService";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import CustomDatePicker from "../components/common/CustomDatePicker";
 import ReceiptModal from "../components/ReceiptModal";
+import ExportModal from "../components/features/outstanding/ExportModal";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -77,7 +81,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const FinancePage = () => {
-  const { activeBranchId } = useBranch();
+  const { activeBranchId, activeBranchName } = useBranch();
   const [loading, setLoading] = useState(true);
 
   // Data States
@@ -88,12 +92,12 @@ const FinancePage = () => {
     paymentChannels: [],
   });
   const [dailyGraphData, setDailyGraphData] = useState([]);
-  const [monthlyChartData, setMonthlyChartData] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [fullOrderData, setFullOrderData] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Cache State
   const dataCache = React.useRef({});
@@ -117,13 +121,42 @@ const FinancePage = () => {
   const fetchFinanceData = async () => {
     setLoading(true);
     try {
-      const [stats, recentOrders] = await Promise.all([
+      const [stats, recentOrders, recentManual] = await Promise.all([
         transactionService.getFinanceStats(activeBranchId),
         orderService.getRecentOrders(activeBranchId),
+        transactionService.getRecentTransactions(activeBranchId, 50),
       ]);
 
       setMetrics(stats);
-      setTransactions(recentOrders || []);
+
+      // Merge and normalize
+      const normalizedOrders = (recentOrders || []).map((o) => ({
+        ...o,
+        source: "order",
+        displayType: o.payment_type === "credit_sale" ? "ค้างชำระ" : "เงินสด",
+        displayAmount: Number(o.total_amount),
+        displayName: o.order_no,
+        displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
+        isIncome: true,
+        clickable: true,
+      }));
+
+      const normalizedManual = (recentManual || []).map((m) => ({
+        ...m,
+        source: "manual",
+        displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+        displayAmount: Number(m.amount),
+        displayName: m.description || m.category || "ไม่ระบุรายการ",
+        displaySubtitle: m.category,
+        isIncome: m.trans_type === "income",
+        clickable: !!m.reference_order_id, // Clickable if linked to an order
+      }));
+
+      const combined = [...normalizedOrders, ...normalizedManual].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
+      );
+
+      setTransactions(combined.slice(0, 50));
     } catch (error) {
       console.error("Failed to fetch finance data:", error);
     } finally {
@@ -244,14 +277,23 @@ const FinancePage = () => {
   };
 
   const handleTransactionClick = async (tx) => {
+    // Only clickable if it has an id (order) or reference_order_id (manual)
+    const targetOrderId = tx.source === "manual" ? tx.reference_order_id : tx.id;
+    if (!targetOrderId) return;
+
+    setFullOrderData(null);
     setSelectedTransaction(tx);
     setIsReceiptModalOpen(true);
     setIsLoadingDetails(true);
+
     try {
-      if (tx.id) {
-        const orderDetails = await orderService.getOrderDetails(tx.id, activeBranchId);
-        setFullOrderData(orderDetails);
-      }
+      const orderDetails = await orderService.getOrderDetails(
+        targetOrderId,
+        activeBranchId,
+      );
+      // If manual transaction, we might need to adjust some display fields in selectedTransaction
+      // but the spread in ReceiptModal usually handles it.
+      setFullOrderData(orderDetails);
     } catch (error) {
       console.error("Failed to fetch order details:", error);
     } finally {
@@ -259,26 +301,138 @@ const FinancePage = () => {
     }
   };
 
-  const formatSelectedDate = () => {
-    if (viewMode === "day")
-      return selectedDate.toLocaleDateString("th-TH", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
+  const handleExportExcel = () => {
+    try {
+      if (!transactions || transactions.length === 0) {
+        alert("ไม่มีข้อมูลที่จะส่งออก");
+        return;
+      }
+
+      if (!XLSX) {
+        throw new Error("XLSX library not loaded");
+      }
+
+      const data = transactions.map((tx) => ({
+        "เลขที่รายการ": tx.displayName || "-",
+        "ผู้ติดต่อ/คำอธิบาย": tx.displaySubtitle || "-",
+        วันที่: tx.created_at ? new Date(tx.created_at).toLocaleDateString("th-TH") : "-",
+        ประเภท: tx.displayType || "-",
+        จำนวน: tx.isIncome ? (tx.displayAmount || 0) : -(tx.displayAmount || 0),
+        สถานะ: tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Financial Transactions");
+
+      // Sanitize branch name for filename
+      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const filename = `Finance_Report_${safeBranchName}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+      setIsExportModalOpen(false);
+    } catch (err) {
+      console.error("Export Excel error:", err);
+      alert(`ไม่สามารถส่งออก Excel ได้: ${err.message || "เกิดข้อผิดพลาดภายใน"}`);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      if (transactions.length === 0) return;
+
+      // Ensure jsPDF is global for the font script
+      window.jsPDF = { API: jsPDF.API };
+      await import("../assets/font/th-sarabun-normal.js");
+
+      const doc = new jsPDF();
+
+      // Set Thai Font
+      doc.setFont("THSarabunNew", "normal");
+
+      // Add Title
+      doc.setFontSize(22);
+      doc.setTextColor(27, 37, 89); // Premium dark blue
+      doc.text("รายงานสรุปรายรับ-รายจ่าย", 105, 20, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.setTextColor(113, 128, 150); // Gray
+      doc.text(`สาขา: ${activeBranchName || "-"}`, 14, 30);
+      doc.text(
+        `วันที่ออกรายงาน: ${new Date().toLocaleDateString("th-TH")}`,
+        14,
+        37,
+      );
+
+      const tableData = transactions.map((tx) => [
+        tx.displayName,
+        tx.displaySubtitle,
+        new Date(tx.created_at).toLocaleDateString("th-TH"),
+        tx.displayType,
+        `${tx.isIncome ? "+" : "-"}฿${tx.displayAmount.toLocaleString()}`,
+        tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
+      ]);
+
+      autoTable(doc, {
+        startY: 45,
+        head: [
+          [
+            "เลขที่รายการ",
+            "ผู้ติดต่อ/คำอธิบาย",
+            "วันที่",
+            "ประเภท",
+            "จำนวนเงิน",
+            "สถานะ",
+          ],
+        ],
+        body: tableData,
+        headStyles: {
+          fillColor: [255, 122, 0], // Primary Orange
+          font: "THSarabunNew",
+          fontStyle: "normal",
+          halign: "center",
+        },
+        styles: {
+          font: "THSarabunNew",
+          fontSize: 12,
+        },
+        columnStyles: {
+          4: { halign: "right" },
+          5: { halign: "center" },
+        },
+        didParseCell: (data) => {
+          if (data.section === "body" && data.column.index === 4) {
+            const text = data.cell.raw;
+            if (text.startsWith("+")) {
+              data.cell.styles.textColor = [16, 185, 129]; // Emerald 600
+            } else if (text.startsWith("-")) {
+              data.cell.styles.textColor = [225, 29, 72]; // Rose 600
+            }
+          }
+        },
       });
-    if (viewMode === "month")
-      return selectedDate.toLocaleDateString("th-TH", {
-        month: "long",
-        year: "numeric",
-      });
-    return selectedDate.toLocaleDateString("th-TH", { year: "numeric" });
+
+      // Sanitize branch name for filename
+      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const filename = `Finance_Report_${safeBranchName}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+      doc.save(filename);
+      setIsExportModalOpen(false);
+    } catch (err) {
+      console.error("Export PDF details:", err);
+      if (err.message?.includes("THSarabunNew")) {
+        alert("กรุณาติดตั้งฟอนต์ภาษาไทยสำหรับ PDF");
+      } else {
+        alert(`Failed to export PDF: ${err.message || err.toString()}`);
+      }
+    }
   };
 
   const financeTopics = [
     {
       id: 1,
       title: "รายรับทั้งหมด",
-      amount: metrics.totalRevenue.toLocaleString(),
+      amount: (metrics?.totalRevenue || 0).toLocaleString(),
       subtext: "ยอดขายรวมทั้งหมด",
       subtextColor: "text-primary",
       color: "bg-orange-50",
@@ -288,7 +442,7 @@ const FinancePage = () => {
     {
       id: 2,
       title: "ต้นทุนขาย (COGS)",
-      amount: metrics.totalExpense.toLocaleString(),
+      amount: (metrics?.totalExpense || 0).toLocaleString(),
       subtext: "คิดจากต้นทุนสินค้า",
       subtextColor: "text-inactive",
       color: "bg-gray-50",
@@ -298,7 +452,7 @@ const FinancePage = () => {
     {
       id: 3,
       title: "กำไรขั้นต้น",
-      amount: metrics.netProfit.toLocaleString(),
+      amount: (metrics?.netProfit || 0).toLocaleString(),
       subtext: "รายรับ - ต้นทุนขาย",
       subtextColor: "text-primary",
       color: "bg-primary/10",
@@ -308,7 +462,7 @@ const FinancePage = () => {
     {
       id: 4,
       title: "ยอดเงินสุทธิ",
-      amount: metrics.netProfit.toLocaleString(), // Using Net Profit as substitute for now
+      amount: (metrics?.netProfit || 0).toLocaleString(), // Using Net Profit as substitute for now
       subtext: "Balance",
       subtextColor: "text-primary",
       color: "bg-orange-50",
@@ -356,7 +510,7 @@ const FinancePage = () => {
     },
   ];
 
-  const paymentChannelDisplay = metrics.paymentChannels.map((pc, index) => {
+  const paymentChannelDisplay = (metrics?.paymentChannels || []).map((pc, index) => {
     // Basic mapping based on name or fallback
     let template =
       processedChannels.find(
@@ -366,8 +520,8 @@ const FinancePage = () => {
     return {
       id: index,
       name: pc.method || "ไม่ระบุ",
-      amount: pc.amount.toLocaleString(),
-      percent: pc.percent,
+      amount: (pc.amount || 0).toLocaleString(),
+      percent: pc.percent || 0,
       color: template.color,
       icon: template.icon,
       iconBg: template.iconBg,
@@ -705,7 +859,10 @@ const FinancePage = () => {
               <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 รายการล่าสุด
               </h2>
-              <button className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20">
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20"
+              >
                 <LogOut size={16} strokeWidth={2.5} />
                 Export
               </button>
@@ -735,43 +892,46 @@ const FinancePage = () => {
                   {transactions.map((tx, index) => (
                     <tr
                       key={index}
-                      className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-                      onClick={() => handleTransactionClick(tx)}
+                      className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}
+                      onClick={() => tx.clickable && handleTransactionClick(tx)}
                     >
                       <td className="py-4 px-4 text-xs font-bold text-gray-900">
-                        {tx.order_no}
+                        {tx.displayName}
                         <p className="text-[10px] text-inactive font-medium">
-                          {tx.customers_info?.name || "ลูกค้าทั่วไป"}
+                          {tx.displaySubtitle}
                         </p>
                       </td>
                       <td className="py-4 px-4 text-xs font-bold text-inactive">
                         {new Date(tx.created_at).toLocaleDateString("th-TH")}
                       </td>
                       <td className="py-4 px-4 text-sm font-bold text-gray-900">
-                        {tx.payment_type === "credit_sale"
-                          ? "ค้างชำระ"
-                          : "เงินสด"}
+                        {tx.displayType}
                       </td>
                       <td
-                        className={`py-4 px-4 text-sm font-black text-primary`}
+                        className={`py-4 px-4 text-sm font-black ${tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
                       >
-                        +฿{Number(tx.total_amount).toLocaleString()}
+                        {tx.isIncome ? "+" : "-"}฿
+                        {tx.displayAmount.toLocaleString()}
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.payment_status === "paid" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
+                            ? "bg-gray-100 text-gray-600"
+                            : tx.payment_status === "paid"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-orange-50 text-orange-600"
+                            }`}
                         >
-                          {tx.payment_status || "สำเร็จ"}
+                          {tx.source === "manual"
+                            ? "สำเร็จ"
+                            : tx.payment_status || "สำเร็จ"}
                         </span>
                       </td>
                     </tr>
                   ))}
                   {transactions.length === 0 && (
                     <tr>
-                      <td
-                        colSpan="5"
-                        className="text-center py-8 text-inactive"
-                      >
+                      <td colSpan="5" className="text-center py-8 text-inactive">
                         ไม่มีรายการล่าสุด
                       </td>
                     </tr>
@@ -806,16 +966,16 @@ const FinancePage = () => {
                   subtotal: detail.subtotal,
                 })) || [
                     {
-                      name: `รายการ #${selectedTransaction.order_no}`,
+                      name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || "-"}`,
                       quantity: 1,
                       unit: "ชิ้น",
-                      price: Number(selectedTransaction.total_amount),
-                      subtotal: Number(selectedTransaction.total_amount),
+                      price: Number(selectedTransaction.total_amount || selectedTransaction.amount || 0),
+                      subtotal: Number(selectedTransaction.total_amount || selectedTransaction.amount || 0),
                     },
                   ]),
               total: isLoadingDetails
-                ? Number(selectedTransaction.total_amount)
-                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount)),
+                ? Number(selectedTransaction.total_amount || selectedTransaction.amount || 0)
+                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount || selectedTransaction.amount || 0)),
               received: 0,
               change: 0,
               store: {
@@ -833,6 +993,13 @@ const FinancePage = () => {
         }}
         onPrint={() => window.print()}
         onNewTransaction={() => setIsReceiptModalOpen(false)}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExportPDF={handleExportPDF}
+        onExportExcel={handleExportExcel}
       />
     </>
   );
