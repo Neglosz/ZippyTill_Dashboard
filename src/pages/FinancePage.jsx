@@ -11,6 +11,7 @@ import {
   DollarSign,
   Sparkles,
   CreditCard,
+  User,
 } from "lucide-react";
 import {
   LineChart,
@@ -325,6 +326,13 @@ const FinancePage = () => {
       color: "bg-gray-500",
       iconBg: "bg-gray-100 text-gray-600",
     },
+    {
+      id: "credit_sale",
+      name: "ค้างชำระ",
+      icon: User,
+      color: "bg-rose-500",
+      iconBg: "bg-rose-50 text-rose-600",
+    },
   ];
 
   const paymentChannelDisplay = metrics.paymentChannels.map((pc, index) => {
@@ -378,7 +386,13 @@ const FinancePage = () => {
               <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
               <stop offset="100%" stopColor="#F97316" stopOpacity={0.9} />
             </linearGradient>
-            <linearGradient id="incomeGradientActive" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              id="incomeGradientActive"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
               <stop offset="0%" stopColor="#FFB347" stopOpacity={1} />
               <stop offset="100%" stopColor="#FF8C00" stopOpacity={1} />
             </linearGradient>
@@ -386,7 +400,13 @@ const FinancePage = () => {
               <stop offset="0%" stopColor="#CBD5E1" stopOpacity={0.8} />
               <stop offset="100%" stopColor="#94A3B8" stopOpacity={0.8} />
             </linearGradient>
-            <linearGradient id="expenseGradientActive" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              id="expenseGradientActive"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
               <stop offset="0%" stopColor="#E2E8F0" stopOpacity={1} />
               <stop offset="100%" stopColor="#CBD5E1" stopOpacity={1} />
             </linearGradient>
@@ -587,10 +607,7 @@ const FinancePage = () => {
                   allowDecimals={false}
                   dx={-10}
                 />
-                <Tooltip
-                  content={<CustomTooltip />}
-                  cursor={false}
-                />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
                 <Bar
                   dataKey="income"
                   fill="url(#incomeGradient)"

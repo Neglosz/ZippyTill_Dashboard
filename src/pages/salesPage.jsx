@@ -16,6 +16,7 @@ import {
   Milk,
   Package,
   MoreHorizontal,
+  AlarmClockOff,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
 import { useBranch } from "../contexts/BranchContext";
@@ -157,7 +158,10 @@ const SalesPage = () => {
       if (!activeBranchId || isLoading) return;
       try {
         setIsChartLoading(true);
-        const histData = await saleService.getSalesHistory(activeBranchId, timeRange);
+        const histData = await saleService.getSalesHistory(
+          activeBranchId,
+          timeRange,
+        );
         setHistoryData(histData);
       } catch (error) {
         console.error("Failed to fetch chart data:", error);
@@ -212,6 +216,20 @@ const SalesPage = () => {
       color: "bg-emerald-50",
       iconBg: "bg-emerald-500",
       icon: Tag,
+    },
+    {
+      id: 4,
+      title: "ค้างชำระ",
+      amount:
+        "฿" +
+        (salesSummary.overdueAmount
+          ? Math.ceil(salesSummary.overdueAmount).toLocaleString()
+          : "0"),
+      subtext: "ยอดที่ยังไม่ได้ชำระ",
+      subtextColor: "text-rose-500",
+      color: "bg-rose-50",
+      iconBg: "bg-rose-500",
+      icon: AlarmClockOff,
     },
   ];
 
@@ -270,7 +288,7 @@ const SalesPage = () => {
         </div>
 
         {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((topic) => (
             <div
               key={topic.id}
@@ -357,10 +375,11 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
-                      ? "bg-white shadow-sm text-primary border border-gray-100"
-                      : "text-inactive hover:text-gray-900"
-                      }`}
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                      timeRange === range
+                        ? "bg-white shadow-sm text-primary border border-gray-100"
+                        : "text-inactive hover:text-gray-900"
+                    }`}
                   >
                     {range}
                   </button>
@@ -402,11 +421,7 @@ const SalesPage = () => {
                       y2="1"
                     >
                       <stop offset="0%" stopColor="#FFB347" stopOpacity={1} />
-                      <stop
-                        offset="100%"
-                        stopColor="#FF8C00"
-                        stopOpacity={1}
-                      />
+                      <stop offset="100%" stopColor="#FF8C00" stopOpacity={1} />
                     </linearGradient>
                     <linearGradient
                       id="areaGradient"
@@ -522,8 +537,13 @@ const SalesPage = () => {
                     animationDuration={1000}
                     animationEasing="ease-out"
                     filter="url(#barShadow)"
-                    onAnimationEnd={() => { hasAnimated.current = true; }}
-                    activeBar={{ fill: "url(#barGradientActive)", filter: "url(#barShadow)" }}
+                    onAnimationEnd={() => {
+                      hasAnimated.current = true;
+                    }}
+                    activeBar={{
+                      fill: "url(#barGradientActive)",
+                      filter: "url(#barShadow)",
+                    }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -556,7 +576,7 @@ const SalesPage = () => {
                   style={{
                     width: `${item.percentage || 0}%`,
                     backgroundColor: item.color,
-                    minWidth: item.percentage > 0 ? '4px' : '0',
+                    minWidth: item.percentage > 0 ? "4px" : "0",
                   }}
                 />
               ))}
@@ -579,15 +599,45 @@ const SalesPage = () => {
                         >
                           {(() => {
                             const name = (item.name || "").toLowerCase();
-                            const iconProps = { size: 16, strokeWidth: 2.5, color: "white" };
-                            if (name.includes("ขนม") || name.includes("snack")) return <Cookie {...iconProps} />;
-                            if (name.includes("เครื่องดื่ม") || name.includes("drink") || name.includes("น้ำ")) return <Coffee {...iconProps} />;
-                            if (name.includes("อาหารแห้ง") || name.includes("dry")) return <Wheat {...iconProps} />;
-                            if (name.includes("ของใช้") || name.includes("ของชำ") || name.includes("household")) return <ShoppingBag {...iconProps} />;
-                            if (name.includes("แช่แข็ง") || name.includes("frozen")) return <Snowflake {...iconProps} />;
-                            if (name.includes("ผัก") || name.includes("ผลไม้") || name.includes("fresh")) return <Apple {...iconProps} />;
-                            if (name.includes("นม") || name.includes("dairy")) return <Milk {...iconProps} />;
-                            if (name.includes("อื่น") || name.includes("other")) return <MoreHorizontal {...iconProps} />;
+                            const iconProps = {
+                              size: 16,
+                              strokeWidth: 2.5,
+                              color: "white",
+                            };
+                            if (name.includes("ขนม") || name.includes("snack"))
+                              return <Cookie {...iconProps} />;
+                            if (
+                              name.includes("เครื่องดื่ม") ||
+                              name.includes("drink") ||
+                              name.includes("น้ำ")
+                            )
+                              return <Coffee {...iconProps} />;
+                            if (
+                              name.includes("อาหารแห้ง") ||
+                              name.includes("dry")
+                            )
+                              return <Wheat {...iconProps} />;
+                            if (
+                              name.includes("ของใช้") ||
+                              name.includes("ของชำ") ||
+                              name.includes("household")
+                            )
+                              return <ShoppingBag {...iconProps} />;
+                            if (
+                              name.includes("แช่แข็ง") ||
+                              name.includes("frozen")
+                            )
+                              return <Snowflake {...iconProps} />;
+                            if (
+                              name.includes("ผัก") ||
+                              name.includes("ผลไม้") ||
+                              name.includes("fresh")
+                            )
+                              return <Apple {...iconProps} />;
+                            if (name.includes("นม") || name.includes("dairy"))
+                              return <Milk {...iconProps} />;
+                            if (name.includes("อื่น") || name.includes("other"))
+                              return <MoreHorizontal {...iconProps} />;
                             return <Tag {...iconProps} />;
                           })()}
                         </div>
@@ -683,14 +733,15 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${rank === 1
+                            ${
+                              rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                              }`}
+                            }`}
                           >
                             {rank}
                           </div>
