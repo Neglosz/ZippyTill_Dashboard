@@ -45,6 +45,8 @@ export const productService = {
   async createProduct(productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
+    const initialQty = productData.stockQty || 0;
+
     const { data, error } = await supabase
       .from("products")
       .insert([
@@ -54,7 +56,7 @@ export const productService = {
           category_id: productData.categoryId,
           price: productData.price,
           cost_price: productData.costPrice,
-          stock_qty: productData.stockQty || 0,
+          stock_qty: initialQty,
           unit_type: productData.unitType || "ชิ้น",
           is_weightable: productData.isWeightable || false,
           store_id: branchId,
@@ -64,6 +66,22 @@ export const productService = {
       .single();
 
     if (error) throw error;
+
+    // บันทึกจำนวนนำเข้าเป็น inventory_transaction เพื่อเก็บประวัติย้อนหลัง (ไม่เปลี่ยนแปลงเมื่อขาย)
+    if (initialQty > 0 && data?.id) {
+      const { data: userData } = await supabase.auth.getUser();
+      await supabase.from("inventory_transactions").insert({
+        product_id: data.id,
+        trans_type: "in",
+        qty: initialQty,
+        reference_type: "product_creation",
+        notes: "นำเข้าสินค้าใหม่",
+        store_id: branchId,
+        created_by: userData?.user?.id,
+        created_at: new Date().toISOString(),
+      });
+    }
+
     return data;
   },
 
@@ -273,28 +291,7 @@ export const productService = {
         note: `ออเดอร์ #${item.orders?.order_no || "N/A"}`,
       }));
 
-      // Fetch newly added products as IN movements
-      const { data: productsData, error: productsError } = await supabase
-        .from("products")
-        .select("id, name, image_url, stock_qty, created_at")
-        .eq("store_id", branchId)
-        .is("deleted_at", null)
-        .gt("stock_qty", 0)
-        .order("created_at", { ascending: false });
-
-      if (productsError) throw productsError;
-
-      const productMovements = (productsData || []).map((item) => ({
-        id: `NEW-${item.id}`,
-        created_at: item.created_at,
-        product: item.name || "ไม่ทราบชื่อสินค้า",
-        imageUrl: item.image_url,
-        type: "IN",
-        qty: item.stock_qty,
-        note: "เพิ่มสินค้าใหม่",
-      }));
-
-      // Fetch inventory transactions (including deletions)
+      // ดึง inventory_transactions (IN จากการนำเข้า, OUT จากการลบ/ปรับสต็อก)
       const { data: inventoryTxns, error: txnError } = await supabase
         .from("inventory_transactions")
         .select(
@@ -327,14 +324,12 @@ export const productService = {
           item.notes ||
           (item.reference_type === "product_deletion"
             ? "ลบสินค้าออกจากระบบ"
-            : "ปรับสต็อก"),
+            : item.reference_type === "product_creation"
+              ? "นำเข้าสินค้าใหม่"
+              : "ปรับสต็อก"),
       }));
 
-      const allMovements = [
-        ...movements,
-        ...productMovements,
-        ...inventoryMovements,
-      ];
+      const allMovements = [...movements, ...inventoryMovements];
       return allMovements.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );

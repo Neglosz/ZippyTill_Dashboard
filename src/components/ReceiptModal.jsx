@@ -240,6 +240,7 @@ export default function ReceiptModal({
   onPrint,
   onNewTransaction,
   onClose,
+  title = "ใบเสร็จรับเงิน",
 }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -359,7 +360,7 @@ export default function ReceiptModal({
       >
         {/* Header */}
         <div style={styles.modalHeader}>
-          <h2 style={styles.modalTitle}>ใบเสร็จรับเงิน</h2>
+          <h2 style={styles.modalTitle}>{title}</h2>
           <button
             className="receipt-close-button"
             onClick={handleClose}
