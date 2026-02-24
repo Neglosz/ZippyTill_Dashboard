@@ -352,7 +352,7 @@ const FinancePage = () => {
           date: tx.created_at ? new Date(tx.created_at).toLocaleDateString("th-TH") : "-",
           type: tx.displayType || "-",
           amount: tx.isIncome ? (tx.displayAmount || 0) : -(tx.displayAmount || 0),
-          status: tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
+          status: tx.source === "manual" ? "สำเร็จ" : tx.payment_status === "paid" ? "จ่ายแล้ว" : tx.payment_status === "pending" ? "กำลังรอ" : "สำเร็จ",
         });
 
         // Cell Styling for data
@@ -432,7 +432,7 @@ const FinancePage = () => {
         new Date(tx.created_at).toLocaleDateString("th-TH"),
         tx.displayType,
         `${tx.isIncome ? "+" : "-"}฿${tx.displayAmount.toLocaleString()}`,
-        tx.source === "manual" ? "สำเร็จ" : tx.payment_status || "สำเร็จ",
+        tx.source === "manual" ? "สำเร็จ" : tx.payment_status === "paid" ? "จ่ายแล้ว" : tx.payment_status === "pending" ? "กำลังรอ" : "สำเร็จ",
       ]);
 
       autoTable(doc, {
