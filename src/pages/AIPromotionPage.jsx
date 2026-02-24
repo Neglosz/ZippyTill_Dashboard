@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -8,6 +8,7 @@ import {
   ArrowRight,
   MoreHorizontal,
   Plus,
+  RotateCw,
   Target,
   BarChart3,
   Calendar,
@@ -24,6 +25,7 @@ import {
   Legend,
 } from "recharts";
 import CreatePromotionModal from "../components/modals/CreatePromotionModal";
+import PromotionDetailModal from "../components/Aipage/PromotionDetailModal";
 import { useBranch } from "../contexts/BranchContext";
 import { getPromotionRecommendations } from "../../AI/geminiAPI";
 import { promotionService } from "../services/promotionService";
@@ -76,6 +78,13 @@ const AIPromotionPage = () => {
   const [usedRecId, setUsedRecId] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(true);
+  const [, setTick] = useState(0); // triggers re-render every second
+
+  // Live countdown ticker
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleCreateFromAI = (rec) => {
     // Transform AI recommendation into modal-compatible format
@@ -167,65 +176,73 @@ const AIPromotionPage = () => {
     },
   ];
 
+  const fetchRecs = async (forceRefresh = false) => {
+    if (!activeBranchId) return;
+
+    // Try to load from cache first if not forcing refresh
+    const cachedData = forceRefresh ? null : getCache();
+    if (cachedData) {
+      console.log("📦 Loading recommendations from cache");
+      setRecommendations(cachedData);
+      setIsRecLoading(false); // Show cached data immediately
+    } else {
+      setRecommendations([]); // Clear old state for new branch or refresh
+      setIsRecLoading(true);
+    }
+
+    // Fetch fresh data
+    try {
+      console.log(
+        forceRefresh
+          ? "🔄 Forcing fresh AI recommendations..."
+          : "🔄 Fetching fresh AI recommendations...",
+      );
+      const aiRecs = await getPromotionRecommendations(
+        activeBranchId,
+        activeBranchName,
+      );
+      setRecommendations(aiRecs);
+      setCache(aiRecs); // Update cache
+      console.log("✅ Fresh recommendations loaded and cached");
+    } catch (error) {
+      console.error("Failed to fetch AI recs:", error);
+      // Only show fallback if no cache available and not forcing refresh
+      if (!cachedData) {
+        setRecommendations([
+          {
+            id: 1,
+            title: "โปรโมชั่นสินค้าขายดี",
+            desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
+            match: "92%",
+            benefit: "+25% ยอดขาย",
+            icon: "TrendingUp",
+            color: "text-purple-500",
+            bg: "bg-purple-50",
+          },
+          {
+            id: 2,
+            title: "ซื้อ 2 แถม 1",
+            desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
+            match: "88%",
+            benefit: "+40% ยอดขาย",
+            icon: "Package",
+            color: "text-blue-500",
+            bg: "bg-blue-50",
+          },
+        ]);
+      }
+    } finally {
+      setIsRecLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRecs = async () => {
-      if (!activeBranchId) return;
-
-      // Try to load from cache first
-      const cachedData = getCache();
-      if (cachedData) {
-        console.log("📦 Loading recommendations from cache");
-        setRecommendations(cachedData);
-        setIsRecLoading(false); // Show cached data immediately
-      } else {
-        setRecommendations([]); // Clear old state for new branch
-        setIsRecLoading(true);
-      }
-
-      // Fetch fresh data in background
-      try {
-        console.log("🔄 Fetching fresh AI recommendations...");
-        const aiRecs = await getPromotionRecommendations(
-          activeBranchId,
-          activeBranchName,
-        );
-        setRecommendations(aiRecs);
-        setCache(aiRecs); // Update cache
-        console.log("✅ Fresh recommendations loaded and cached");
-      } catch (error) {
-        console.error("Failed to fetch AI recs:", error);
-        // Only show fallback if no cache available
-        if (!cachedData) {
-          setRecommendations([
-            {
-              id: 1,
-              title: "โปรโมชั่นสินค้าขายดี",
-              desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
-              match: "92%",
-              benefit: "+25% ยอดขาย",
-              icon: "TrendingUp",
-              color: "text-purple-500",
-              bg: "bg-purple-50",
-            },
-            {
-              id: 2,
-              title: "ซื้อ 2 แถม 1",
-              desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
-              match: "88%",
-              benefit: "+40% ยอดขาย",
-              icon: "Package",
-              color: "text-blue-500",
-              bg: "bg-blue-50",
-            },
-          ]);
-        }
-      } finally {
-        setIsRecLoading(false);
-      }
-    };
-
-    fetchRecs();
+    fetchRecs(false);
   }, [activeBranchId, activeBranchName]);
+
+  const handleRefreshRecs = () => {
+    fetchRecs(true);
+  };
 
   const fetchPromos = async () => {
     if (!activeBranchId) return;
@@ -257,7 +274,7 @@ const AIPromotionPage = () => {
     setIsModalOpen(false);
   };
 
-  // Fetch real chart data: orders this year split by whether a promotion was active
+  // Fetch chart data: split by order_items.promotion_id (null = no promo, not null = with promo)
   const fetchChartData = async () => {
     if (!activeBranchId) return;
     try {
@@ -265,23 +282,22 @@ const AIPromotionPage = () => {
       const year = new Date().getFullYear();
       const startOfYear = new Date(year, 0, 1).toISOString();
 
-      // Fetch all orders this year
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select("total_amount, created_at")
-        .eq("store_id", activeBranchId)
-        .gte("created_at", startOfYear);
-      if (ordersError) throw ordersError;
+      // Fetch order_items joined with orders (filter by store + year)
+      // promotion_id != null → sold with a promotion
+      const { data: items, error } = await supabase
+        .from("order_items")
+        .select(
+          `
+          subtotal,
+          promotion_id,
+          orders!inner ( created_at, store_id )
+        `,
+        )
+        .eq("orders.store_id", activeBranchId)
+        .gte("orders.created_at", startOfYear);
+      if (error) throw error;
 
-      // Fetch all promotions for this branch
-      const { data: promos, error: promosError } = await supabase
-        .from("promotions")
-        .select("start_date, end_date, is_active")
-        .eq("store_id", activeBranchId)
-        .eq("is_active", true);
-      if (promosError) throw promosError;
-
-      // Build monthly buckets for last 6 months
+      // Build monthly buckets (last 6 months)
       const thaiMonths = [
         "ม.ค.",
         "ก.พ.",
@@ -309,29 +325,20 @@ const AIPromotionPage = () => {
         });
       }
 
-      // Helper: check if a given date falls within any promotion period
-      const isInPromo = (dateStr) => {
-        const d = new Date(dateStr);
-        return promos.some((p) => {
-          const start = p.start_date ? new Date(p.start_date) : null;
-          const end = p.end_date ? new Date(p.end_date) : null;
-          if (start && d < start) return false;
-          if (end && d > end) return false;
-          return true;
-        });
-      };
-
-      // Bucket each order
-      (orders || []).forEach((o) => {
-        const d = new Date(o.created_at);
+      // Bucket each order_item by month
+      (items || []).forEach((item) => {
+        const createdAt = item.orders?.created_at;
+        if (!createdAt) return;
+        const d = new Date(createdAt);
         const bucket = months.find(
           (m) => m.month === d.getMonth() && m.year === d.getFullYear(),
         );
         if (!bucket) return;
-        if (isInPromo(o.created_at)) {
-          bucket.withPromo += o.total_amount || 0;
+        const amount = parseFloat(item.subtotal) || 0;
+        if (item.promotion_id) {
+          bucket.withPromo += amount;
         } else {
-          bucket.noPromo += o.total_amount || 0;
+          bucket.noPromo += amount;
         }
       });
 
@@ -358,14 +365,18 @@ const AIPromotionPage = () => {
     }
   };
 
-  // Parse date string as LOCAL midnight to avoid UTC +7 offset issues
+  // Parse date string as LOCAL time to avoid UTC +7 offset issues
   // new Date("2026-02-24") → UTC midnight → 07:00 Thailand → loses 7 hours
-  const parseLocalDate = (dateStr) => {
+  const parseLocalDate = (dateStr, isEndDate = false) => {
     if (!dateStr) return null;
-    // If it's a date-only string YYYY-MM-DD, parse as local midnight
+    // If it's a date-only string YYYY-MM-DD, parse as local time
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       const [year, month, day] = dateStr.split("-").map(Number);
-      return new Date(year, month - 1, day, 23, 59, 59); // Local end of day
+      // end_date = 23:59:59 local (so it covers the full day)
+      // start_date = 00:00:00 local
+      return isEndDate
+        ? new Date(year, month - 1, day, 23, 59, 59)
+        : new Date(year, month - 1, day, 0, 0, 0);
     }
     return new Date(dateStr);
   };
@@ -381,15 +392,15 @@ const AIPromotionPage = () => {
 
   const getStatusInfo = (isActive, endDate) => {
     if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
-    if (parseLocalDate(endDate) < new Date())
+    if (parseLocalDate(endDate, true) < new Date())
       return { label: "หมดอายุ", color: "bg-red-500" };
     return { label: "ใช้งาน", color: "bg-emerald-500" };
   };
 
-  const getTimeRemaining = (startDate, endDate) => {
+  const getTimeRemaining = (createdAt, endDate) => {
     const now = new Date();
-    const start = parseLocalDate(startDate) || now;
-    const end = parseLocalDate(endDate);
+    const start = createdAt ? new Date(createdAt) : now;
+    const end = parseLocalDate(endDate, true);
     if (!end)
       return {
         text: "ไม่มีกำหนด",
@@ -412,6 +423,7 @@ const AIPromotionPage = () => {
       (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
 
     // Calculate percentage based on actual duration
     const elapsed = now - start;
@@ -431,11 +443,13 @@ const AIPromotionPage = () => {
     // Format text
     let text;
     if (days > 0) {
-      text = `${days} วัน ${hours} ชั่วโมง`;
+      text = `${days} วัน ${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
     } else if (hours > 0) {
-      text = `${hours} ชั่วโมง ${minutes} นาที`;
+      text = `${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
+    } else if (minutes > 0) {
+      text = `${minutes} นาที ${seconds} วินาที`;
     } else {
-      text = `${minutes} นาที`;
+      text = `${seconds} วินาที`;
     }
 
     return { text, percentage, color };
@@ -460,7 +474,7 @@ const AIPromotionPage = () => {
             <div>
               <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
                 AI โปรโมชั่น
-                <span className="text-primary">.</span>
+                {/* <span className="text-primary"> .</span> */}
               </h1>
               <p className="text-sm font-medium text-inactive">
                 ใช้ AI ของสาขาช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมที่สุด
@@ -526,11 +540,28 @@ const AIPromotionPage = () => {
           <div className="xl:col-span-1 flex flex-col gap-6">
             {/* AI Recommendations List */}
             <div className="bg-white rounded-[32px] p-6 shadow-premium border border-gray-100 flex-1 flex flex-col">
-              <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="text-orange-500 w-5 h-5" />
-                <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                  คำแนะนำจาก AI
-                </h3>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-orange-500 w-5 h-5" />
+                  <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                    คำแนะนำจาก AI
+                  </h3>
+                </div>
+                <button
+                  onClick={handleRefreshRecs}
+                  disabled={isRecLoading}
+                  className={`p-2 rounded-xl transition-all duration-300 flex items-center justify-center ${
+                    isRecLoading
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-inactive hover:text-primary hover:bg-primary/10 hover:rotate-180"
+                  }`}
+                  title="โหลดคำแนะนำใหม่"
+                >
+                  <RotateCw
+                    size={18}
+                    className={isRecLoading ? "animate-spin" : ""}
+                  />
+                </button>
               </div>
               <div className="space-y-4 flex-1">
                 {isRecLoading ? (
@@ -684,7 +715,7 @@ const AIPromotionPage = () => {
                         <div className="space-y-1.5 pt-3 border-t border-gray-200/50">
                           {(() => {
                             const timeRemaining = getTimeRemaining(
-                              promo.start_date,
+                              promo.created_at,
                               promo.end_date,
                             );
                             return (
@@ -799,13 +830,7 @@ const AIPromotionPage = () => {
                           "",
                         ]}
                       />
-                      <Legend
-                        formatter={(value) =>
-                          value === "withPromo"
-                            ? "มีโปรโมชั่น"
-                            : "ไม่มีโปรโมชั่น"
-                        }
-                      />
+
                       <Bar
                         dataKey="withPromo"
                         name="มีโปรโมชั่น"
@@ -916,7 +941,7 @@ const AIPromotionPage = () => {
                       <div className="space-y-1.5 pt-3 border-t border-gray-200/50">
                         {(() => {
                           const timeRemaining = getTimeRemaining(
-                            promo.start_date,
+                            promo.created_at,
                             promo.end_date,
                           );
                           return (
@@ -960,146 +985,10 @@ const AIPromotionPage = () => {
         </div>
       )}
 
-      {/* Promotion Detail Modal */}
-      {selectedPromo && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6">
-          <div
-            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-            onClick={() => setSelectedPromo(null)}
-          />
-          <div className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            {/* Header */}
-            <div className="bg-gradient-to-br from-primary/10 to-orange-50 p-8 border-b border-gray-100">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`text-[10px] font-black px-2 py-0.5 rounded-lg text-white ${
-                        getStatusInfo(
-                          selectedPromo.is_active,
-                          selectedPromo.end_date,
-                        ).color
-                      }`}
-                    >
-                      {
-                        getStatusInfo(
-                          selectedPromo.is_active,
-                          selectedPromo.end_date,
-                        ).label
-                      }
-                    </span>
-                    <span className="text-[10px] font-bold text-inactive uppercase tracking-wider">
-                      ID: {selectedPromo.id.slice(0, 8)}
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
-                    {selectedPromo.name}
-                  </h2>
-                  {selectedPromo.description && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {selectedPromo.description}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelectedPromo(null)}
-                  className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm shrink-0"
-                >
-                  <Plus size={20} className="rotate-45" />
-                </button>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="p-8 space-y-4">
-              {/* Discount Type */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Target size={18} className="text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
-                    ประเภทส่วนลด
-                  </p>
-                  <p className="text-sm font-black text-gray-900">
-                    {getPromotionLabel(selectedPromo)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Date Range */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                  <Calendar size={18} className="text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
-                    ระยะเวลา
-                  </p>
-                  <p className="text-sm font-black text-gray-900">
-                    {formatDateRange(
-                      selectedPromo.start_date,
-                      selectedPromo.end_date,
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {/* Products Count */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <Package size={18} className="text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
-                    สินค้าที่ร่วมรายการ
-                  </p>
-                  <p className="text-sm font-black text-gray-900">
-                    {selectedPromo.itemCount || 0} สินค้า
-                  </p>
-                </div>
-              </div>
-
-              {/* Time Remaining */}
-              {selectedPromo.end_date &&
-                (() => {
-                  const tr = getTimeRemaining(
-                    selectedPromo.start_date,
-                    selectedPromo.end_date,
-                  );
-                  return (
-                    <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                      <div className="flex justify-between mb-3">
-                        <p className="text-[10px] font-black text-inactive uppercase tracking-wider">
-                          เวลาที่เหลือ
-                        </p>
-                        <p className="text-[10px] font-black text-gray-900">
-                          {tr.text}
-                        </p>
-                      </div>
-                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${tr.color} rounded-full transition-all duration-1000`}
-                          style={{ width: `${100 - tr.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-            </div>
-
-            {/* Footer */}
-            <div className="px-8 pb-8">
-              <button
-                onClick={() => setSelectedPromo(null)}
-                className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200 transition-all text-sm"
-              >
-                ปิด
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PromotionDetailModal
+        promo={selectedPromo}
+        onClose={() => setSelectedPromo(null)}
+      />
     </>
   );
 };

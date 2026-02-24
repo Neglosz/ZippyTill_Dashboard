@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   X,
+  Trash2,
   Search,
   Filter,
   Check,
@@ -190,6 +191,8 @@ const CreatePromotionModal = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [products, setProducts] = useState([]);
+  const [expiringProducts, setExpiringProducts] = useState([]);
+  const [overstockedProducts, setOverstockedProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -210,13 +213,16 @@ const CreatePromotionModal = ({
           const profit = product.price - product.cost_price;
           const acceptableProfit = profit * 0.7; // 70% of profit
 
-          // Calculate default expiry date (6 months from now)
-          const defaultExpiry = new Date();
-          defaultExpiry.setMonth(defaultExpiry.getMonth() + 6);
-          const expiryDate = defaultExpiry.toISOString().split("T")[0];
+          // Get earliest expiry date from product_batches (real data)
+          const batches = product.product_batches || [];
+          const futureBatches = batches
+            .map((b) => b.expire_date)
+            .filter(Boolean)
+            .sort();
+          const expiryDate = futureBatches[0] || null;
 
           return {
-            id: product.id, // ✅ Use actual UUID, not barcode!
+            id: product.id,
             name: product.name,
             price: product.price,
             costPrice: product.cost_price,
@@ -227,6 +233,7 @@ const CreatePromotionModal = ({
             remaining: product.stock_qty,
             lastSalePrice: product.price,
             stock: product.stock_qty,
+            lowStockThreshold: product.low_stock_threshold || 5,
             image:
               product.image_url ||
               "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=200&h=200&fit=crop",
@@ -235,6 +242,23 @@ const CreatePromotionModal = ({
         });
 
         setProducts(transformedProducts);
+
+        // Pre-compute expiring/overstocked lists for tab counts
+        const now = new Date();
+        const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        setExpiringProducts(
+          transformedProducts.filter((p) => {
+            if (!p.expiryDate) return false;
+            const exp = new Date(p.expiryDate);
+            return exp <= in30Days;
+          }),
+        );
+        // Overstocked: stock significantly above threshold (3x threshold or >50 if no threshold)
+        setOverstockedProducts(
+          transformedProducts.filter(
+            (p) => p.stock > Math.max(p.lowStockThreshold * 3, 50),
+          ),
+        );
 
         // Auto-select products if initialData has target_products
         if (
@@ -415,19 +439,24 @@ const CreatePromotionModal = ({
                   สินค้าใกล้หมดอายุ
                 </h4>
                 <p className="text-xs text-red-700 font-medium">
-                  มี 6 รายการที่หมดอายุภายใน 30 วัน
-                  แนะนำให้ทำโปรโมชั่นเพื่อระบาย
+                  {expiringProducts.length > 0
+                    ? `มี ${expiringProducts.length} รายการที่หมดอายุภายใน 30 วัน แนะนำให้ทำโปรโมชั่นเพื่อระบาย`
+                    : "ไม่พบสินค้าที่ใกล้หมดอายุใน 30 วัน"}
                 </p>
               </div>
             </div>
             <button
               type="button"
+              disabled={expiringProducts.length === 0}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Select all logic would go here
+                // Merge without duplicates
+                const newIds = new Set(selectedProducts.map((p) => p.id));
+                const toAdd = expiringProducts.filter((p) => !newIds.has(p.id));
+                setSelectedProducts((prev) => [...prev, ...toAdd]);
               }}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-colors shrink-0"
             >
               เลือกทั้งหมด
             </button>
@@ -445,19 +474,25 @@ const CreatePromotionModal = ({
                   สินค้าล้นสต็อก
                 </h4>
                 <p className="text-xs text-orange-700 font-medium">
-                  มี 4 รายการที่สต็อกเยอะ (50%
-                  ขอแนะนำให้ลดราคาเพื่อเพิ่มการหมุนเวียน
+                  {overstockedProducts.length > 0
+                    ? `มี ${overstockedProducts.length} รายการที่สต็อกเยอะ แนะนำให้ลดราคาเพื่อเพิ่มการหมุนเวียน`
+                    : "ไม่พบสินค้าที่สต็อกเกิน"}
                 </p>
               </div>
             </div>
             <button
               type="button"
+              disabled={overstockedProducts.length === 0}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Select all logic would go here
+                const newIds = new Set(selectedProducts.map((p) => p.id));
+                const toAdd = overstockedProducts.filter(
+                  (p) => !newIds.has(p.id),
+                );
+                setSelectedProducts((prev) => [...prev, ...toAdd]);
               }}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-colors shrink-0"
             >
               เลือกทั้งหมด
             </button>
@@ -501,101 +536,130 @@ const CreatePromotionModal = ({
         )}
 
         {/* Premium Product Grid */}
-        {!loading && !error && products.length > 0 && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 overflow-y-auto pr-2 pb-20">
-            {products.map((product) => {
-              const isSelected = selectedProducts.find(
-                (p) => p.id === product.id,
-              );
+        {!loading &&
+          !error &&
+          products.length > 0 &&
+          (() => {
+            // Filter products based on active tab
+            const displayProducts =
+              activeTab === 1
+                ? expiringProducts
+                : activeTab === 2
+                  ? overstockedProducts
+                  : products;
+
+            if (displayProducts.length === 0) {
               return (
-                <div
-                  key={product.id}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleProduct(product);
-                  }}
-                  className={`group relative rounded-2xl cursor-pointer transition-all duration-500 ${
-                    isSelected ? "scale-[1.02]" : "hover:scale-[1.03]"
-                  }`}
-                >
-                  {/* Glow Effect */}
-                  <div
-                    className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${
-                      isSelected
-                        ? "bg-gradient-to-br from-primary/30 to-orange-400/30 opacity-100"
-                        : "bg-gradient-to-br from-gray-200/50 to-gray-300/50 opacity-0 group-hover:opacity-100"
-                    }`}
-                  />
-
-                  {/* Card Content */}
-                  <div
-                    className={`relative bg-white rounded-2xl border-2 p-3 transition-all duration-300 ${
-                      isSelected
-                        ? "border-primary shadow-xl shadow-primary/20"
-                        : "border-gray-100 group-hover:border-gray-200 shadow-md group-hover:shadow-xl"
-                    }`}
-                  >
-                    {/* Selection Badge */}
-                    {isSelected && (
-                      <div className="absolute top-1 right-1 w-7 h-7 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white z-20 shadow-lg shadow-primary/40">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                    )}
-
-                    {/* Discount Badge for Expiring Products */}
-                    {activeTab === 1 && (
-                      <div className="absolute top-0 left-0 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-tl-[14px] rounded-br-lg shadow-md z-10">
-                        ลด {10 + (parseInt(product.id.slice(-3)) % 20)}%
-                      </div>
-                    )}
-
-                    {/* Discount Badge for Overstocked Products */}
-                    {activeTab === 2 && (
-                      <div className="absolute top-0 left-0 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded-tl-[14px] rounded-br-lg shadow-md z-10">
-                        ลด {15 + (parseInt(product.id.slice(-3)) % 30)}%
-                      </div>
-                    )}
-
-                    {/* Blue Checkmark for AI Suggested Products */}
-                    {(activeTab === 1 || activeTab === 2) &&
-                      parseInt(product.id.slice(-1)) % 2 === 0 && (
-                        <div className="absolute top-8 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white z-10 shadow-md">
-                          <Check size={10} strokeWidth={3} />
-                        </div>
-                      )}
-
-                    {/* Product Image */}
-                    <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl mb-2 overflow-hidden">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      {/* Gradient Overlay on Hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
-
-                    {/* Product Info */}
-                    <h4 className="font-bold text-gray-900 text-sm mb-1 leading-tight line-clamp-1">
-                      {product.name}
-                    </h4>
-
-                    {/* Price & Stock */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-base font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-                        ฿{product.price}
-                      </span>
-                      <span className="text-[10px] px-2 py-1 bg-gray-100 text-gray-600 font-bold rounded-full">
-                        {product.stock} ชิ้น
-                      </span>
-                    </div>
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Package size={32} className="text-gray-400" />
                   </div>
+                  <p className="mt-4 text-gray-500 font-semibold">
+                    {activeTab === 1
+                      ? "ไม่พบสินค้าใกล้หมดอายุใน 30 วัน"
+                      : "ไม่พบสินค้าที่สต็อกเกิน"}
+                  </p>
                 </div>
               );
-            })}
-          </div>
-        )}
+            }
+
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 overflow-y-auto pr-2 pb-20">
+                {displayProducts.map((product) => {
+                  const isSelected = selectedProducts.find(
+                    (p) => p.id === product.id,
+                  );
+                  // Compute days until expiry for badge
+                  const daysUntilExpiry = product.expiryDate
+                    ? Math.ceil(
+                        (new Date(product.expiryDate) - new Date()) /
+                          (1000 * 60 * 60 * 24),
+                      )
+                    : null;
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleProduct(product);
+                      }}
+                      className={`group relative rounded-2xl cursor-pointer transition-all duration-500 ${
+                        isSelected ? "scale-[1.02]" : "hover:scale-[1.03]"
+                      }`}
+                    >
+                      {/* Glow Effect */}
+                      <div
+                        className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${
+                          isSelected
+                            ? "bg-gradient-to-br from-primary/30 to-orange-400/30 opacity-100"
+                            : "bg-gradient-to-br from-gray-200/50 to-gray-300/50 opacity-0 group-hover:opacity-100"
+                        }`}
+                      />
+
+                      {/* Card Content */}
+                      <div
+                        className={`relative bg-white rounded-2xl border-2 p-3 transition-all duration-300 ${
+                          isSelected
+                            ? "border-primary shadow-xl shadow-primary/20"
+                            : "border-gray-100 group-hover:border-gray-200 shadow-md group-hover:shadow-xl"
+                        }`}
+                      >
+                        {/* Selection Badge */}
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-7 h-7 bg-gradient-to-br from-primary to-orange-600 rounded-full flex items-center justify-center text-white z-20 shadow-lg shadow-primary/40">
+                            <Check size={14} strokeWidth={3} />
+                          </div>
+                        )}
+
+                        {/* Expiry Badge for Expiring Products */}
+                        {activeTab === 1 && daysUntilExpiry !== null && (
+                          <div className="absolute top-0 left-0 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-tl-[14px] rounded-br-lg shadow-md z-10">
+                            {daysUntilExpiry <= 0
+                              ? "หมดอายุแล้ว"
+                              : `เหลือ ${daysUntilExpiry} วัน`}
+                          </div>
+                        )}
+
+                        {/* Stock badge for overstocked products */}
+                        {activeTab === 2 && (
+                          <div className="absolute top-0 left-0 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded-tl-[14px] rounded-br-lg shadow-md z-10">
+                            สต็อกเยอะ {product.stock} ชิ้น
+                          </div>
+                        )}
+
+                        {/* Product Image */}
+                        <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl mb-2 overflow-hidden">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          {/* Gradient Overlay on Hover */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+
+                        {/* Product Info */}
+                        <h4 className="font-bold text-gray-900 text-sm mb-1 leading-tight line-clamp-1">
+                          {product.name}
+                        </h4>
+
+                        {/* Price & Stock */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-base font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+                            ฿{product.price}
+                          </span>
+                          <span className="text-[10px] px-2 py-1 bg-gray-100 text-gray-600 font-bold rounded-full">
+                            {product.stock} ชิ้น
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
       </div>
 
       {/* Premium Selected Items Sidebar */}
@@ -638,20 +702,7 @@ const CreatePromotionModal = ({
                   className="group relative bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-100 p-3 hover:shadow-lg hover:border-primary/20 transition-all duration-300"
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
-                  {/* Remove Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleProduct(p);
-                    }}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 shadow-lg flex items-center justify-center"
-                  >
-                    <X size={12} strokeWidth={3} />
-                  </button>
-
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 items-center">
                     {/* Product Image */}
                     <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shrink-0 ring-2 ring-gray-100 group-hover:ring-primary/20 transition-all">
                       <img
@@ -675,6 +726,19 @@ const CreatePromotionModal = ({
                         </span>
                       </div>
                     </div>
+
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleProduct(p);
+                      }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 shrink-0"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               ))
@@ -1131,9 +1195,6 @@ const CreatePromotionModal = ({
                         <div>
                           <p className="text-sm font-bold text-gray-900">
                             {product.name}
-                          </p>
-                          <p className="text-xs font-semibold text-gray-500">
-                            {product.id}
                           </p>
                         </div>
                       </div>

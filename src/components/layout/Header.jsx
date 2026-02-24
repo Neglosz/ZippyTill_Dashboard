@@ -18,8 +18,12 @@ const Header = () => {
 
   // Read notification settings from localStorage (per branch)
   const getNotificationSettings = () => {
-    const notifEnabled = localStorage.getItem(`setting_notifications_${activeBranchId}`);
-    const stockEnabled = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
+    const notifEnabled = localStorage.getItem(
+      `setting_notifications_${activeBranchId}`,
+    );
+    const stockEnabled = localStorage.getItem(
+      `setting_stockAlert_${activeBranchId}`,
+    );
     return {
       notifications: notifEnabled !== null ? JSON.parse(notifEnabled) : true,
       stockAlert: stockEnabled !== null ? JSON.parse(stockEnabled) : true,
@@ -48,44 +52,60 @@ const Header = () => {
       ]);
 
       // Transform Overdue Items
-      const overdueNotifications = overdueItems.map((item) => ({
-        id: `overdue-${item.id}`,
-        type: "overdue",
-        title: `Overdue Payment: ${item.name}`,
-        message: `${item.amount.toLocaleString()} THB due on ${new Date(
-          item.dueDate,
-        ).toLocaleDateString("th-TH")}`,
-        time: `${item.overdueDays} days overdue`,
-        created_at: item.dueDate, // Sort by due date
-        link: "/finance/overdue", // Potential future use
-      }));
+      const overdueNotifications = overdueItems.map((item) => {
+        // Use multiple fallback dates to ensure we show a date to the user
+        const rawDate = item.dueDate || item.customerDueDate || item.createdAt;
+        const dueDateObj = rawDate ? new Date(rawDate) : null;
+
+        const formattedDate =
+          dueDateObj && !isNaN(dueDateObj.getTime())
+            ? dueDateObj.toLocaleDateString("th-TH", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "ไม่ได้ระบุ";
+
+        return {
+          id: `overdue-${item.id}`,
+          type: "overdue",
+          title: `ค้างชำระ: ${item.name}`,
+          message: `ยอด ${item.amount.toLocaleString()} บาท\nครบกำหนดเมื่อ ${formattedDate}`,
+          time:
+            item.overdueDays > 0
+              ? `ค้างชำระมาแล้ว ${item.overdueDays} วัน`
+              : "ครบกำหนดวันนี้",
+          created_at: rawDate || new Date().toISOString(),
+          link: "/finance/overdue",
+        };
+      });
 
       // Transform Expiring Items (only if stockAlert is enabled)
       const expiringNotifications = settings.stockAlert
         ? [
             ...dashboardNotifs.expired.map((item) => ({
-              id: `expired-${item.name}-${Math.random()}`, // Ensure unique ID
-              type: "alert", // Use alert for expired
-              title: `Expired: ${item.name}`,
-              message: `Product expired on ${item.expiryDate}`,
-              time: "Expired",
+              id: `expired-${item.name}-${Math.random()}`,
+              type: "alert",
+              title: `สินค้าหมดอายุ: ${item.name}`,
+              message: `หมดอายุเมื่อวันที่ ${item.expiryDate}`,
+              time: "หมดอายุแล้ว",
               created_at: new Date().toISOString(),
             })),
             ...dashboardNotifs.expiringSoon.map((item) => ({
               id: `expiring-${item.name}-${Math.random()}`,
               type: "expiring",
-              title: `Expiring Soon: ${item.name}`,
-              message: `Expires in ${item.days} days (${item.expiryDate})`,
-              time: `${item.days} days left`,
+              title: `สินค้าใกล้หมดอายุ: ${item.name}`,
+              message: `จะหมดอายุในอีก ${item.days} วัน\n(วันที่ ${item.expiryDate})`,
+              time: `เหลืออีก ${item.days} วัน`,
               created_at: new Date().toISOString(),
             })),
             ...(settings.stockAlert
               ? dashboardNotifs.lowStock.map((item) => ({
                   id: `lowstock-${item.name}-${Math.random()}`,
                   type: "stock",
-                  title: `Low Stock: ${item.name}`,
-                  message: `Only ${item.remaining} left in stock`,
-                  time: "Low stock",
+                  title: `สินค้าใกล้หมด: ${item.name}`,
+                  message: `เหลือเพียง ${item.qty} ${item.unit || "ชิ้น"} ในคลัง`,
+                  time: "สต็อกน้อย",
                   created_at: new Date().toISOString(),
                 }))
               : []),
@@ -138,7 +158,10 @@ const Header = () => {
 
     // Listen for settings changes from SettingPage
     const handleStorageChange = (e) => {
-      if (e.key?.startsWith("setting_notifications_") || e.key?.startsWith("setting_stockAlert_")) {
+      if (
+        e.key?.startsWith("setting_notifications_") ||
+        e.key?.startsWith("setting_stockAlert_")
+      ) {
         fetchNotifications();
       }
     };

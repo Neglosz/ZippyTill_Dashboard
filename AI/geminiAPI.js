@@ -75,6 +75,7 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
   const productData = topProducts.slice(0, 10).map((p) => ({
     id: p.id,
     name: p.name,
+    category: p.product_categories?.name || "ไม่ระบุประเภท",
     sold_qty: p.sold_qty,
     revenue: p.revenue,
   }));
@@ -150,6 +151,19 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
        - In this case, return exactly an empty array: []
        - Do not suggest generic promotions for "Green Tea", "Noodles", or any common items if they are not in the provided data.
     
+    7. **NO DUPLICATE PRODUCTS** (CRITICAL):
+       - Each product (by id) may only appear in ONE promotion across the entire response.
+       - Do NOT use the same product in Promotion 1 and Promotion 2, even if it fits both.
+       - If a product was already assigned to a promotion, exclude it from all subsequent promotions.
+       - This prevents overlapping/redundant promotions and confusion at checkout.
+    
+    8. **SAME CATEGORY ONLY** (CRITICAL):
+       - Each promotion must only contain products from the SAME category.
+       - Do NOT mix food items with household items, beverages with cleaning products, etc.
+       - Group products by their "category" field — only products sharing the same category can be in one promotion.
+       - If categories are mixed, it confuses customers and feels unnatural.
+       - Example: "น้ำดื่ม" and "น้ำอัดลม" can be together (both beverages). "แป้ง" and "ยาสีฟัน" cannot.
+    
     OUTPUT REQUIREMENTS:
     - Use Thai language for title and description
     - Explain WHY each promotion is recommended
@@ -181,7 +195,21 @@ export const getPromotionRecommendations = async (branchId, branchName) => {
   try {
     const responseText = await generateAIContent(prompt);
     const cleanJson = responseText.replace(/```json|```/g, "").trim();
-    return JSON.parse(cleanJson);
+    const recs = JSON.parse(cleanJson);
+
+    // Safety net: remove duplicate products across recommendations
+    const usedProductIds = new Set();
+    for (const rec of recs) {
+      if (Array.isArray(rec.target_products)) {
+        rec.target_products = rec.target_products.filter((p) => {
+          if (!p.id || usedProductIds.has(p.id)) return false;
+          usedProductIds.add(p.id);
+          return true;
+        });
+      }
+    }
+
+    return recs;
   } catch (error) {
     console.error("Failed to parse AI recommendations:", error);
     throw error;

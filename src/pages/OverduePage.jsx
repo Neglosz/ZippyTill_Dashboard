@@ -84,7 +84,8 @@ const OverduePage = () => {
       setRecoveryRate(rate);
     } catch (err) {
       console.error("Error fetching items:", err);
-      if (!isBackground) setError("Failed to load data.");
+      if (!isBackground)
+        setError("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       if (!isBackground) setIsLoading(false);
     }
@@ -214,7 +215,7 @@ const OverduePage = () => {
       setShowEditSuccess(true);
     } catch (err) {
       console.error("Error updating item:", err);
-      alert("Failed to update item");
+      alert("ไม่สามารถอัปเดตข้อมูลได้");
     }
   };
 
@@ -230,11 +231,11 @@ const OverduePage = () => {
       prev.map((item) =>
         item.customerId === customerId
           ? {
-            ...item,
-            name: result.name,
-            phone: result.phone,
-            customerDueDate: result.customerDueDate,
-          }
+              ...item,
+              name: result.name,
+              phone: result.phone,
+              customerDueDate: result.customerDueDate,
+            }
           : item,
       ),
     );
@@ -243,17 +244,17 @@ const OverduePage = () => {
     setSelectedCustomer((prev) =>
       prev
         ? {
-          ...prev,
-          name: result.name,
-          phone: result.phone,
-          customerDueDate: result.customerDueDate,
-          items: prev.items.map((i) => ({
-            ...i,
+            ...prev,
             name: result.name,
             phone: result.phone,
             customerDueDate: result.customerDueDate,
-          })),
-        }
+            items: prev.items.map((i) => ({
+              ...i,
+              name: result.name,
+              phone: result.phone,
+              customerDueDate: result.customerDueDate,
+            })),
+          }
         : prev,
     );
 
@@ -273,10 +274,10 @@ const OverduePage = () => {
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Overdue Debtors");
+      XLSX.utils.book_append_sheet(wb, ws, "รายชื่อลูกหนี้ค้างชำระ");
       XLSX.writeFile(
         wb,
-        `Overdue_Debtors_${new Date().toISOString().split("T")[0]}.xlsx`,
+        `รายงานลูกหนี้ค้างชำระ_${new Date().toISOString().split("T")[0]}.xlsx`,
       );
       setShowExportModal(false);
     } catch (err) {
@@ -336,11 +337,13 @@ const OverduePage = () => {
         },
       });
 
-      doc.save(`Overdue_Debtors_${new Date().toISOString().split("T")[0]}.pdf`);
+      doc.save(
+        `รายงานลูกหนี้ค้างชำระ_${new Date().toISOString().split("T")[0]}.pdf`,
+      );
       setShowExportModal(false);
     } catch (err) {
       console.error("Export PDF details:", err);
-      alert(`Failed to export PDF: ${err.message || err.toString()}`);
+      alert(`ไม่สามารถส่งออก PDF ได้: ${err.message || err.toString()}`);
     }
   };
 
@@ -507,8 +510,11 @@ const OverduePage = () => {
                         </span>
                       </td>
                       <td className="py-5 text-right">
-                        <div className="font-black text-gray-900 text-xl tracking-tighter">
-                          ฿{customer.totalAmount.toLocaleString()}
+                        <div className="font-black text-gray-900 text-xl tracking-tighter flex items-baseline justify-end">
+                          <span className="text-sm mr-1 opacity-50 font-bold">
+                            ฿
+                          </span>
+                          {customer.totalAmount.toLocaleString()}
                         </div>
                         {customer.maxOverdueDays > 15 && (
                           <div className="text-[10px] text-rose-500 font-black uppercase tracking-wider mt-1">
