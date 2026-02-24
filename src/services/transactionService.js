@@ -171,6 +171,9 @@ export const transactionService = {
         });
       }
 
+      // Sort by amount descending
+      paymentChannels.sort((a, b) => b.amount - a.amount);
+
       return {
         totalRevenue,
         totalExpense,
