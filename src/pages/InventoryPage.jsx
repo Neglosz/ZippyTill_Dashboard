@@ -342,7 +342,7 @@ const InventoryPage = () => {
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
                   {
                     products.filter(
-                      (p) => p.stock_qty <= (p.low_stock_threshold || 10),
+                      (p) => p.low_stock_threshold && p.stock_qty <= p.low_stock_threshold && p.stock_qty > 0,
                     ).length
                   }{" "}
                   <span className="text-lg font-black text-inactive">
@@ -534,8 +534,8 @@ const InventoryPage = () => {
                   .sort((a, b) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const sevenDays = new Date(today);
-                    sevenDays.setDate(today.getDate() + 7);
+                    const thirtyDays = new Date(today);
+                    thirtyDays.setDate(today.getDate() + 30);
 
                     const getScore = (p) => {
                       const batches = p.product_batches || [];
@@ -545,7 +545,7 @@ const InventoryPage = () => {
                       const isExpiringSoon = batches.some(
                         (b) =>
                           new Date(b.expire_date) >= today &&
-                          new Date(b.expire_date) <= sevenDays,
+                          new Date(b.expire_date) <= thirtyDays,
                       );
                       const isOutOfStock = p.stock_qty <= 0;
                       if (isExpired) return 0;
@@ -570,18 +570,18 @@ const InventoryPage = () => {
                         ).toLocaleDateString("th-TH")
                         : "-";
 
-                    // Low stock threshold check (default to 10 if not set)
+                    // Low stock threshold check (only if threshold is set)
                     const isLowStock =
-                      product.stock_qty <=
-                      (product.low_stock_threshold || 10) &&
+                      product.low_stock_threshold &&
+                      product.stock_qty <= product.low_stock_threshold &&
                       product.stock_qty > 0;
                     const isOutOfStock = product.stock_qty <= 0;
 
                     // Expiry status
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const sevenDaysFromNow = new Date(today);
-                    sevenDaysFromNow.setDate(today.getDate() + 7);
+                    const thirtyDaysFromNow = new Date(today);
+                    thirtyDaysFromNow.setDate(today.getDate() + 30);
 
                     const isExpired = sortedBatches.some(
                       (b) => new Date(b.expire_date) < today,
@@ -591,7 +591,7 @@ const InventoryPage = () => {
                       sortedBatches.some(
                         (b) =>
                           new Date(b.expire_date) >= today &&
-                          new Date(b.expire_date) <= sevenDaysFromNow,
+                          new Date(b.expire_date) <= thirtyDaysFromNow,
                       );
 
                     return (
@@ -741,7 +741,7 @@ const InventoryPage = () => {
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={
-                                  product.stock_qty < 10
+                                  product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold
                                     ? "text-rose-500"
                                     : "text-[#1B2559]"
                                 }
@@ -763,7 +763,7 @@ const InventoryPage = () => {
                                 </svg>
                               </span>
                               <span
-                                className={`text-2xl font-black leading-none ${product.stock_qty < 10 ? "text-rose-500" : "text-[#1B2559]"}`}
+                                className={`text-2xl font-black leading-none ${product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold ? "text-rose-500" : "text-[#1B2559]"}`}
                               >
                                 {product.stock_qty}
                               </span>
