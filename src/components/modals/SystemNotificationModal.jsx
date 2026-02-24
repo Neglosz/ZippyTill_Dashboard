@@ -104,7 +104,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
       text: "text-blue-600",
       iconBg: "bg-blue-500",
       tag: "bg-blue-500",
-      tagLabel: "เหลืออีก",
+      tagLabel: "เหลือ",
     },
   };
 
@@ -141,13 +141,17 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
                 <span
                   className={`${theme.tag} text-[9px] font-black text-white px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide flex-shrink-0`}
                 >
-                  {theme.tagLabel} {item.days}{" "}
-                  {item.days !== undefined ? "วัน" : ""}
+                  {theme.tagLabel}{" "}
+                  {color === "blue"
+                    ? `${item.qty} ${item.unit || "ชิ้น"}`
+                    : `${item.days} วัน`}
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-inactive tracking-wide">
-                วันหมดอายุ : {item.expiryDate}
-              </p>
+              {color !== "blue" && (
+                <p className="text-[11px] font-bold text-inactive tracking-wide">
+                  วันหมดอายุ : {item.expiryDate}
+                </p>
+              )}
             </div>
           ))
         ) : (

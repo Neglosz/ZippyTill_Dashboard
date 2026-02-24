@@ -255,15 +255,9 @@ const Header = () => {
       {/* Edge lighting effect - High Dimension */}
 
       <div className="flex flex-col">
-        <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-snug">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight leading-snug">
           {title}
         </h2>
-        <div className="flex items-center gap-2 mt-1.5 opacity-80">
-          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
-            Overview & Metrics
-          </p>
-        </div>
       </div>
 
       <div className="flex items-center gap-4">

@@ -403,7 +403,6 @@ const CreatePromotionModal = ({
               { label: "ทั้งหมด", icon: Star },
               { label: "ยอดขายต่ำ", icon: TrendingUp },
               { label: "ยอดขายดี", icon: Sparkles },
-              { label: "ลูกค้าชอบ", icon: Heart },
               { label: "กำไรสูง", icon: DollarSign },
             ].map((cat, i) => (
               <button
@@ -541,12 +540,33 @@ const CreatePromotionModal = ({
           products.length > 0 &&
           (() => {
             // Filter products based on active tab
-            const displayProducts =
+            let displayProducts =
               activeTab === 1
                 ? expiringProducts
                 : activeTab === 2
                   ? overstockedProducts
                   : products;
+
+            // Apply secondary filter if in 'All Products' tab
+            if (activeTab === 0 && activeFilter !== 0) {
+              const sorted = [...displayProducts];
+              // Assuming dummy logic or existing fields for these metrics:
+              // For actual app, we might need actual sales data attached to products.
+              // Without it, we will use mock logic or available fields like profit, stock for demo purposes.
+              switch (activeFilter) {
+                case 1: // ยอดขายต่ำ (Low sales / high stock representing low movement)
+                  displayProducts = sorted.sort((a, b) => b.stock - a.stock);
+                  break;
+                case 2: // ยอดขายดี (Best sellers / low stock but high profit representing high movement)
+                  displayProducts = sorted.sort((a, b) => a.stock - b.stock);
+                  break;
+                case 3: // กำไรสูง (High profit)
+                  displayProducts = sorted.sort((a, b) => b.profit - a.profit);
+                  break;
+                default:
+                  break;
+              }
+            }
 
             if (displayProducts.length === 0) {
               return (
