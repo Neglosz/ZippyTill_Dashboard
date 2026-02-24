@@ -107,9 +107,7 @@ const SummaryStats = ({
               {overdueRate ?? 0}
               <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
             </h3>
-            <p className="text-[10px] font-medium text-inactive mt-1.5">
-              ของยอดซื้อขายทั้งหมด
-            </p>
+          
           </div>
         </div>
       </div>
