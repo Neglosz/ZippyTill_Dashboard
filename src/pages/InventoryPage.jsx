@@ -289,21 +289,19 @@ const InventoryPage = () => {
         <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-[20px] w-fit shadow-sm border border-white/20">
           <button
             onClick={() => setActiveTab("products")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-              activeTab === "products"
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "products"
                 ? "bg-primary text-white shadow-lg shadow-primary/20"
                 : "text-gray-500 hover:text-primary hover:bg-primary/5"
-            }`}
+              }`}
           >
             รายการสินค้า
           </button>
           <button
             onClick={() => setActiveTab("report")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-              activeTab === "report"
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "report"
                 ? "bg-primary text-white shadow-lg shadow-primary/20"
                 : "text-gray-500 hover:text-primary hover:bg-primary/5"
-            }`}
+              }`}
           >
             รายงานสต็อก
           </button>
@@ -428,16 +426,16 @@ const InventoryPage = () => {
                 <div className="relative" ref={filterRef}>
                   <button
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${
-                      selectedCategory
+                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${selectedCategory
                         ? "border-primary text-primary bg-primary/5"
                         : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     <Filter size={16} />
                     {selectedCategory
-                      ? categories.find((c) => c.id === selectedCategory)
-                          ?.name || "ตัวกรอง"
+                      ? selectedCategory === "no-category"
+                        ? "ทั่วไป"
+                        : categories.find((c) => c.id === selectedCategory)?.name || "ตัวกรอง"
                       : "ตัวกรอง"}
                   </button>
 
@@ -449,13 +447,24 @@ const InventoryPage = () => {
                           setSelectedCategory(null);
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                          !selectedCategory
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${!selectedCategory
                             ? "bg-primary text-white"
                             : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         ทั้งหมด
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCategory("no-category");
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === "no-category"
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        ทั่วไป
                       </button>
                       {categories.map((category) => (
                         <button
@@ -464,11 +473,10 @@ const InventoryPage = () => {
                             setSelectedCategory(category.id);
                             setIsFilterOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                            selectedCategory === category.id
+                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === category.id
                               ? "bg-primary text-white"
                               : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           {category.name}
                         </button>
@@ -489,13 +497,16 @@ const InventoryPage = () => {
                   </p>
                 </div>
               ) : products.filter((p) => {
-                  const matchesSearch =
-                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (p.barcode && p.barcode.includes(searchQuery));
-                  const matchesCategory =
-                    !selectedCategory || p.category_id === selectedCategory;
-                  return matchesSearch && matchesCategory;
-                }).length === 0 ? (
+                const matchesSearch =
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (p.barcode && p.barcode.includes(searchQuery));
+                const matchesCategory =
+                  !selectedCategory ||
+                  (selectedCategory === "no-category"
+                    ? !p.category_id
+                    : p.category_id === selectedCategory);
+                return matchesSearch && matchesCategory;
+              }).length === 0 ? (
                 <div className="col-span-full bg-white rounded-[32px] p-20 text-center shadow-premium border border-gray-100">
                   <Package
                     size={48}
@@ -514,7 +525,10 @@ const InventoryPage = () => {
                         .includes(searchQuery.toLowerCase()) ||
                       (p.barcode && p.barcode.includes(searchQuery));
                     const matchesCategory =
-                      !selectedCategory || p.category_id === selectedCategory;
+                      !selectedCategory ||
+                      (selectedCategory === "no-category"
+                        ? !p.category_id
+                        : p.category_id === selectedCategory);
                     return matchesSearch && matchesCategory;
                   })
                   .sort((a, b) => {
@@ -552,8 +566,8 @@ const InventoryPage = () => {
                     const expDate =
                       sortedBatches.length > 0
                         ? new Date(
-                            sortedBatches[0].expire_date,
-                          ).toLocaleDateString("th-TH")
+                          sortedBatches[0].expire_date,
+                        ).toLocaleDateString("th-TH")
                         : "-";
 
                     // Low stock threshold check (only if threshold is set)
@@ -701,13 +715,12 @@ const InventoryPage = () => {
                                   </svg>
                                 </span>
                                 <span
-                                  className={`text-sm font-bold ${
-                                    isExpired
+                                  className={`text-sm font-bold ${isExpired
                                       ? "text-rose-600"
                                       : isExpiringSoon
                                         ? "text-orange-500"
                                         : "text-[#1B2559]"
-                                  }`}
+                                    }`}
                                 >
                                   หมดอายุ: {expDate}
                                 </span>
