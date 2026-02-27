@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
-import { authService } from "../services/authService";
+import { authService } from "../../services/authService";
 
 const ProfileDropdown = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();

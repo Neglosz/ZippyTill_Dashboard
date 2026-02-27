@@ -23,11 +23,11 @@ import {
   Edit,
 } from "lucide-react";
 import { createPortal } from "react-dom";
-import EditProductModal from "./EditProductModal";
-import { productService } from "../../services/productService";
-import { promotionService } from "../../services/promotionService";
-import { supabase } from "../../lib/supabase";
-import { useBranch } from "../../contexts/BranchContext";
+import PromoProductEditModal from "./PromoProductEditModal";
+import { productService } from "../../../services/productService";
+import { promotionService } from "../../../services/promotionService";
+import { supabase } from "../../../lib/supabase";
+import { useBranch } from "../../../contexts/BranchContext";
 
 const CreatePromotionModal = ({
   isOpen,
@@ -1416,7 +1416,7 @@ const CreatePromotionModal = ({
         </div>
       </div>
       {/* Edit Product Modal */}
-      <EditProductModal
+      <PromoProductEditModal
         isOpen={showEditModal}
         product={editingProduct}
         formData={editFormData}

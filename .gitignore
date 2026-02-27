@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+testsprite_tests/
 
 # Env files
 .env

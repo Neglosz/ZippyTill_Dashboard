@@ -12,7 +12,7 @@ import { useBranch } from "../../../contexts/BranchContext";
 import { saleService } from "../../../services/saleService";
 import { aiService } from "../../../services/aiService";
 import ReactMarkdown from "react-markdown";
-import CreatePromotionModal from "../../modals/CreatePromotionModal";
+import CreatePromotionModal from "./CreatePromotionModal";
 import { Tag as TagIcon, Sparkles as SparklesIcon } from "lucide-react";
 
 const AIChatBot = () => {

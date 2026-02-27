@@ -12,7 +12,7 @@ import {
   Save,
 } from "lucide-react";
 import { orderService } from "../../../services/orderService";
-import ReceiptModal from "../../ReceiptModal";
+import ReceiptModal from "../../modals/ReceiptModal";
 
 const DebtorDetailModal = ({
   item,
