@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import ProfileDropdown from "../ProfileDropdown";
+import ProfileDropdown from "./ProfileDropdown";
 
 /**
  * Header Profile button and dropdown wrapper

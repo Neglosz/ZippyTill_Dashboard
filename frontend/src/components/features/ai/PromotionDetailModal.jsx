@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Target, Calendar, Package } from "lucide-react";
-import { promotionService } from "../../services/promotionService";
+import { promotionService } from "../../../services/promotionService";
 
 // ─── Helper utilities ───────────────────────────────────────────────
 const parseLocalDate = (dateStr, isEndDate = false) => {

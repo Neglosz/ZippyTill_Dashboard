@@ -37,6 +37,12 @@ backend/
 ### 5. `middleware/`
 - (เตรียมไว้สำหรับการขยายผล) เช่น การตรวจสอบ JWT Token หรือการจัดการข้อผิดพลาด (Error Handling) ก่อนที่ข้อมูลจะถูกส่งไปยัง Controller
 
+### 6. Testing with TestSprite
+- **Configuration:** ใช้ไฟล์ `testsprite.json` ใน root directory เพื่อตั้งค่าโปรเจกต์
+- **Environment:** ต้องมี `TESTSPRITE_API_KEY` ในไฟล์ `backend/.env`
+- **Commands:** 
+  - `npm run test:sprite` (ในโฟลเดอร์ `backend`) เพื่อเรียกใช้งาน TestSprite MCP สำหรับการทดสอบ API อัตโนมัติ
+
 ## การเชื่อมต่อจาก Frontend
 
 เมื่อย้าย Backend ออกมาแยกต่างหากแล้ว การเรียกใช้งานจาก Frontend จะเปลี่ยนจากการเรียกใช้ Service โดยตรง เป็นการเรียกผ่าน API (HTTP Requests) ดังนี้:

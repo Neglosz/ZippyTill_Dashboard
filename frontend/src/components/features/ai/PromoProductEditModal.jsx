@@ -2,7 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 
-const EditProductModal = ({
+const PromoProductEditModal = ({
   isOpen,
   product,
   formData,
@@ -186,4 +186,4 @@ const EditProductModal = ({
   );
 };
 
-export default EditProductModal;
+export default PromoProductEditModal;
