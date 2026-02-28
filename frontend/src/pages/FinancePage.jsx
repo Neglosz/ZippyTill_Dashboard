@@ -152,7 +152,7 @@ const FinancePage = () => {
           displayName: m.description || m.category || "ไม่ระบุรายการ",
           displaySubtitle: m.category,
           isIncome: m.trans_type === "income",
-          clickable: true, // All manual transactions are now clickable
+          clickable: false, // Manual transactions do not show receipt
         }));
 
       const combined = [...normalizedOrders, ...normalizedManual].sort(
@@ -1061,8 +1061,11 @@ const FinancePage = () => {
               total: isLoadingDetails
                 ? Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)
                 : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)),
-              received: 0,
-              change: 0,
+              received: fullOrderData?.payments?.[0]?.tendered_amount ||
+                Number(selectedTransaction.amount_paid || selectedTransaction.total_amount || selectedTransaction.displayAmount || 0),
+              change: fullOrderData?.payments?.[0]?.change_amount !== undefined
+                ? fullOrderData.payments[0].change_amount
+                : Math.max(0, (selectedTransaction.amount_paid || selectedTransaction.total_amount || 0) - (selectedTransaction.total_amount || 0)),
               store: {
                 name: selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
                 address: "-",
