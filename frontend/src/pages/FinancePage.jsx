@@ -31,7 +31,7 @@ import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import CustomDatePicker from "../components/common/CustomDatePicker";
-import ReceiptModal from "../components/ReceiptModal";
+import ReceiptModal from "../components/modals/ReceiptModal";
 import ExportModal from "../components/features/outstanding/ExportModal";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";

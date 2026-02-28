@@ -17,7 +17,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import SystemNotificationModal from "../components/modals/SystemNotificationModal";
-import ReceiptModal from "../components/ReceiptModal";
+import ReceiptModal from "../components/modals/ReceiptModal";
 import { productService } from "../services/productService";
 import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";

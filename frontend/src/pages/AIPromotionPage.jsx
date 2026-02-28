@@ -24,8 +24,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import CreatePromotionModal from "../components/modals/CreatePromotionModal";
-import PromotionDetailModal from "../components/Aipage/PromotionDetailModal";
+import CreatePromotionModal from "../components/features/ai/CreatePromotionModal";
+import PromotionDetailModal from "../components/features/ai/PromotionDetailModal";
 import { useBranch } from "../contexts/BranchContext";
 import { aiService } from "../services/aiService";
 import { promotionService } from "../services/promotionService";
