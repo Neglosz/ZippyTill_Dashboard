@@ -145,7 +145,7 @@ const FinancePage = () => {
           displayName: m.description || m.category || "ไม่ระบุรายการ",
           displaySubtitle: m.category,
           isIncome: m.trans_type === "income",
-          clickable: true, // All manual transactions are now clickable
+          clickable: false, // Manual transactions do not show receipt
         }));
 
       const combined = [...normalizedOrders, ...normalizedManual].sort(

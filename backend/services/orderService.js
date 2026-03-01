@@ -28,7 +28,7 @@ const orderService = {
     if (!storeId) throw new Error("Store ID is required");
     const { data, error } = await supabase
       .from("orders")
-      .select(`*, customers_info (name, phone), order_items (*, products (name, image_url))`)
+      .select(`*, customers_info (name, phone), order_items (*, products (name, image_url)), payments(tendered_amount, change_amount)`)
       .eq("store_id", storeId).order("created_at", { ascending: false }).limit(50);
     if (error) throw error;
     return data;
@@ -38,7 +38,7 @@ const orderService = {
     if (!branchId) throw new Error("Branch ID is required");
     const { data, error } = await supabase
       .from("orders")
-      .select(`*, order_items (*, products (name, barcode, unit_type, is_weightable)), customers_info (name, phone)`)
+      .select(`*, order_items (*, products (name, barcode, unit_type, is_weightable)), customers_info (name, phone), payments(tendered_amount, change_amount)`)
       .eq("id", orderId).eq("store_id", branchId).single();
     if (error) throw error;
     return data;
