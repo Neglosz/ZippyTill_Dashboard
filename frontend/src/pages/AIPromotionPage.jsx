@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -30,6 +30,7 @@ import { useBranch } from "../contexts/BranchContext";
 import { aiService } from "../services/aiService";
 import { promotionService } from "../services/promotionService";
 import { supabase } from "../lib/supabase";
+import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const AIPromotionPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
@@ -38,7 +39,7 @@ const AIPromotionPage = () => {
   const CACHE_KEY = "ai_promo_recommendations";
   const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
-  const getCache = () => {
+  const getCache = useCallback(() => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (!cached) return null;
@@ -51,22 +52,25 @@ const AIPromotionPage = () => {
       console.error("Cache read error:", error);
       return null;
     }
-  };
+  }, [activeBranchId]);
 
-  const setCache = (data) => {
-    try {
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          data,
-          timestamp: Date.now(),
-          branchId: activeBranchId,
-        }),
-      );
-    } catch (error) {
-      console.error("Cache write error:", error);
-    }
-  };
+  const setCache = useCallback(
+    (data) => {
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            data,
+            timestamp: Date.now(),
+            branchId: activeBranchId,
+          }),
+        );
+      } catch (error) {
+        console.error("Cache write error:", error);
+      }
+    },
+    [activeBranchId],
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState(null);
@@ -86,7 +90,7 @@ const AIPromotionPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCreateFromAI = (rec) => {
+  const handleCreateFromAI = useCallback((rec) => {
     // Transform AI recommendation into modal-compatible format
     const transformedData = {
       title: rec.title,
@@ -101,14 +105,14 @@ const AIPromotionPage = () => {
     setUsedRecId(rec.id); // Track which recommendation is being used
     setAiPromoData(transformedData);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setAiPromoData(null);
-  };
+  }, []);
 
-  const getIcon = (iconName) => {
+  const getIcon = useCallback((iconName) => {
     switch (iconName) {
       case "TrendingUp":
         return TrendingUp;
@@ -119,133 +123,140 @@ const AIPromotionPage = () => {
       default:
         return Sparkles;
     }
-  };
+  }, []);
 
   // Calculate real stats from active promotions
-  const activePromosCount = activePromotions.filter((p) => p.is_active).length;
-  const totalSales = activePromotions.reduce(
-    (sum, p) => sum + (p.total_sales || 0),
-    0,
-  );
-  const totalCustomers = activePromotions.reduce(
-    (sum, p) => sum + (p.customer_count || 0),
-    0,
-  );
+  const stats = useMemo(() => {
+    const activePromosCount = activePromotions.filter(
+      (p) => p.is_active,
+    ).length;
+    const totalSales = activePromotions.reduce(
+      (sum, p) => sum + (p.total_sales || 0),
+      0,
+    );
+    const totalCustomers = activePromotions.reduce(
+      (sum, p) => sum + (p.customer_count || 0),
+      0,
+    );
 
-  const stats = [
-    {
-      id: 1,
-      label: "โปรโมชั่นที่ใช้งานอยู่",
-      value: `${activePromosCount} รายการ`,
-      trend: activePromosCount > 0 ? "+33%" : "0%",
-      icon: Zap,
-      color: "text-primary",
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-    },
-    {
-      id: 2,
-      label: "ยอดขายจากโปรโมชั่น",
-      value: totalSales > 0 ? `฿${totalSales.toLocaleString()}` : "฿0",
-      trend: totalSales > 0 ? "+28%" : "0%",
-      icon: TrendingUp,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-    },
-    {
-      id: 3,
-      label: "ลูกค้าที่ใช้โปรโมชั่น",
-      value:
-        totalCustomers > 0 ? `${totalCustomers.toLocaleString()} คน` : "0 คน",
-      trend: totalCustomers > 0 ? "+42%" : "0%",
-      icon: Users,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-    },
-    {
-      id: 4,
-      label: "คำแนะนำจาก AI",
-      value: `${recommendations.length} รายการ`,
-      isAi: true,
-      icon: Sparkles,
-      color: "text-orange-600",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/20",
-    },
-  ];
+    return [
+      {
+        id: 1,
+        label: "โปรโมชั่นที่ใช้งานอยู่",
+        value: `${activePromosCount} รายการ`,
+        trend: activePromosCount > 0 ? "+33%" : "0%",
+        icon: Zap,
+        color: "text-primary",
+        bg: "bg-primary/10",
+        border: "border-primary/20",
+      },
+      {
+        id: 2,
+        label: "ยอดขายจากโปรโมชั่น",
+        value: totalSales > 0 ? `฿${totalSales.toLocaleString()}` : "฿0",
+        trend: totalSales > 0 ? "+28%" : "0%",
+        icon: TrendingUp,
+        color: "text-blue-500",
+        bg: "bg-blue-500/10",
+        border: "border-blue-500/20",
+      },
+      {
+        id: 3,
+        label: "ลูกค้าที่ใช้โปรโมชั่น",
+        value:
+          totalCustomers > 0 ? `${totalCustomers.toLocaleString()} คน` : "0 คน",
+        trend: totalCustomers > 0 ? "+42%" : "0%",
+        icon: Users,
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10",
+        border: "border-emerald-500/20",
+      },
+      {
+        id: 4,
+        label: "คำแนะนำจาก AI",
+        value: `${recommendations.length} รายการ`,
+        isAi: true,
+        icon: Sparkles,
+        color: "text-orange-600",
+        bg: "bg-orange-500/10",
+        border: "border-orange-500/20",
+      },
+    ];
+  }, [activePromotions, recommendations.length]);
 
-  const fetchRecs = async (forceRefresh = false) => {
-    if (!activeBranchId) return;
+  const fetchRecs = useCallback(
+    async (forceRefresh = false) => {
+      if (!activeBranchId) return;
 
-    // Try to load from cache first if not forcing refresh
-    const cachedData = forceRefresh ? null : getCache();
-    if (cachedData) {
-      console.log("📦 Loading recommendations from cache");
-      setRecommendations(cachedData);
-      setIsRecLoading(false); // Show cached data immediately
-      return; // Stop here and don't fetch fresh data if cache is valid
-    } else {
-      setRecommendations([]); // Clear old state for new branch or refresh
-      setIsRecLoading(true);
-    }
-
-    // Fetch fresh data
-    try {
-      console.log(
-        forceRefresh
-          ? "🔄 Forcing fresh AI recommendations..."
-          : "🔄 Fetching fresh AI recommendations...",
-      );
-      const aiRecs = await aiService.getPromotionRecommendations(
-        activeBranchId,
-        activeBranchName,
-      );
-      setRecommendations(aiRecs);
-      setCache(aiRecs); // Update cache
-      console.log("✅ Fresh recommendations loaded and cached");
-    } catch (error) {
-      console.error("Failed to fetch AI recs:", error);
-      // Only show fallback if no cache available and not forcing refresh
-      if (!cachedData) {
-        setRecommendations([
-          {
-            id: 1,
-            title: "โปรโมชั่นสินค้าขายดี",
-            desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
-            match: "92%",
-            benefit: "+25% ยอดขาย",
-            icon: "TrendingUp",
-            color: "text-purple-500",
-            bg: "bg-purple-50",
-          },
-          {
-            id: 2,
-            title: "ซื้อ 2 แถม 1",
-            desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
-            match: "88%",
-            benefit: "+40% ยอดขาย",
-            icon: "Package",
-            color: "text-blue-500",
-            bg: "bg-blue-50",
-          },
-        ]);
+      // Try to load from cache first if not forcing refresh
+      const cachedData = forceRefresh ? null : getCache();
+      if (cachedData) {
+        console.log("📦 Loading recommendations from cache");
+        setRecommendations(cachedData);
+        setIsRecLoading(false); // Show cached data immediately
+        return; // Stop here and don't fetch fresh data if cache is valid
+      } else {
+        setRecommendations([]); // Clear old state for new branch or refresh
+        setIsRecLoading(true);
       }
-    } finally {
-      setIsRecLoading(false);
-    }
-  };
+
+      // Fetch fresh data
+      try {
+        console.log(
+          forceRefresh
+            ? "🔄 Forcing fresh AI recommendations..."
+            : "🔄 Fetching fresh AI recommendations...",
+        );
+        const aiRecs = await aiService.getPromotionRecommendations(
+          activeBranchId,
+          activeBranchName,
+        );
+        setRecommendations(aiRecs);
+        setCache(aiRecs); // Update cache
+        console.log("✅ Fresh recommendations loaded and cached");
+      } catch (error) {
+        console.error("Failed to fetch AI recs:", error);
+        // Only show fallback if no cache available and not forcing refresh
+        if (!cachedData) {
+          setRecommendations([
+            {
+              id: 1,
+              title: "โปรโมชั่นสินค้าขายดี",
+              desc: "ลด 15% สำหรับสินค้า Top 5 เพื่อเพิ่มยอดขาย",
+              match: "92%",
+              benefit: "+25% ยอดขาย",
+              icon: "TrendingUp",
+              color: "text-purple-500",
+              bg: "bg-purple-50",
+            },
+            {
+              id: 2,
+              title: "ซื้อ 2 แถม 1",
+              desc: "สินค้าที่สต็อกเยอะ - เพิ่มการหมุนเวียน",
+              match: "88%",
+              benefit: "+40% ยอดขาย",
+              icon: "Package",
+              color: "text-blue-500",
+              bg: "bg-blue-50",
+            },
+          ]);
+        }
+      } finally {
+        setIsRecLoading(false);
+      }
+    },
+    [activeBranchId, activeBranchName, getCache, setCache],
+  );
 
   useEffect(() => {
     fetchRecs(false);
-  }, [activeBranchId, activeBranchName]);
+  }, [fetchRecs]);
 
-  const handleRefreshRecs = () => {
+  const handleRefreshRecs = useCallback(() => {
     fetchRecs(true);
-  };
+  }, [fetchRecs]);
 
-  const fetchPromos = async () => {
+  const fetchPromos = useCallback(async () => {
     if (!activeBranchId) return;
     try {
       setActivePromotions([]); // Clear old state
@@ -257,26 +268,10 @@ const AIPromotionPage = () => {
     } finally {
       setIsPromosLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPromos();
-    fetchChartData();
   }, [activeBranchId]);
 
-  const handlePromotionCreated = () => {
-    // Remove the used recommendation from the list
-    if (usedRecId !== null) {
-      setRecommendations((prev) => prev.filter((r) => r.id !== usedRecId));
-      setUsedRecId(null);
-    }
-    fetchPromos();
-    fetchChartData();
-    setIsModalOpen(false);
-  };
-
   // Fetch chart data: split by order_items.promotion_id (null = no promo, not null = with promo)
-  const fetchChartData = async () => {
+  const fetchChartData = useCallback(async () => {
     if (!activeBranchId) return;
     try {
       setIsChartLoading(true);
@@ -349,9 +344,25 @@ const AIPromotionPage = () => {
     } finally {
       setIsChartLoading(false);
     }
-  };
+  }, [activeBranchId]);
 
-  const getPromotionLabel = (promo) => {
+  useEffect(() => {
+    fetchPromos();
+    fetchChartData();
+  }, [fetchPromos, fetchChartData]);
+
+  const handlePromotionCreated = useCallback(() => {
+    // Remove the used recommendation from the list
+    if (usedRecId !== null) {
+      setRecommendations((prev) => prev.filter((r) => r.id !== usedRecId));
+      setUsedRecId(null);
+    }
+    fetchPromos();
+    fetchChartData();
+    setIsModalOpen(false);
+  }, [usedRecId, fetchPromos, fetchChartData]);
+
+  const getPromotionLabel = useCallback((promo) => {
     switch (promo.type) {
       case "discount_percent":
         return `ลด ${promo.discount_value}%`;
@@ -364,11 +375,11 @@ const AIPromotionPage = () => {
       default:
         return "ส่วนลดพิเศษ";
     }
-  };
+  }, []);
 
   // Parse date string as LOCAL time to avoid UTC +7 offset issues
   // new Date("2026-02-24") → UTC midnight → 07:00 Thailand → loses 7 hours
-  const parseLocalDate = (dateStr, isEndDate = false) => {
+  const parseLocalDate = useCallback((dateStr, isEndDate = false) => {
     if (!dateStr) return null;
     // If it's a date-only string YYYY-MM-DD, parse as local time
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
@@ -380,109 +391,103 @@ const AIPromotionPage = () => {
         : new Date(year, month - 1, day, 0, 0, 0);
     }
     return new Date(dateStr);
-  };
+  }, []);
 
-  const formatDateRange = (start, end) => {
-    if (!start && !end) return "ไม่มีกำหนด";
-    const s = start ? parseLocalDate(start).toLocaleDateString("th-TH") : "...";
-    const e = end
-      ? parseLocalDate(end).toLocaleDateString("th-TH")
-      : "ไม่มีกำหนด";
-    return `${s} - ${e}`;
-  };
+  const formatDateRange = useCallback(
+    (start, end) => {
+      if (!start && !end) return "ไม่มีกำหนด";
+      const s = start
+        ? parseLocalDate(start).toLocaleDateString("th-TH")
+        : "...";
+      const e = end
+        ? parseLocalDate(end, true).toLocaleDateString("th-TH")
+        : "ไม่มีกำหนด";
+      return `${s} - ${e}`;
+    },
+    [parseLocalDate],
+  );
 
-  const getStatusInfo = (isActive, endDate) => {
-    if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
-    if (parseLocalDate(endDate, true) < new Date())
-      return { label: "หมดอายุ", color: "bg-red-500" };
-    return { label: "ใช้งาน", color: "bg-emerald-500" };
-  };
+  const getStatusInfo = useCallback(
+    (isActive, endDate) => {
+      if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
+      if (parseLocalDate(endDate, true) < new Date())
+        return { label: "หมดอายุ", color: "bg-red-500" };
+      return { label: "ใช้งาน", color: "bg-emerald-500" };
+    },
+    [parseLocalDate],
+  );
 
-  const getTimeRemaining = (createdAt, endDate) => {
-    const now = new Date();
-    const start = createdAt ? new Date(createdAt) : now;
-    const end = parseLocalDate(endDate, true);
-    if (!end)
-      return {
-        text: "ไม่มีกำหนด",
-        percentage: 0,
-        color: "from-emerald-500 to-emerald-600",
-      };
-    const total = end - start;
-    const remaining = end - now;
+  const getTimeRemaining = useCallback(
+    (createdAt, endDate) => {
+      const now = new Date();
+      const start = createdAt ? new Date(createdAt) : now;
+      const end = parseLocalDate(endDate, true);
+      if (!end)
+        return {
+          text: "ไม่มีกำหนด",
+          percentage: 0,
+          color: "from-emerald-500 to-emerald-600",
+        };
+      const total = end - start;
+      const remaining = end - now;
 
-    if (remaining <= 0) {
-      return {
-        text: "หมดเวลา",
-        percentage: 100,
-        color: "from-red-500 to-red-600",
-      };
-    }
+      if (remaining <= 0) {
+        return {
+          text: "หมดเวลา",
+          percentage: 100,
+          color: "from-red-500 to-red-600",
+        };
+      }
 
-    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(
-      (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+      const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
 
-    // Calculate percentage based on actual duration
-    const elapsed = now - start;
-    const percentage = Math.max(0, Math.min(100, (elapsed / total) * 100));
+      // Calculate percentage based on actual duration
+      const elapsed = now - start;
+      const percentage = Math.max(0, Math.min(100, (elapsed / total) * 100));
 
-    // Determine color based on urgency (remaining percentage)
-    const remainingPercentage = 100 - percentage;
-    let color;
-    if (remainingPercentage > 50) {
-      color = "from-emerald-500 to-emerald-600"; // Green
-    } else if (remainingPercentage > 20) {
-      color = "from-yellow-500 to-yellow-600"; // Yellow
-    } else {
-      color = "from-red-500 to-red-600"; // Red
-    }
+      // Determine color based on urgency (remaining percentage)
+      const remainingPercentage = 100 - percentage;
+      let color;
+      if (remainingPercentage > 50) {
+        color = "from-emerald-500 to-emerald-600"; // Green
+      } else if (remainingPercentage > 20) {
+        color = "from-yellow-500 to-yellow-600"; // Yellow
+      } else {
+        color = "from-red-500 to-red-600"; // Red
+      }
 
-    // Format text
-    let text;
-    if (days > 0) {
-      text = `${days} วัน ${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
-    } else if (hours > 0) {
-      text = `${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
-    } else if (minutes > 0) {
-      text = `${minutes} นาที ${seconds} วินาที`;
-    } else {
-      text = `${seconds} วินาที`;
-    }
+      // Format text
+      let text;
+      if (days > 0) {
+        text = `${days} วัน ${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
+      } else if (hours > 0) {
+        text = `${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
+      } else if (minutes > 0) {
+        text = `${minutes} นาที ${seconds} วินาที`;
+      } else {
+        text = `${seconds} วินาที`;
+      }
 
-    return { text, percentage, color };
-  };
+      return { text, percentage, color };
+    },
+    [parseLocalDate],
+  );
 
   return (
     <>
-      {/* Background Decorative Blobs - High Dimension */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[5%] right-[-5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[130px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-orange-500/5 rounded-full blur-[110px]" />
-      </div>
+      <PageBackground />
 
       <div className="relative pb-10 space-y-6 min-h-screen font-sans">
-        {/* Header Banner */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-              <Sparkles className="w-10 h-10 text-primary" strokeWidth={2} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                AI โปรโมชั่น
-                {/* <span className="text-primary"> .</span> */}
-              </h1>
-              <p className="text-sm font-medium text-inactive">
-                ใช้ AI ของสาขาช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมที่สุด
-              </p>
-            </div>
-          </div>
-
+        <PageHeader
+          title="AI โปรโมชั่น"
+          description="ใช้ AI ของสาขาช่วยวิเคราะห์และสร้างโปรโมชั่นที่เหมาะสมที่สุด"
+          icon={Sparkles}
+        >
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-orange-600 text-white rounded-2xl font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300"
@@ -490,7 +495,7 @@ const AIPromotionPage = () => {
             <Plus size={20} strokeWidth={3} />
             <span>สร้างด้วย AI</span>
           </button>
-        </div>
+        </PageHeader>
 
         <CreatePromotionModal
           isOpen={isModalOpen}

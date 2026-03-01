@@ -1,15 +1,9 @@
 import React, { useState } from "react";
-import {
-  Box,
-  BarChart3,
-  TrendingUp,
-  Lock,
-  Loader2,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Box, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { authService } from "../services/authService";
+import TextInput from "../components/common/TextInput";
+import SubmitButton from "../components/common/SubmitButton";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -17,7 +11,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -135,75 +128,38 @@ const LoginPage = () => {
           )}
 
           <form className="space-y-8" onSubmit={handleLogin}>
-            <div className="relative group/input">
-              <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                อีเมล
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@zippytill.com"
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-              />
-            </div>
+            <TextInput
+              label="อีเมล"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@zippytill.com"
+              required
+            />
 
-            <div className="relative group/input">
-              <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                รหัสผ่าน
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 pr-12 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-primary transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff size={18} strokeWidth={2} />
-                  ) : (
-                    <Eye size={18} strokeWidth={2} />
-                  )}
-                </button>
-              </div>
-              <div className="text-right mt-3 mr-2">
+            <TextInput
+              label="รหัสผ่าน"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+              rightElement={
                 <Link
                   to="/reset-password"
                   className="text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
                 >
                   ลืมรหัสผ่าน?
                 </Link>
-              </div>
-            </div>
+              }
+            />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-white font-bold py-5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 hover:bg-[#d66515] active:scale-[0.98] mt-4"
-            >
-              {loading ? (
-                <>
-                  <Loader2
-                    className="animate-spin mr-3"
-                    size={20}
-                    strokeWidth={2}
-                  />
-                  กำลังตรวจสอบ...
-                </>
-              ) : (
-                <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
-                  เข้าสู่ระบบ
-                </span>
-              )}
-            </button>
+            <SubmitButton
+              loading={loading}
+              loadingText="กำลังตรวจสอบ..."
+              text="เข้าสู่ระบบ"
+              className="mt-4"
+            />
           </form>
         </div>
 

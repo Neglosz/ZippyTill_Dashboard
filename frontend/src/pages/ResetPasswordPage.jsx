@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Mail, ArrowLeft, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import TextInput from "../components/common/TextInput";
+import SubmitButton from "../components/common/SubmitButton";
 
 const ResetPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -147,41 +149,22 @@ const ResetPasswordPage = () => {
               )}
 
               <form className="space-y-8" onSubmit={handleResetPassword}>
-                <div className="relative group/input">
-                  <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                    อีเมล
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@zippytill.com"
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-                  />
-                </div>
+                <TextInput
+                  label="อีเมล"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@zippytill.com"
+                  required
+                />
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-primary text-white font-bold py-5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 hover:bg-[#d66515] active:scale-[0.98] mt-4"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2
-                        className="animate-spin mr-3"
-                        size={20}
-                        strokeWidth={2}
-                      />
-                      กำลังส่ง...
-                    </>
-                  ) : (
-                    <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
-                      <Mail size={16} strokeWidth={2.5} />
-                      ส่งลิงก์รีเซ็ต
-                    </span>
-                  )}
-                </button>
+                <SubmitButton
+                  loading={loading}
+                  loadingText="กำลังส่ง..."
+                  text="ส่งลิงก์รีเซ็ต"
+                  icon={Mail}
+                  className="mt-4"
+                />
               </form>
 
               <div className="mt-8 text-center">

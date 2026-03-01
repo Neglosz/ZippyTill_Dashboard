@@ -12,19 +12,28 @@ const storeController = require("../controllers/storeController");
 const transactionController = require("../controllers/transactionController");
 const aiController = require("../controllers/aiController");
 
-// Auth Routes
+const authMiddleware = require("../middleware/authMiddleware");
+const validate = require("../middleware/validateMiddleware");
+const productValidation = require("../validations/productValidation");
+
+// Auth Routes (Public)
 router.post("/auth/login", authController.login);
+
+// Protected Routes (Apply middleware to everything below)
+router.use(authMiddleware);
+
 router.post("/auth/logout", authController.logout);
 router.get("/auth/user", authController.getCurrentUser);
 
 // Product Routes
-router.get("/products", productController.getAllProducts);
-router.post("/products", productController.createProduct);
+router.get("/products", validate(productValidation.branchQuery), productController.getAllProducts);
+router.post("/products", validate(productValidation.createProduct), productController.createProduct);
 router.put("/products/:id", productController.updateProduct);
 router.delete("/products/:id", productController.deleteProduct);
-router.get("/products/categories", productController.getAllCategories);
-router.get("/products/notifications", productController.getDashboardNotifications);
-router.get("/products/movements", productController.getStockMovements);
+router.get("/products/categories", validate(productValidation.branchQuery), productController.getAllCategories);
+router.get("/products/notifications", validate(productValidation.branchQuery), productController.getDashboardNotifications);
+router.get("/products/movements", validate(productValidation.branchQuery), productController.getStockMovements);
+router.post("/products/removal", productController.recordStockRemoval);
 
 // Order Routes
 router.post("/orders", orderController.createOrder);

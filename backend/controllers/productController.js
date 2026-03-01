@@ -72,6 +72,16 @@ const productController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  async recordStockRemoval(req, res) {
+    try {
+      const { branchId, ...removalData } = req.body;
+      const data = await productService.recordStockRemoval(removalData, branchId);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = productController;

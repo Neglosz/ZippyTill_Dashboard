@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
 import { supabase } from "../lib/supabase";
+import { Modal, InfoItem } from "../components/common/ProfileComponents";
 
 const ProfilePage = () => {
   const { activeBranchId, activeBranchName, selectBranch, userRole } =
@@ -23,7 +24,6 @@ const ProfilePage = () => {
   const fileInputRef = useRef(null);
 
   // State
-  const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [branchName, setBranchName] = useState(activeBranchName || "สาขาหลัก");
   const [userProfile, setUserProfile] = useState({
@@ -47,7 +47,6 @@ const ProfilePage = () => {
   // Load profile and store data
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
       try {
         // Get current user
         const {
@@ -98,8 +97,6 @@ const ProfilePage = () => {
         }
       } catch (err) {
         console.error("Error loading profile:", err);
-      } finally {
-        setLoading(false);
       }
     };
     loadData();
@@ -118,11 +115,19 @@ const ProfilePage = () => {
 
   const infoItems = [
     { icon: Mail, label: "อีเมล", value: userProfile.email || "-" },
-    { icon: Phone, label: "เบอร์โทรศัพท์", value: formatPhone(userProfile.phone || storeData.phone) },
+    {
+      icon: Phone,
+      label: "เบอร์โทรศัพท์",
+      value: formatPhone(userProfile.phone || storeData.phone),
+    },
     { icon: Briefcase, label: "ตำแหน่ง", value: userProfile.role || "-" },
     { icon: Store, label: "สาขา", value: displayName },
     { icon: MapPin, label: "ที่อยู่", value: storeData.address || "-" },
-    { icon: Shield, label: "เข้าร่วมเมื่อ", value: userProfile.createdAt || "-" },
+    {
+      icon: Shield,
+      label: "เข้าร่วมเมื่อ",
+      value: userProfile.createdAt || "-",
+    },
   ];
 
   // Open edit modal
@@ -293,22 +298,7 @@ const ProfilePage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {infoItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="group/item flex items-start gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all duration-300"
-                  >
-                    <div className="p-2.5 bg-white rounded-xl text-inactive group-hover/item:text-primary transition-colors shadow-sm border border-gray-100 shrink-0">
-                      <item.icon size={18} strokeWidth={2.5} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
-                        {item.label}
-                      </p>
-                      <p className="text-sm font-bold text-gray-900 truncate">
-                        {item.value}
-                      </p>
-                    </div>
-                  </div>
+                  <InfoItem key={idx} {...item} />
                 ))}
               </div>
             </div>
@@ -317,108 +307,71 @@ const ProfilePage = () => {
       </div>
 
       {/* Edit Profile Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !saving && setIsEditModalOpen(false)}
-          />
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="แก้ไขโปรไฟล์"
+        icon={Edit}
+        onSave={handleSave}
+        saving={saving}
+        saveDisabled={!editBranchName.trim()}
+      >
+        {/* Image Upload */}
+        <div className="flex flex-col items-center mb-8">
+          <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-4">
+            รูปภาพโปรไฟล์
+          </p>
+          <div className="relative">
+            <div className="w-28 h-28 rounded-[24px] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
+              {previewImage ? (
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-4xl font-black text-primary">
+                  {editBranchName.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
 
-          {/* Modal */}
-          <div className="relative bg-white rounded-[32px] p-8 shadow-2xl border border-gray-100 w-full max-w-md">
-            {/* Close button */}
+            {/* Camera button */}
             <button
-              onClick={() => !saving && setIsEditModalOpen(false)}
-              className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-2 -right-2 w-9 h-9 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-primary/50 active:scale-90 transition-all"
+              title="เลือกรูปภาพ"
             >
-              <X size={18} strokeWidth={2.5} />
+              <ImagePlus size={16} strokeWidth={2.5} />
             </button>
 
-            <h3 className="text-xl font-black text-gray-900 tracking-tighter mb-8 flex items-center gap-3">
-              <div className="p-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20">
-                <Edit size={20} strokeWidth={2.5} />
-              </div>
-              แก้ไขโปรไฟล์
-            </h3>
-
-            {/* Image Upload */}
-            <div className="flex flex-col items-center mb-8">
-              <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-4">
-                รูปภาพโปรไฟล์
-              </p>
-              <div className="relative">
-                <div className="w-28 h-28 rounded-[24px] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
-                  {previewImage ? (
-                    <img
-                      src={previewImage}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-4xl font-black text-primary">
-                      {editBranchName.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-
-                {/* Camera button */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-2 -right-2 w-9 h-9 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-primary/50 active:scale-90 transition-all"
-                  title="เลือกรูปภาพ"
-                >
-                  <ImagePlus size={16} strokeWidth={2.5} />
-                </button>
-
-                {/* Remove image button */}
-                {previewImage && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute -bottom-2 -left-2 w-9 h-9 bg-red-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-red-500/50 active:scale-90 transition-all"
-                    title="ลบรูปภาพ"
-                  >
-                    <Trash2 size={14} strokeWidth={2.5} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Branch Name */}
-            <div className="mb-8">
-              <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
-                ชื่อสาขา
-              </label>
-              <input
-                type="text"
-                value={editBranchName}
-                onChange={(e) => setEditBranchName(e.target.value)}
-                className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                placeholder="กรอกชื่อสาขา"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
+            {/* Remove image button */}
+            {previewImage && (
               <button
-                onClick={() => !saving && setIsEditModalOpen(false)}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm transition-all border border-gray-100 active:scale-95 disabled:opacity-50"
+                onClick={handleRemoveImage}
+                className="absolute -bottom-2 -left-2 w-9 h-9 bg-red-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-red-500/50 active:scale-90 transition-all"
+                title="ลบรูปภาพ"
               >
-                ยกเลิก
+                <Trash2 size={14} strokeWidth={2.5} />
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !editBranchName.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50"
-              >
-                <Save size={16} strokeWidth={2.5} />
-                {saving ? "กำลังบันทึก..." : "บันทึก"}
-              </button>
-            </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Branch Name */}
+        <div className="mb-8">
+          <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
+            ชื่อสาขา
+          </label>
+          <input
+            type="text"
+            value={editBranchName}
+            onChange={(e) => setEditBranchName(e.target.value)}
+            className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            placeholder="กรอกชื่อสาขา"
+          />
+        </div>
+      </Modal>
     </>
   );
 };

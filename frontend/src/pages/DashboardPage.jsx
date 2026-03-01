@@ -23,6 +23,7 @@ import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
 import { creditService } from "../services/creditService";
 import { useBranch } from "../contexts/BranchContext";
+import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const DashboardPage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
@@ -150,7 +151,7 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [activeBranchId]);
 
-  const scroll = (direction) => {
+  const scroll = React.useCallback((direction) => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
       const scrollAmount = clientWidth * 0.8;
@@ -160,9 +161,9 @@ const DashboardPage = () => {
           : scrollLeft + scrollAmount;
       scrollRef.current.scrollTo({ left: scrollTo, behavior: "smooth" });
     }
-  };
+  }, []);
 
-  const getImageUrl = (path, bucket = "products") => {
+  const getImageUrl = React.useCallback((path, bucket = "products") => {
     if (!path) return null;
     const cleanPath = path.trim();
     if (cleanPath.startsWith("http")) return cleanPath;
@@ -174,50 +175,52 @@ const DashboardPage = () => {
     }
 
     return `${supabaseUrl}/storage/v1/object/public/${fullPath}`;
-  };
+  }, []);
 
-  const handleOrderClick = (sale) => {
-    // Transform order data to match ReceiptModal's expected format
-    const transaction = {
-      receiptNo: sale.order_no,
-      date: new Date(sale.created_at).toLocaleString("th-TH", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      paymentMethod:
-        sale.payment_method === "cash"
-          ? "เงินสด"
-          : sale.payment_method === "transfer"
-            ? "โอนเงิน"
-            : sale.payment_method || "เงินสด",
-      items:
-        sale.order_items?.map((item) => ({
-          name: item.products?.name || "N/A",
-          quantity: item.qty || item.quantity || 1,
-          price:
-            (item.price_per_unit || item.price || 0) *
-            (item.qty || item.quantity || 1),
-        })) || [],
-      total: sale.total_amount || 0,
-      received: sale.payments?.[0]?.tendered_amount || sale.amount_paid || sale.total_amount || 0,
-      change: sale.payments?.[0]?.change_amount !== undefined
-        ? sale.payments[0].change_amount
-        : Math.max(
+  const handleOrderClick = React.useCallback(
+    (sale) => {
+      // Transform order data to match ReceiptModal's expected format
+      const transaction = {
+        receiptNo: sale.order_no,
+        date: new Date(sale.created_at).toLocaleString("th-TH", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        paymentMethod:
+          sale.payment_method === "cash"
+            ? "เงินสด"
+            : sale.payment_method === "transfer"
+              ? "โอนเงิน"
+              : sale.payment_method || "เงินสด",
+        items:
+          sale.order_items?.map((item) => ({
+            name: item.products?.name || "N/A",
+            quantity: item.qty || item.quantity || 1,
+            price:
+              (item.price_per_unit || item.price || 0) *
+              (item.qty || item.quantity || 1),
+          })) || [],
+        total: sale.total_amount || 0,
+        received: sale.amount_paid || sale.total_amount || 0,
+        change: Math.max(
           0,
-          (sale.amount_paid || sale.total_amount || 0) - (sale.total_amount || 0),
+          (sale.amount_paid || sale.total_amount || 0) -
+            (sale.total_amount || 0),
         ),
-      store: {
-        name: activeBranchName || "ZippyTill",
-        address: "สาขา " + (activeBranchName || "Default"),
-        phone: sale.customers_info?.phone || "-",
-      },
-    };
-    setSelectedTransaction(transaction);
-    setIsReceiptModalOpen(true);
-  };
+        store: {
+          name: activeBranchName || "ZippyTill",
+          address: "สาขา " + (activeBranchName || "Default"),
+          phone: sale.customers_info?.phone || "-",
+        },
+      };
+      setSelectedTransaction(transaction);
+      setIsReceiptModalOpen(true);
+    },
+    [activeBranchName],
+  );
 
   if (isLoading) {
     return (
@@ -234,35 +237,15 @@ const DashboardPage = () => {
 
   return (
     <div className="relative flex flex-col xl:flex-row gap-8 pb-8 min-h-screen">
-      {/* Background Decorative Blobs - High Dimension */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px]" />
-      </div>
+      <PageBackground />
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 space-y-6">
-        {/* Header Banner */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-              <LayoutDashboard
-                className="w-10 h-10 text-primary"
-                strokeWidth={2}
-              />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                ภาพรวม
-                <span className="text-primary">.</span>
-              </h1>
-              <p className="text-sm font-medium text-inactive">
-                ภาพรวมธุกิจของสาขาและข้อมูลสำคัญทั้งหมดในที่เดียว
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="ภาพรวม"
+          description="ภาพรวมธุกิจของสาขาและข้อมูลสำคัญทั้งหมดในที่เดียว"
+          icon={LayoutDashboard}
+        />
 
         {/* Row 1: Sales Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

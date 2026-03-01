@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Package,
   Truck,
@@ -19,6 +25,8 @@ import StockReport from "../components/features/inventory/StockReport";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
 
+const DEFAULT_PRODUCT_IMAGE = "https://via.placeholder.com/150";
+
 const InventoryPage = () => {
   const { activeBranchId } = useBranch();
   const [activeTab, setActiveTab] = useState("products"); // 'products' or 'report'
@@ -36,31 +44,79 @@ const InventoryPage = () => {
   const filterRef = useRef(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  useEffect(() => {
-    if (activeBranchId) {
-      fetchProducts();
-      fetchCategories();
-    }
-  }, [activeBranchId]);
+  const totalCount = products.length;
 
-  // Click outside handler for filter dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setIsFilterOpen(false);
+  const stats = React.useMemo(() => {
+    let lowStock = 0;
+    let expired = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    products.forEach((product) => {
+      const isLowStock =
+        product.low_stock_threshold &&
+        product.stock_qty <= product.low_stock_threshold &&
+        product.stock_qty > 0;
+      const isOutOfStock = product.stock_qty <= 0;
+
+      if (isLowStock || isOutOfStock) {
+        lowStock++;
       }
-    };
 
-    if (isFilterOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+      const batches = product.product_batches || [];
+      const isExpired = batches.some((b) => new Date(b.expire_date) < today);
+      if (isExpired) {
+        expired++;
+      }
+    });
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isFilterOpen]);
+    return { lowStock, expired };
+  }, [products]);
 
-  const fetchProducts = async () => {
+  const filteredAndSortedProducts = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDays = new Date(today);
+    thirtyDays.setDate(today.getDate() + 30);
+
+    return products
+      .filter((p) => {
+        const matchesSearch =
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.barcode && p.barcode.includes(searchQuery));
+        const matchesCategory =
+          !selectedCategory ||
+          (selectedCategory === "no-category"
+            ? !p.category_id
+            : p.category_id === selectedCategory);
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        const getScore = (p) => {
+          const batches = p.product_batches || [];
+          const isExpired = batches.some(
+            (batch) => new Date(batch.expire_date) < today,
+          );
+          const isOutOfStock = p.stock_qty <= 0;
+          const isLowStock =
+            p.low_stock_threshold && p.stock_qty <= p.low_stock_threshold;
+          const isExpiringSoon = batches.some(
+            (batch) =>
+              new Date(batch.expire_date) >= today &&
+              new Date(batch.expire_date) <= thirtyDays,
+          );
+
+          if (isExpired) return 0;
+          if (isOutOfStock) return 1;
+          if (isLowStock) return 2;
+          if (isExpiringSoon) return 3;
+          return 4;
+        };
+        return getScore(a) - getScore(b);
+      });
+  }, [products, searchQuery, selectedCategory]);
+
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -72,16 +128,23 @@ const InventoryPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeBranchId]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const data = await productService.getAllCategories(activeBranchId);
       setCategories(data);
     } catch (err) {
       console.error("Error fetching categories:", err);
     }
-  };
+  }, [activeBranchId]);
+
+  useEffect(() => {
+    if (activeBranchId) {
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [activeBranchId, fetchProducts, fetchCategories]);
 
   const handleExportPDF = () => {
     console.log("Exporting PDF...");
@@ -213,95 +276,62 @@ const InventoryPage = () => {
 
       <div className="relative space-y-6 pb-10 min-h-screen">
         {/* Header Banners */}
-        {activeTab === "products" ? (
-          <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-                <Package className="w-10 h-10 text-primary" strokeWidth={2} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                  คลังสินค้า
-                  <span className="text-primary">.</span>
-                </h1>
-                <p className="text-sm font-medium text-inactive">
-                  จัดการสินค้า ตรวจสอบสต็อก และติดตามสินค้าใกล้หมดอายุ
-                </p>
-              </div>
+        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
+              <Package className="w-10 h-10 text-primary" strokeWidth={2} />
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-primary hover:bg-primary/95 rounded-[20px] px-6 py-4 flex items-center justify-center gap-4 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 group/btn relative overflow-hidden border border-white/10 active:scale-95 shrink-0 z-10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-              <div className="bg-white/20 p-2.5 rounded-[15px] text-white shadow-inner group-hover/btn:rotate-90 transition-transform duration-500">
-                <Plus size={16} strokeWidth={3} />
-              </div>
-              <div className="text-left">
-                <p className="text-[8px] font-black text-white/70 uppercase tracking-[0.1em] mb-0.5">
-                  จัดการสต็อก
-                </p>
-                <h3 className="text-[12px] font-black tracking-widest text-white uppercase leading-none">
-                  เพิ่มสินค้า
-                </h3>
-              </div>
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-                <Package className="w-10 h-10 text-primary" strokeWidth={2} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                  รายงานสต็อก
-                  <span className="text-primary">.</span>
-                </h1>
-                <p className="text-sm font-medium text-inactive">
-                  ตรวจสอบความเคลื่อนไหวของสินค้า เข้า-ออก และยอดคงเหลือ
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
+                {activeTab === "products" ? "คลังสินค้า" : "รายงานสต็อก"}
+                <span className="text-primary">.</span>
+              </h1>
+              <p className="text-sm font-medium text-inactive">
+                {activeTab === "products"
+                  ? "จัดการสินค้า ตรวจสอบสต็อก และติดตามสินค้าใกล้หมดอายุ"
+                  : "ตรวจสอบความเคลื่อนไหวของสินค้า เข้า-ออก และยอดคงเหลือ"}
+              </p>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-primary hover:bg-primary/95 rounded-[20px] px-6 py-4 flex items-center justify-center gap-4 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 group/btn relative overflow-hidden border border-white/10 active:scale-95 shrink-0 z-10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-              <div className="bg-white/20 p-2.5 rounded-[15px] text-white shadow-inner group-hover/btn:rotate-90 transition-transform duration-500">
-                <Plus size={16} strokeWidth={3} />
-              </div>
-              <div className="text-left">
-                <p className="text-[8px] font-black text-white/70 uppercase tracking-[0.1em] mb-0.5">
-                  จัดการสต็อก
-                </p>
-                <h3 className="text-[12px] font-black tracking-widest text-white uppercase leading-none">
-                  เพิ่มสินค้า
-                </h3>
-              </div>
-            </button>
           </div>
-        )}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-primary hover:bg-primary/95 rounded-[20px] px-6 py-4 flex items-center justify-center gap-4 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 group/btn relative overflow-hidden border border-white/10 active:scale-95 shrink-0 z-10"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+            <div className="bg-white/20 p-2.5 rounded-[15px] text-white shadow-inner group-hover/btn:rotate-90 transition-transform duration-500">
+              <Plus size={16} strokeWidth={3} />
+            </div>
+            <div className="text-left">
+              <p className="text-[8px] font-black text-white/70 uppercase tracking-[0.1em] mb-0.5">
+                จัดการสต็อก
+              </p>
+              <h3 className="text-[12px] font-black tracking-widest text-white uppercase leading-none">
+                เพิ่มสินค้า
+              </h3>
+            </div>
+          </button>
+        </div>
 
         {/* Dedicated Tab Navigation */}
         <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-[20px] w-fit shadow-sm border border-white/20">
           <button
             onClick={() => setActiveTab("products")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "products"
-              ? "bg-primary text-white shadow-lg shadow-primary/20"
-              : "text-gray-500 hover:text-primary hover:bg-primary/5"
-              }`}
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+              activeTab === "products"
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "text-gray-500 hover:text-primary hover:bg-primary/5"
+            }`}
           >
             รายการสินค้า
           </button>
           <button
             onClick={() => setActiveTab("report")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "report"
-              ? "bg-primary text-white shadow-lg shadow-primary/20"
-              : "text-gray-500 hover:text-primary hover:bg-primary/5"
-              }`}
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+              activeTab === "report"
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "text-gray-500 hover:text-primary hover:bg-primary/5"
+            }`}
           >
             รายงานสต็อก
           </button>
@@ -321,7 +351,7 @@ const InventoryPage = () => {
                   สินค้าทั้งหมด
                 </p>
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-                  {products.length}{" "}
+                  {totalCount}{" "}
                   <span className="text-lg font-black text-inactive">
                     รายการ
                   </span>
@@ -340,11 +370,7 @@ const InventoryPage = () => {
                   สินค้าใกล้หมด
                 </p>
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
-                  {
-                    products.filter(
-                      (p) => p.low_stock_threshold && p.stock_qty <= p.low_stock_threshold && p.stock_qty > 0,
-                    ).length
-                  }{" "}
+                  {stats.lowStock}{" "}
                   <span className="text-lg font-black text-inactive">
                     รายการ
                   </span>
@@ -363,13 +389,7 @@ const InventoryPage = () => {
                   สินค้าหมดอายุ
                 </p>
                 <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-rose-600">
-                  {
-                    products.filter((p) =>
-                      p.product_batches?.some(
-                        (b) => new Date(b.expire_date) < new Date(),
-                      ),
-                    ).length
-                  }{" "}
+                  {stats.expired}{" "}
                   <span className="text-lg font-black text-inactive">
                     รายการ
                   </span>
@@ -426,16 +446,18 @@ const InventoryPage = () => {
                 <div className="relative" ref={filterRef}>
                   <button
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${selectedCategory
-                      ? "border-primary text-primary bg-primary/5"
-                      : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
-                      }`}
+                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${
+                      selectedCategory
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
+                    }`}
                   >
                     <Filter size={16} />
                     {selectedCategory
                       ? selectedCategory === "no-category"
                         ? "ทั่วไป"
-                        : categories.find((c) => c.id === selectedCategory)?.name || "ตัวกรอง"
+                        : categories.find((c) => c.id === selectedCategory)
+                            ?.name || "ตัวกรอง"
                       : "ตัวกรอง"}
                   </button>
 
@@ -447,10 +469,11 @@ const InventoryPage = () => {
                           setSelectedCategory(null);
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${!selectedCategory
-                          ? "bg-primary text-white"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                          !selectedCategory
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
                       >
                         ทั้งหมด
                       </button>
@@ -459,10 +482,11 @@ const InventoryPage = () => {
                           setSelectedCategory("no-category");
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === "no-category"
-                          ? "bg-primary text-white"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                          selectedCategory === "no-category"
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
                       >
                         ทั่วไป
                       </button>
@@ -473,10 +497,11 @@ const InventoryPage = () => {
                             setSelectedCategory(category.id);
                             setIsFilterOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === category.id
-                            ? "bg-primary text-white"
-                            : "text-gray-700 hover:bg-gray-50"
-                            }`}
+                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                            selectedCategory === category.id
+                              ? "bg-primary text-white"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
                         >
                           {category.name}
                         </button>
@@ -496,17 +521,7 @@ const InventoryPage = () => {
                     กำลังโหลดข้อมูลสินค้า...
                   </p>
                 </div>
-              ) : products.filter((p) => {
-                const matchesSearch =
-                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (p.barcode && p.barcode.includes(searchQuery));
-                const matchesCategory =
-                  !selectedCategory ||
-                  (selectedCategory === "no-category"
-                    ? !p.category_id
-                    : p.category_id === selectedCategory);
-                return matchesSearch && matchesCategory;
-              }).length === 0 ? (
+              ) : filteredAndSortedProducts.length === 0 ? (
                 <div className="col-span-full bg-white rounded-[32px] p-20 text-center shadow-premium border border-gray-100">
                   <Package
                     size={48}
@@ -517,288 +532,244 @@ const InventoryPage = () => {
                   </p>
                 </div>
               ) : (
-                products
-                  .filter((p) => {
-                    const matchesSearch =
-                      p.name
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      (p.barcode && p.barcode.includes(searchQuery));
-                    const matchesCategory =
-                      !selectedCategory ||
-                      (selectedCategory === "no-category"
-                        ? !p.category_id
-                        : p.category_id === selectedCategory);
-                    return matchesSearch && matchesCategory;
-                  })
-                  .sort((a, b) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const thirtyDays = new Date(today);
-                    thirtyDays.setDate(today.getDate() + 30);
+                filteredAndSortedProducts.map((product) => {
+                  // Find earliest expiry date
+                  const sortedBatches =
+                    product.product_batches?.sort(
+                      (a, b) =>
+                        new Date(a.expire_date) - new Date(b.expire_date),
+                    ) || [];
 
-                    const getScore = (p) => {
-                      const batches = p.product_batches || [];
-                      const isExpired = batches.some(
-                        (b) => new Date(b.expire_date) < today,
-                      );
-                      const isOutOfStock = p.stock_qty <= 0;
-                      const isLowStock =
-                        p.low_stock_threshold &&
-                        p.stock_qty <= p.low_stock_threshold;
-                      const isExpiringSoon = batches.some(
-                        (b) =>
-                          new Date(b.expire_date) >= today &&
-                          new Date(b.expire_date) <= thirtyDays,
-                      );
-
-                      if (isExpired) return 0;
-                      if (isOutOfStock) return 1;
-                      if (isLowStock) return 2;
-                      if (isExpiringSoon) return 3;
-                      return 4;
-                    };
-                    return getScore(a) - getScore(b);
-                  })
-                  .map((product) => {
-                    // Find earliest expiry date
-                    const sortedBatches =
-                      product.product_batches?.sort(
-                        (a, b) =>
-                          new Date(a.expire_date) - new Date(b.expire_date),
-                      ) || [];
-
-                    const expDate =
-                      sortedBatches.length > 0
-                        ? new Date(
+                  const expDate =
+                    sortedBatches.length > 0
+                      ? new Date(
                           sortedBatches[0].expire_date,
                         ).toLocaleDateString("th-TH")
-                        : "-";
+                      : "-";
 
-                    // Low stock threshold check (only if threshold is set)
-                    const isLowStock =
-                      product.low_stock_threshold &&
-                      product.stock_qty <= product.low_stock_threshold &&
-                      product.stock_qty > 0;
-                    const isOutOfStock = product.stock_qty <= 0;
+                  // Low stock threshold check (only if threshold is set)
+                  const isLowStock =
+                    product.low_stock_threshold &&
+                    product.stock_qty <= product.low_stock_threshold &&
+                    product.stock_qty > 0;
+                  const isOutOfStock = product.stock_qty <= 0;
 
-                    // Expiry status
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const thirtyDaysFromNow = new Date(today);
-                    thirtyDaysFromNow.setDate(today.getDate() + 30);
+                  // Expiry status
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const thirtyDaysFromNow = new Date(today);
+                  thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-                    const isExpired = sortedBatches.some(
-                      (b) => new Date(b.expire_date) < today,
+                  const isExpired = sortedBatches.some(
+                    (b) => new Date(b.expire_date) < today,
+                  );
+                  const isExpiringSoon =
+                    !isExpired &&
+                    sortedBatches.some(
+                      (b) =>
+                        new Date(b.expire_date) >= today &&
+                        new Date(b.expire_date) <= thirtyDaysFromNow,
                     );
-                    const isExpiringSoon =
-                      !isExpired &&
-                      sortedBatches.some(
-                        (b) =>
-                          new Date(b.expire_date) >= today &&
-                          new Date(b.expire_date) <= thirtyDaysFromNow,
-                      );
 
-                    return (
-                      <div
-                        key={product.id}
-                        className="group bg-white rounded-[32px] p-6 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-6 relative overflow-hidden"
-                      >
-                        {/* Top Section: Image and Info */}
-                        <div className="flex flex-col sm:flex-row gap-6">
-                          {/* Left: Image with Status Indicator */}
-                          <div className="w-full sm:w-40 h-56 sm:h-40 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md">
-                            <img
-                              src={product.image_url}
-                              alt={product.name}
-                              className="h-full w-full object-cover relative z-10"
-                              onError={(e) => {
-                                e.target.src =
-                                  "https://via.placeholder.com/150";
-                              }}
-                            />
-                            {/* Status Badges */}
-                            {isOutOfStock && (
-                              <div className="absolute top-2 left-2 z-20 bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                🚫 หมดสต็อก
-                              </div>
-                            )}
-                            {!isOutOfStock && isLowStock && (
-                              <div className="absolute top-2 left-2 z-20 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
-                                ⚠️ ใกล้หมด
-                              </div>
-                            )}
-                            {isExpired && (
-                              <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                ❌ หมดอายุ
-                              </div>
-                            )}
-                            {!isExpired && isExpiringSoon && (
-                              <div className="absolute top-2 right-2 z-20 bg-orange-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
-                                🕒 ใกล้หมดอายุ
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  return (
+                    <div
+                      key={product.id}
+                      className="group bg-white rounded-[32px] p-6 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-6 relative overflow-hidden"
+                    >
+                      {/* Top Section: Image and Info */}
+                      <div className="flex flex-col sm:flex-row gap-6">
+                        {/* Left: Image with Status Indicator */}
+                        <div className="w-full sm:w-40 h-56 sm:h-40 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md">
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="h-full w-full object-cover relative z-10"
+                            onError={(e) => {
+                              e.target.src = DEFAULT_PRODUCT_IMAGE;
+                            }}
+                          />
+                          {/* Status Badges */}
+                          {isOutOfStock && (
+                            <div className="absolute top-2 left-2 z-20 bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                              🚫 หมดสต็อก
+                            </div>
+                          )}
+                          {!isOutOfStock && isLowStock && (
+                            <div className="absolute top-2 left-2 z-20 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                              ⚠️ ใกล้หมด
+                            </div>
+                          )}
+                          {isExpired && (
+                            <div className="absolute top-2 right-2 z-20 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                              ❌ หมดอายุ
+                            </div>
+                          )}
+                          {!isExpired && isExpiringSoon && (
+                            <div className="absolute top-2 right-2 z-20 bg-orange-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                              🕒 ใกล้หมดอายุ
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+
+                        {/* Right: Details */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {/* Header Area */}
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-2xl font-black text-[#1B2559] group-hover:text-primary transition-colors truncate leading-tight mb-2">
+                                {product.name}
+                              </h4>
+                              <span className="inline-flex items-center text-xs font-bold text-white bg-[#1B2559] px-2.5 py-1 rounded-lg shadow-sm">
+                                #{product.barcode || product.id.slice(0, 8)}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(product);
+                                  setIsEditModalOpen(true);
+                                }}
+                                className="p-3 bg-[#F8FAFD] border border-indigo-50/50 hover:border-primary/20 hover:bg-primary/10 rounded-[20px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm active:scale-90 shrink-0"
+                              >
+                                <Edit size={22} strokeWidth={2.5} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(product)}
+                                className="p-3 bg-[#F8FAFD] border border-rose-50/50 hover:border-rose-500/20 hover:bg-rose-50 rounded-[20px] text-[#1B2559]/40 hover:text-rose-500 transition-all shadow-sm active:scale-90 shrink-0"
+                              >
+                                <Trash2 size={22} strokeWidth={2.5} />
+                              </button>
+                            </div>
                           </div>
 
-                          {/* Right: Details */}
-                          <div className="flex-1 flex flex-col min-w-0">
-                            {/* Header Area */}
-                            <div className="flex justify-between items-start gap-3">
-                              <div className="min-w-0 flex-1">
-                                <h4 className="text-2xl font-black text-[#1B2559] group-hover:text-primary transition-colors truncate leading-tight mb-2">
-                                  {product.name}
-                                </h4>
-                                <span className="inline-flex items-center text-xs font-bold text-white bg-[#1B2559] px-2.5 py-1 rounded-lg shadow-sm">
-                                  #{product.barcode || product.id.slice(0, 8)}
-                                </span>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingProduct(product);
-                                    setIsEditModalOpen(true);
-                                  }}
-                                  className="p-3 bg-[#F8FAFD] border border-indigo-50/50 hover:border-primary/20 hover:bg-primary/10 rounded-[20px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm active:scale-90 shrink-0"
+                          {/* Middle Area: Meta Chips */}
+                          <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
+                            <div className="flex items-center gap-2 bg-[#F8FAFD] px-3 py-1.5 rounded-xl border border-indigo-50/30">
+                              <span className="text-primary text-[10px]">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
                                 >
-                                  <Edit size={22} strokeWidth={2.5} />
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(product)}
-                                  className="p-3 bg-[#F8FAFD] border border-rose-50/50 hover:border-rose-500/20 hover:bg-rose-50 rounded-[20px] text-[#1B2559]/40 hover:text-rose-500 transition-all shadow-sm active:scale-90 shrink-0"
-                                >
-                                  <Trash2 size={22} strokeWidth={2.5} />
-                                </button>
-                              </div>
+                                  <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
+                                  <path d="M7 7h.01"></path>
+                                </svg>
+                              </span>
+                              <span className="text-sm font-bold text-[#1B2559]">
+                                {product.product_categories?.name || "ทั่วไป"}
+                              </span>
                             </div>
-
-                            {/* Middle Area: Meta Chips */}
-                            <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
-                              <div className="flex items-center gap-2 bg-[#F8FAFD] px-3 py-1.5 rounded-xl border border-indigo-50/30">
-                                <span className="text-primary text-[10px]">
-                                  <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
-                                    <path d="M7 7h.01"></path>
-                                  </svg>
-                                </span>
-                                <span className="text-sm font-bold text-[#1B2559]">
-                                  {product.product_categories?.name || "ทั่วไป"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 bg-[#F8FAFD] px-3 py-1.5 rounded-xl border border-indigo-50/30">
-                                <span className="text-primary text-[10px]">
-                                  <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <rect
-                                      width="18"
-                                      height="18"
-                                      x="3"
-                                      y="4"
-                                      rx="2"
-                                      ry="2"
-                                    ></rect>
-                                    <line x1="16" x2="16" y1="2" y2="6"></line>
-                                    <line x1="8" x2="8" y1="2" y2="6"></line>
-                                    <line x1="3" x2="21" y1="10" y2="10"></line>
-                                  </svg>
-                                </span>
-                                <span
-                                  className={`text-sm font-bold ${isExpired
+                            <div className="flex items-center gap-2 bg-[#F8FAFD] px-3 py-1.5 rounded-xl border border-indigo-50/30">
+                              <span className="text-primary text-[10px]">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect
+                                    width="18"
+                                    height="18"
+                                    x="3"
+                                    y="4"
+                                    rx="2"
+                                    ry="2"
+                                  ></rect>
+                                  <line x1="16" x2="16" y1="2" y2="6"></line>
+                                  <line x1="8" x2="8" y1="2" y2="6"></line>
+                                  <line x1="3" x2="21" y1="10" y2="10"></line>
+                                </svg>
+                              </span>
+                              <span
+                                className={`text-sm font-bold ${
+                                  isExpired
                                     ? "text-rose-600"
                                     : isExpiringSoon
                                       ? "text-orange-500"
                                       : "text-[#1B2559]"
-                                    }`}
-                                >
-                                  หมดอายุ: {expDate}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Bottom Area: Stock & Pricing Row */}
-                        <div className="mt-auto pt-4 border-t border-gray-100/50 flex items-center gap-4">
-                          {/* Left: Stock (Outside) */}
-                          <div className="flex flex-col gap-1 min-w-[70px]">
-                            <p className="text-[10px] font-black text-inactive uppercase tracking-tighter">
-                              {product.is_weightable
-                                ? "คงเหลือ (KG)"
-                                : "คงเหลือ"}
-                            </p>
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={
-                                  product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold
-                                    ? "text-rose-500"
-                                    : "text-[#1B2559]"
-                                }
+                                }`}
                               >
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <path d="m7.5 4.27 9 5.15"></path>
-                                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-                                  <path d="m3.3 7 8.7 5 8.7-5"></path>
-                                  <path d="M12 22v-10"></path>
-                                </svg>
+                                หมดอายุ: {expDate}
                               </span>
-                              <span
-                                className={`text-2xl font-black leading-none ${product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold ? "text-rose-500" : "text-[#1B2559]"}`}
-                              >
-                                {product.stock_qty}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Right: Pricing Box */}
-                          <div className="ml-auto bg-[#F8FAFD] rounded-[20px] px-5 py-2.5 flex items-center justify-end gap-10 group-hover:bg-primary/5 transition-colors duration-500">
-                            <div className="flex flex-col gap-0.5 text-right">
-                              <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
-                                ราคาทุน
-                              </p>
-                              <p className="text-sm font-bold text-gray-400 leading-none">
-                                ฿{product.cost_price}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-col gap-0.5 text-right">
-                              <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
-                                ราคาขาย
-                              </p>
-                              <p className="text-xl font-black text-primary leading-none">
-                                ฿{product.price}
-                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    );
-                  })
+
+                      {/* Bottom Area: Stock & Pricing Row */}
+                      <div className="mt-auto pt-4 border-t border-gray-100/50 flex items-center gap-4">
+                        {/* Left: Stock (Outside) */}
+                        <div className="flex flex-col gap-1 min-w-[70px]">
+                          <p className="text-[10px] font-black text-inactive uppercase tracking-tighter">
+                            {product.is_weightable ? "คงเหลือ (KG)" : "คงเหลือ"}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={
+                                product.low_stock_threshold &&
+                                product.stock_qty <= product.low_stock_threshold
+                                  ? "text-rose-500"
+                                  : "text-[#1B2559]"
+                              }
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="m7.5 4.27 9 5.15"></path>
+                                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                                <path d="m3.3 7 8.7 5 8.7-5"></path>
+                                <path d="M12 22v-10"></path>
+                              </svg>
+                            </span>
+                            <span
+                              className={`text-2xl font-black leading-none ${product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold ? "text-rose-500" : "text-[#1B2559]"}`}
+                            >
+                              {product.stock_qty}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Right: Pricing Box */}
+                        <div className="ml-auto bg-[#F8FAFD] rounded-[20px] px-5 py-2.5 flex items-center justify-end gap-10 group-hover:bg-primary/5 transition-colors duration-500">
+                          <div className="flex flex-col gap-0.5 text-right">
+                            <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
+                              ราคาทุน
+                            </p>
+                            <p className="text-sm font-bold text-gray-400 leading-none">
+                              ฿{product.cost_price}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5 text-right">
+                            <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
+                              ราคาขาย
+                            </p>
+                            <p className="text-xl font-black text-primary leading-none">
+                              ฿{product.price}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </>
@@ -830,7 +801,7 @@ const InventoryPage = () => {
                   alt={deleteConfirm.name}
                   className="w-16 h-16 rounded-xl object-cover"
                   onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/150";
+                    e.target.src = DEFAULT_PRODUCT_IMAGE;
                   }}
                 />
                 <div className="flex-1 min-w-0">
