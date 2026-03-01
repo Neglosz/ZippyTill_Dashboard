@@ -1,23 +1,36 @@
-import { apiClient } from "./apiClient";
+import { supabase } from "../lib/supabase";
 
 export const authService = {
   async login(email, password) {
-    return apiClient.post("/auth/login", { email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
   },
 
   async logout() {
-    const result = await apiClient.post("/auth/logout");
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     sessionStorage.clear();
-    return result;
   },
 
   async getCurrentUser() {
-    return apiClient.get("/auth/user");
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error) throw error;
+    return user;
   },
 
   async getSession() {
-    // Session management might still need some client-side logic depending on how you handle tokens,
-    // but for now, we'll route it through the backend if applicable.
-    return apiClient.get("/auth/user"); // Fallback to user for now
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+    if (error) throw error;
+    return session;
   },
 };

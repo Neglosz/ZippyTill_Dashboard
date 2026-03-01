@@ -5,6 +5,10 @@ export const productService = {
     return apiClient.get(`/products?branchId=${branchId}`);
   },
 
+  async recordStockRemoval(removalData, branchId) {
+    return apiClient.post(`/products/removal`, { ...removalData, branchId });
+  },
+
   async getProductById(id, branchId) {
     // Backend controller expects query param or just ID, assuming ID is in path for now
     return apiClient.get(`/products/${id}?branchId=${branchId}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -26,7 +26,7 @@ import {
   Legend,
 } from "recharts";
 import { useBranch } from "../contexts/BranchContext";
-import { saleService } from "../services/saleService";
+
 import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -37,6 +37,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -70,7 +71,8 @@ const CustomTooltip = ({ active, payload, label }) => {
                 </span>
               </div>
               <span className="text-sm font-black text-gray-900 tabular-nums">
-                <span className="text-xs mr-0.5">฿</span>{entry.value.toLocaleString()}
+                <span className="text-xs mr-0.5">฿</span>
+                {entry.value.toLocaleString()}
               </span>
             </div>
           ))}
@@ -107,19 +109,7 @@ const FinancePage = () => {
   const [viewMode, setViewMode] = useState("day"); // 'day', 'month', 'year'
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  useEffect(() => {
-    if (activeBranchId) {
-      fetchFinanceData();
-    }
-  }, [activeBranchId]);
-
-  useEffect(() => {
-    if (activeBranchId) {
-      fetchChartData();
-    }
-  }, [activeBranchId, viewMode, selectedDate]);
-
-  const fetchFinanceData = async () => {
+  const fetchFinanceData = useCallback(async () => {
     setLoading(true);
     try {
       const [stats, recentOrders, recentManual] = await Promise.all([
@@ -134,7 +124,10 @@ const FinancePage = () => {
       const normalizedOrders = (recentOrders || []).map((o) => ({
         ...o,
         source: "order",
-        displayType: o.payment_type === "credit_sale" ? "ค้างชำระ" : "เงินสด",
+        displayType:
+          o.payment_type === "credit_sale" || o.payment_method === "credit_sale"
+            ? "ค้างชำระ"
+            : "เงินสด",
         displayAmount: Number(o.total_amount),
         displayName: o.order_no,
         displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
@@ -165,43 +158,18 @@ const FinancePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeBranchId]);
 
-  const getCacheKey = (mode, date) => {
-    const d = new Date(date);
-    const keyDate = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-    return `${activeBranchId}-${mode}-${keyDate}`;
-  };
+  const getCacheKey = useCallback(
+    (mode, date) => {
+      const d = new Date(date);
+      const keyDate = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      return `${activeBranchId}-${mode}-${keyDate}`;
+    },
+    [activeBranchId],
+  );
 
-  const fetchChartData = async () => {
-    const cacheKey = getCacheKey(viewMode, selectedDate);
-
-    // Check Cache
-    if (dataCache.current[cacheKey]) {
-      setDailyGraphData(dataCache.current[cacheKey]);
-      prefetchAdjacentData(); // Still try to prefetch adjacent
-      return;
-    }
-
-    try {
-      const data = await transactionService.getAggregatedTransactions(
-        activeBranchId,
-        viewMode,
-        selectedDate,
-      );
-
-      // Update Cache
-      dataCache.current[cacheKey] = data;
-      setDailyGraphData(data);
-
-      // Trigger Prefetch
-      prefetchAdjacentData();
-    } catch (error) {
-      console.error("Failed to fetch chart data:", error);
-    }
-  };
-
-  const prefetchAdjacentData = async () => {
+  const prefetchAdjacentData = useCallback(async () => {
     try {
       // Calculate Previous and Next Dates
       const prevDate = new Date(selectedDate);
@@ -228,24 +196,70 @@ const FinancePage = () => {
           .then((data) => {
             dataCache.current[prevKey] = data;
           })
-          .catch(() => { }); // Ignore prefetch errors
+          .catch(() => {}); // Ignore prefetch errors
       }
 
-      // Fetch Next if not cached
       if (!dataCache.current[nextKey]) {
         transactionService
           .getAggregatedTransactions(activeBranchId, viewMode, nextDate)
           .then((data) => {
             dataCache.current[nextKey] = data;
           })
-          .catch(() => { }); // Ignore prefetch errors
+          .catch(() => {}); // Ignore prefetch errors
       }
-    } catch (error) {
+    } catch {
       // Silently fail prefetch
     }
-  };
+  }, [selectedDate, viewMode, activeBranchId, getCacheKey]);
 
-  const handlePrevDate = () => {
+  const fetchChartData = useCallback(async () => {
+    const cacheKey = getCacheKey(viewMode, selectedDate);
+
+    // Check Cache
+    if (dataCache.current[cacheKey]) {
+      setDailyGraphData(dataCache.current[cacheKey]);
+      prefetchAdjacentData(); // Still try to prefetch adjacent
+      return;
+    }
+
+    try {
+      const data = await transactionService.getAggregatedTransactions(
+        activeBranchId,
+        viewMode,
+        selectedDate,
+      );
+
+      // Update Cache
+      dataCache.current[cacheKey] = data;
+      setDailyGraphData(data);
+
+      // Trigger Prefetch
+      prefetchAdjacentData();
+    } catch (error) {
+      console.error("Failed to fetch chart data:", error);
+    }
+  }, [
+    selectedDate,
+    viewMode,
+    activeBranchId,
+    prefetchAdjacentData,
+    getCacheKey,
+  ]);
+
+  // Effects: placed after all useCallback definitions they depend on
+  useEffect(() => {
+    if (activeBranchId) {
+      fetchFinanceData();
+    }
+  }, [activeBranchId, fetchFinanceData]);
+
+  useEffect(() => {
+    if (activeBranchId) {
+      fetchChartData();
+    }
+  }, [activeBranchId, viewMode, selectedDate, fetchChartData]);
+
+  const handlePrevDate = useCallback(() => {
     const newDate = new Date(selectedDate);
     if (viewMode === "day") newDate.setDate(selectedDate.getDate() - 1);
     else if (viewMode === "month")
@@ -253,9 +267,9 @@ const FinancePage = () => {
     else if (viewMode === "year")
       newDate.setFullYear(selectedDate.getFullYear() - 1);
     setSelectedDate(newDate);
-  };
+  }, [selectedDate, viewMode]);
 
-  const handleNextDate = () => {
+  const handleNextDate = useCallback(() => {
     const newDate = new Date(selectedDate);
     if (viewMode === "day") newDate.setDate(selectedDate.getDate() + 1);
     else if (viewMode === "month")
@@ -263,14 +277,14 @@ const FinancePage = () => {
     else if (viewMode === "year")
       newDate.setFullYear(selectedDate.getFullYear() + 1);
     setSelectedDate(newDate);
-  };
+  }, [selectedDate, viewMode]);
 
-  const handleDateChange = (dateStr) => {
+  const handleDateChange = useCallback((dateStr) => {
     if (!dateStr) return;
     const [day, month, year] = dateStr.split("/");
     const newDate = new Date(year, month - 1, day);
     setSelectedDate(newDate);
-  };
+  }, []);
 
   const formatDateForPicker = (date) => {
     const d = new Date(date);
@@ -279,36 +293,40 @@ const FinancePage = () => {
     ).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
-  const handleTransactionClick = async (tx) => {
-    // Open modal first for immediate feedback
-    setSelectedTransaction(tx);
-    setIsReceiptModalOpen(true);
+  const handleTransactionClick = useCallback(
+    async (tx) => {
+      // Open modal first for immediate feedback
+      setSelectedTransaction(tx);
+      setIsReceiptModalOpen(true);
 
-    const targetOrderId = tx.source === "manual" ? tx.reference_order_id : tx.id;
-    if (!targetOrderId) {
-      // Manual transaction without linked order - no details to fetch
-      setFullOrderData(null);
-      setIsLoadingDetails(false);
-      return;
-    }
-    setIsLoadingDetails(true);
+      const targetOrderId =
+        tx.source === "manual" ? tx.reference_order_id : tx.id;
+      if (!targetOrderId) {
+        // Manual transaction without linked order - no details to fetch
+        setFullOrderData(null);
+        setIsLoadingDetails(false);
+        return;
+      }
+      setIsLoadingDetails(true);
 
-    try {
-      const orderDetails = await orderService.getOrderDetails(
-        targetOrderId,
-        activeBranchId,
-      );
-      // If manual transaction, we might need to adjust some display fields in selectedTransaction
-      // but the spread in ReceiptModal usually handles it.
-      setFullOrderData(orderDetails);
-    } catch (error) {
-      console.error("Failed to fetch order details:", error);
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  };
+      try {
+        const orderDetails = await orderService.getOrderDetails(
+          targetOrderId,
+          activeBranchId,
+        );
+        // If manual transaction, we might need to adjust some display fields in selectedTransaction
+        // but the spread in ReceiptModal usually handles it.
+        setFullOrderData(orderDetails);
+      } catch (error) {
+        console.error("Failed to fetch order details:", error);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    },
+    [activeBranchId],
+  );
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = useCallback(async () => {
     try {
       if (!transactions || transactions.length === 0) {
         alert("ไม่มีข้อมูลที่จะส่งออก");
@@ -349,10 +367,21 @@ const FinancePage = () => {
         const row = worksheet.addRow({
           id: tx.displayName || "-",
           subtitle: tx.displaySubtitle || "-",
-          date: tx.created_at ? new Date(tx.created_at).toLocaleDateString("th-TH") : "-",
+          date: tx.created_at
+            ? new Date(tx.created_at).toLocaleDateString("th-TH")
+            : "-",
           type: tx.displayType || "-",
-          amount: tx.isIncome ? (tx.displayAmount || 0) : -(tx.displayAmount || 0),
-          status: tx.source === "manual" ? "สำเร็จ" : tx.payment_status === "paid" ? "จ่ายแล้ว" : tx.payment_status === "pending" ? "กำลังรอ" : "สำเร็จ",
+          amount: tx.isIncome
+            ? tx.displayAmount || 0
+            : -(tx.displayAmount || 0),
+          status:
+            tx.source === "manual"
+              ? "สำเร็จ"
+              : tx.payment_status === "paid"
+                ? "จ่ายแล้ว"
+                : tx.payment_status === "pending"
+                  ? "กำลังรอ"
+                  : "สำเร็จ",
         });
 
         // Cell Styling for data
@@ -383,23 +412,29 @@ const FinancePage = () => {
         });
       });
 
-
       // Sanitize branch name for filename
-      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const safeBranchName = (activeBranchName || "Store").replace(
+        /[/\\?%*:|"<>]/g,
+        "-",
+      );
       const filename = `Finance_Report_${safeBranchName}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       saveAs(blob, filename);
 
       setIsExportModalOpen(false);
     } catch (err) {
       console.error("Export Excel error:", err);
-      alert(`ไม่สามารถส่งออก Excel ได้: ${err.message || "เกิดข้อผิดพลาดภายใน"}`);
+      alert(
+        `ไม่สามารถส่งออก Excel ได้: ${err.message || "เกิดข้อผิดพลาดภายใน"}`,
+      );
     }
-  };
+  }, [transactions, activeBranchName]);
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = useCallback(async () => {
     try {
       if (transactions.length === 0) return;
 
@@ -432,7 +467,13 @@ const FinancePage = () => {
         new Date(tx.created_at).toLocaleDateString("th-TH"),
         tx.displayType,
         `${tx.isIncome ? "+" : "-"}฿${tx.displayAmount.toLocaleString()}`,
-        tx.source === "manual" ? "สำเร็จ" : tx.payment_status === "paid" ? "จ่ายแล้ว" : tx.payment_status === "pending" ? "กำลังรอ" : "สำเร็จ",
+        tx.source === "manual"
+          ? "สำเร็จ"
+          : tx.payment_status === "paid"
+            ? "จ่ายแล้ว"
+            : tx.payment_status === "pending"
+              ? "กำลังรอ"
+              : "สำเร็จ",
       ]);
 
       autoTable(doc, {
@@ -475,7 +516,10 @@ const FinancePage = () => {
       });
 
       // Sanitize branch name for filename
-      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const safeBranchName = (activeBranchName || "Store").replace(
+        /[/\\?%*:|"<>]/g,
+        "-",
+      );
       const filename = `Finance_Report_${safeBranchName}_${new Date().toISOString().split("T")[0]}.pdf`;
 
       doc.save(filename);
@@ -488,107 +532,115 @@ const FinancePage = () => {
         alert(`Failed to export PDF: ${err.message || err.toString()}`);
       }
     }
-  };
+  }, [transactions, activeBranchName]);
 
-  const financeTopics = [
-    {
-      id: 1,
-      title: "รายรับทั้งหมด",
-      amount: (metrics?.totalRevenue || 0).toLocaleString(),
-      subtext: "ยอดขายรวมทั้งหมด",
-      subtextColor: "text-primary",
-      color: "bg-orange-50",
-      iconBg: "bg-primary",
-      icon: TrendingUp,
-    },
-    {
-      id: 2,
-      title: "ต้นทุนขาย (COGS)",
-      amount: (metrics?.totalExpense || 0).toLocaleString(),
-      subtext: "คิดจากต้นทุนสินค้า",
-      subtextColor: "text-inactive",
-      color: "bg-gray-50",
-      iconBg: "bg-slate-400",
-      icon: TrendingDown,
-    },
-    {
-      id: 3,
-      title: "กำไรขั้นต้น",
-      amount: (metrics?.netProfit || 0).toLocaleString(),
-      subtext: "รายรับ - ต้นทุนขาย",
-      subtextColor: "text-primary",
-      color: "bg-primary/10",
-      iconBg: "bg-primary-dark",
-      icon: Coins,
-    },
-    {
-      id: 4,
-      title: "ยอดเงินสุทธิ",
-      amount: (metrics?.netProfit || 0).toLocaleString(), // Using Net Profit as substitute for now
-      subtext: "Balance",
-      subtextColor: "text-primary",
-      color: "bg-orange-50",
-      iconBg: "bg-primary",
-      icon: Wallet,
-    },
-  ];
+  const financeTopics = useMemo(
+    () => [
+      {
+        id: 1,
+        title: "รายรับทั้งหมด",
+        amount: (metrics?.totalRevenue || 0).toLocaleString(),
+        subtext: "ยอดขายรวมทั้งหมด",
+        subtextColor: "text-primary",
+        color: "bg-orange-50",
+        iconBg: "bg-primary",
+        icon: TrendingUp,
+      },
+      {
+        id: 2,
+        title: "ต้นทุนขาย (COGS)",
+        amount: (metrics?.totalExpense || 0).toLocaleString(),
+        subtext: "คิดจากต้นทุนสินค้า",
+        subtextColor: "text-inactive",
+        color: "bg-gray-50",
+        iconBg: "bg-slate-400",
+        icon: TrendingDown,
+      },
+      {
+        id: 3,
+        title: "กำไรขั้นต้น",
+        amount: (metrics?.netProfit || 0).toLocaleString(),
+        subtext: "รายรับ - ต้นทุนขาย",
+        subtextColor: "text-primary",
+        color: "bg-primary/10",
+        iconBg: "bg-primary-dark",
+        icon: Coins,
+      },
+      {
+        id: 4,
+        title: "ยอดเงินสุทธิ",
+        amount: (metrics?.netProfit || 0).toLocaleString(), // Using Net Profit as substitute for now
+        subtext: "Balance",
+        subtextColor: "text-primary",
+        color: "bg-orange-50",
+        iconBg: "bg-primary",
+        icon: Wallet,
+      },
+    ],
+    [metrics],
+  );
 
   // Process Payment Channels for display
-  const processedChannels = [
-    {
-      id: "cash",
-      name: "เงินสด",
-      icon: Banknote,
-      color: "bg-primary",
-      iconBg: "bg-primary/10 text-primary",
-    },
-    {
-      id: "transfer",
-      name: "โอนเงิน",
-      icon: QrCode,
-      color: "bg-blue-500",
-      iconBg: "bg-blue-50 text-blue-600",
-    },
-    {
-      id: "credit",
-      name: "บัตรเครดิต",
-      icon: CreditCard,
-      color: "bg-purple-500",
-      iconBg: "bg-purple-50 text-purple-600",
-    },
-    {
-      id: "other",
-      name: "อื่นๆ",
-      icon: HandCoins,
-      color: "bg-gray-500",
-      iconBg: "bg-gray-100 text-gray-600",
-    },
-    {
-      id: "credit_sale",
-      name: "ค้างชำระ",
-      icon: User,
-      color: "bg-rose-500",
-      iconBg: "bg-rose-50 text-rose-600",
-    },
-  ];
+  const processedChannels = useMemo(
+    () => [
+      {
+        id: "cash",
+        name: "เงินสด",
+        icon: Banknote,
+        color: "bg-primary",
+        iconBg: "bg-primary/10 text-primary",
+      },
+      {
+        id: "transfer",
+        name: "โอนเงิน",
+        icon: QrCode,
+        color: "bg-blue-500",
+        iconBg: "bg-blue-50 text-blue-600",
+      },
+      {
+        id: "credit",
+        name: "บัตรเครดิต",
+        icon: CreditCard,
+        color: "bg-purple-500",
+        iconBg: "bg-purple-50 text-purple-600",
+      },
+      {
+        id: "other",
+        name: "อื่นๆ",
+        icon: HandCoins,
+        color: "bg-gray-500",
+        iconBg: "bg-gray-100 text-gray-600",
+      },
+      {
+        id: "credit_sale",
+        name: "ค้างชำระ",
+        icon: User,
+        color: "bg-rose-500",
+        iconBg: "bg-rose-50 text-rose-600",
+      },
+    ],
+    [],
+  );
 
-  const paymentChannelDisplay = (metrics?.paymentChannels || []).map((pc, index) => {
-    // Basic mapping based on name or fallback
-    let template =
-      processedChannels.find(
-        (c) => c.name === pc.method || c.id === pc.method,
-      ) || processedChannels[3];
-    // If exact match not found but we have method name, we can still show it
-    return {
-      id: index,
-      name: pc.method || "ไม่ระบุ",
-      amount: (pc.amount || 0).toLocaleString(),
-      percent: pc.percent || 0,
-      color: template.color,
-      icon: template.icon,
-      iconBg: template.iconBg,
-    };
-  });
+  const paymentChannelDisplay = useMemo(() => {
+    return (metrics?.paymentChannels || []).map((pc, index) => {
+      // Basic mapping based on name or fallback
+      let template =
+        processedChannels.find(
+          (c) => c.name === pc.method || c.id === pc.method,
+        ) || processedChannels[3];
+
+      return {
+        id: index,
+        name: pc.method || "ไม่ระบุ",
+        amount: (pc.amount || 0).toLocaleString(),
+        percent: pc.percent || 0,
+        color: template.color,
+        icon: template.icon,
+        iconBg: template.iconBg,
+      };
+    });
+  }, [metrics, processedChannels]);
 
   if (loading) {
     return (
@@ -605,11 +657,7 @@ const FinancePage = () => {
 
   return (
     <>
-      {/* Background Decorative Blobs - High Dimension */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[5%] right-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
-      </div>
+      <PageBackground />
 
       <div className="relative pb-10 space-y-6 min-h-screen">
         {/* SVG Definitions for Gradients and Shadows */}
@@ -650,24 +698,11 @@ const FinancePage = () => {
           </defs>
         </svg>
 
-        {/* Header Banner */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-              <DollarSign className="w-10 h-10 text-primary" strokeWidth={2} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight flex items-center gap-2">
-                การเงิน
-                <span className="text-primary">.</span>
-              </h1>
-              <p className="text-sm font-medium text-inactive">
-                รายงานการเงินของสาขา กำไรขาดทุน และการวิเคราะห์ทางการเงิน
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="การเงิน"
+          description="รายงานการเงินของสาขา กำไรขาดทุน และการวิเคราะห์ทางการเงิน"
+          icon={DollarSign}
+        />
 
         {/* 4 Cards - High Dimension */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -778,10 +813,11 @@ const FinancePage = () => {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-inactive hover:text-gray-600"
-                      }`}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === mode
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-inactive hover:text-gray-600"
+                    }`}
                   >
                     {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
                   </button>
@@ -894,7 +930,8 @@ const FinancePage = () => {
                         </span>
                         <div className="text-right">
                           <p className="text-gray-900 font-black tracking-tighter">
-                            <span className="text-sm mr-0.5">฿</span>{channel.amount}
+                            <span className="text-sm mr-0.5">฿</span>
+                            {channel.amount}
                           </p>
                         </div>
                       </div>
@@ -978,12 +1015,13 @@ const FinancePage = () => {
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
-                            ? "bg-emerald-50 text-emerald-600"
-                            : tx.payment_status === "paid"
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                            tx.source === "manual"
                               ? "bg-emerald-50 text-emerald-600"
-                              : "bg-orange-50 text-orange-600"
-                            }`}
+                              : tx.payment_status === "paid"
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-orange-50 text-orange-600"
+                          }`}
                         >
                           {tx.source === "manual"
                             ? "สำเร็จ"
@@ -996,7 +1034,10 @@ const FinancePage = () => {
                   ))}
                   {transactions.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-center py-8 text-inactive">
+                      <td
+                        colSpan="5"
+                        className="text-center py-8 text-inactive"
+                      >
                         ไม่มีรายการล่าสุด
                       </td>
                     </tr>
@@ -1021,54 +1062,90 @@ const FinancePage = () => {
         transaction={
           selectedTransaction
             ? {
-              receiptNo:
-                selectedTransaction.source === "manual"
-                  ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
-                  : selectedTransaction.order_no || "-",
-              date: new Date(selectedTransaction.created_at).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }),
-              paymentMethod: selectedTransaction.payment_type === "credit_sale" ? "เครดิต" : "เงินสด",
-              items: isLoadingDetails
-                ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }]
-                : selectedTransaction.source === "manual" && !fullOrderData
+                receiptNo:
+                  selectedTransaction.source === "manual"
+                    ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
+                    : selectedTransaction.order_no || "-",
+                date: new Date(
+                  selectedTransaction.created_at,
+                ).toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+                paymentMethod:
+                  selectedTransaction.payment_type === "credit_sale" ||
+                  selectedTransaction.payment_method === "credit_sale"
+                    ? "เครดิต"
+                    : "เงินสด",
+                items: isLoadingDetails
                   ? [
-                    {
-                      name: selectedTransaction.displayName || "รายรับอื่น",
-                      quantity: 1,
-                      unit: "รายการ",
-                      price: Number(selectedTransaction.displayAmount || 0),
-                      subtotal: Number(selectedTransaction.displayAmount || 0),
-                    },
-                  ]
-                  : (fullOrderData?.order_items?.map((detail) => ({
-                    name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                    quantity: detail.qty,
-                    unit: detail.products?.unit_type,
-                    price: detail.price_per_unit,
-                    subtotal: detail.subtotal,
-                  })) || [
                       {
-                        name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
-                        quantity: 1,
-                        unit: "ชิ้น",
-                        price: Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0),
-                        subtotal: Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0),
+                        name: "กำลังโหลด...",
+                        quantity: 0,
+                        price: 0,
+                        subtotal: 0,
                       },
-                    ]),
-              total: isLoadingDetails
-                ? Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)
-                : (fullOrderData?.total_amount || Number(selectedTransaction.total_amount || selectedTransaction.displayAmount || 0)),
-              received: 0,
-              change: 0,
-              store: {
-                name: selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
-                address: "-",
-                phone: fullOrderData?.customers_info?.phone || selectedTransaction.customers_info?.phone || "-",
-              },
-            }
+                    ]
+                  : selectedTransaction.source === "manual" && !fullOrderData
+                    ? [
+                        {
+                          name: selectedTransaction.displayName || "รายรับอื่น",
+                          quantity: 1,
+                          unit: "รายการ",
+                          price: Number(selectedTransaction.displayAmount || 0),
+                          subtotal: Number(
+                            selectedTransaction.displayAmount || 0,
+                          ),
+                        },
+                      ]
+                    : fullOrderData?.order_items?.map((detail) => ({
+                        name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                        quantity: detail.qty,
+                        unit: detail.products?.unit_type,
+                        price: detail.price_per_unit,
+                        subtotal: detail.subtotal,
+                      })) || [
+                        {
+                          name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
+                          quantity: 1,
+                          unit: "ชิ้น",
+                          price: Number(
+                            selectedTransaction.total_amount ||
+                              selectedTransaction.displayAmount ||
+                              0,
+                          ),
+                          subtotal: Number(
+                            selectedTransaction.total_amount ||
+                              selectedTransaction.displayAmount ||
+                              0,
+                          ),
+                        },
+                      ],
+                total: isLoadingDetails
+                  ? Number(
+                      selectedTransaction.total_amount ||
+                        selectedTransaction.displayAmount ||
+                        0,
+                    )
+                  : fullOrderData?.total_amount ||
+                    Number(
+                      selectedTransaction.total_amount ||
+                        selectedTransaction.displayAmount ||
+                        0,
+                    ),
+                received: 0,
+                change: 0,
+                store: {
+                  name:
+                    selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
+                  address: "-",
+                  phone:
+                    fullOrderData?.customers_info?.phone ||
+                    selectedTransaction.customers_info?.phone ||
+                    "-",
+                },
+              }
             : null
         }
         onClose={() => {

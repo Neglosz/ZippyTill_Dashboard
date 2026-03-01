@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search,
   Download,
@@ -26,6 +26,7 @@ import ExportModal from "../components/features/outstanding/ExportModal";
 import { creditService } from "../services/creditService";
 import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
+import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const OverduePage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
@@ -43,6 +44,46 @@ const OverduePage = () => {
   const [overdueItems, setOverdueItems] = useState([]);
   const [recoveryRate, setRecoveryRate] = useState(null);
   const [totalSalesAmount, setTotalSalesAmount] = useState(0);
+
+  const fetchItems = useCallback(
+    async (isBackground = false) => {
+      if (!activeBranchId) return;
+      try {
+        if (!isBackground) setIsLoading(true);
+        const [data, rate] = await Promise.all([
+          creditService.getOverdueItems(activeBranchId),
+          creditService.getRecoveryRate(activeBranchId),
+        ]);
+        setOverdueItems(data);
+        setRecoveryRate(rate);
+      } catch (err) {
+        console.error("Error fetching items:", err);
+        if (!isBackground)
+          setError("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
+      } finally {
+        if (!isBackground) setIsLoading(false);
+      }
+    },
+    [activeBranchId],
+  );
+
+  const fetchTotalSales = useCallback(async () => {
+    if (!activeBranchId) return;
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("store_id", activeBranchId);
+      if (error) throw error;
+      const total = (data || []).reduce(
+        (sum, o) => sum + Number(o.total_amount || 0),
+        0,
+      );
+      setTotalSalesAmount(total);
+    } catch (err) {
+      console.error("Error fetching total sales:", err);
+    }
+  }, [activeBranchId]);
 
   useEffect(() => {
     if (!activeBranchId) return;
@@ -71,48 +112,7 @@ const OverduePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeBranchId]);
-
-  const fetchItems = async (isBackground = false) => {
-    if (!activeBranchId) return;
-    try {
-      if (!isBackground) setIsLoading(true);
-      const [data, rate] = await Promise.all([
-        creditService.getOverdueItems(activeBranchId),
-        creditService.getRecoveryRate(activeBranchId),
-      ]);
-      setOverdueItems(data);
-      setRecoveryRate(rate);
-    } catch (err) {
-      console.error("Error fetching items:", err);
-      if (!isBackground)
-        setError("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
-    } finally {
-      if (!isBackground) setIsLoading(false);
-    }
-  };
-
-  const fetchTotalSales = async () => {
-    if (!activeBranchId) return;
-    try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("total_amount")
-        .eq("store_id", activeBranchId);
-      if (error) throw error;
-      const total = (data || []).reduce(
-        (sum, o) => sum + Number(o.total_amount || 0),
-        0,
-      );
-      setTotalSalesAmount(total);
-    } catch (err) {
-      console.error("Error fetching total sales:", err);
-    }
-  };
-
-  const handleEditClick = (item) => {
-    setEditingItem(item);
-  };
+  }, [activeBranchId, fetchItems, fetchTotalSales]);
 
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -160,23 +160,12 @@ const OverduePage = () => {
     (sum, item) => sum + Number(item.amount),
     0,
   );
-  const totalDebtAmount = overdueItems.reduce(
-    (sum, item) => sum + Number(item.totalAmount || item.amount),
-    0,
-  );
   // % ค้าง = ยอดเงินที่ค้าง / ยอดขายทั้งหมด × 100
   const overdueRate =
     totalSalesAmount > 0
       ? Math.round((totalOverdueAmount / totalSalesAmount) * 100)
       : 0;
   const totalOverdueCount = groupedCustomers.length;
-  const recentOverdueCount = overdueItems.filter((item) => {
-    const createdDate = new Date(item.createdAt);
-    const today = new Date();
-    const diffTime = Math.abs(today - createdDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  }).length;
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return "";
@@ -325,19 +314,25 @@ const OverduePage = () => {
         });
       });
 
-
       // Sanitize branch name for filename
-      const safeBranchName = (activeBranchName || "Store").replace(/[/\\?%*:|"<>]/g, '-');
+      const safeBranchName = (activeBranchName || "Store").replace(
+        /[/\\?%*:|"<>]/g,
+        "-",
+      );
       const filename = `Overdue_Debtors_${safeBranchName}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       saveAs(blob, filename);
 
       setShowExportModal(false);
     } catch (err) {
       console.error("Export Excel error:", err);
-      alert("ไม่สามารถส่งออก Excel ได้: " + (err.message || "เกิดข้อผิดพลาดภายใน"));
+      alert(
+        "ไม่สามารถส่งออก Excel ได้: " + (err.message || "เกิดข้อผิดพลาดภายใน"),
+      );
     }
   };
 
@@ -405,31 +400,14 @@ const OverduePage = () => {
   // --- MAIN VIEW ---
   return (
     <>
-      {/* Background Decorative Blobs - High Dimension */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px]" />
-      </div>
+      <PageBackground />
 
       <div className="relative space-y-6 pb-10 min-h-screen">
-        {/* Header Banner */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-              <AlertCircle className="w-10 h-10 text-primary" strokeWidth={2} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                ลูกหนี้ค้างชำระ
-                <span className="text-primary">.</span>
-              </h1>
-              <p className="text-sm font-medium text-inactive">
-                ติดตามและจัดการลูกหนี้ที่ค้างชำระ
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="ลูกหนี้ค้างชำระ"
+          description="ติดตามและจัดการลูกหนี้ที่ค้างชำระ"
+          icon={AlertCircle}
+        />
 
         <SummaryStats
           totalCount={overdueItems.length}

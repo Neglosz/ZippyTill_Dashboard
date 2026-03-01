@@ -7,13 +7,13 @@ import {
   ChevronRight,
   X,
   Save,
-  Eye,
-  EyeOff,
   Loader2,
   CheckCircle2,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
+import { Modal } from "../components/common/ProfileComponents";
+import TextInput from "../components/common/TextInput";
 
 const Toggle = ({ enabled, onToggle }) => (
   <button
@@ -34,7 +34,9 @@ const SettingPage = () => {
   const { activeBranchId } = useBranch();
 
   const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem(`setting_notifications_${activeBranchId}`);
+    const saved = localStorage.getItem(
+      `setting_notifications_${activeBranchId}`,
+    );
     return saved !== null ? JSON.parse(saved) : true;
   });
 
@@ -46,22 +48,32 @@ const SettingPage = () => {
   // Re-read settings when branch changes
   useEffect(() => {
     if (!activeBranchId) return;
-    const savedNotif = localStorage.getItem(`setting_notifications_${activeBranchId}`);
+    const savedNotif = localStorage.getItem(
+      `setting_notifications_${activeBranchId}`,
+    );
     setNotifications(savedNotif !== null ? JSON.parse(savedNotif) : true);
-    const savedStock = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
+    const savedStock = localStorage.getItem(
+      `setting_stockAlert_${activeBranchId}`,
+    );
     setStockAlert(savedStock !== null ? JSON.parse(savedStock) : true);
   }, [activeBranchId]);
 
   // Persist settings to localStorage whenever they change
   useEffect(() => {
     if (!activeBranchId) return;
-    localStorage.setItem(`setting_notifications_${activeBranchId}`, JSON.stringify(notifications));
+    localStorage.setItem(
+      `setting_notifications_${activeBranchId}`,
+      JSON.stringify(notifications),
+    );
     window.dispatchEvent(new Event("settingsChanged"));
   }, [notifications, activeBranchId]);
 
   useEffect(() => {
     if (!activeBranchId) return;
-    localStorage.setItem(`setting_stockAlert_${activeBranchId}`, JSON.stringify(stockAlert));
+    localStorage.setItem(
+      `setting_stockAlert_${activeBranchId}`,
+      JSON.stringify(stockAlert),
+    );
     window.dispatchEvent(new Event("settingsChanged"));
   }, [stockAlert, activeBranchId]);
 
@@ -70,9 +82,6 @@ const SettingPage = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
@@ -83,9 +92,6 @@ const SettingPage = () => {
     setConfirmPassword("");
     setPasswordError(null);
     setPasswordSuccess(false);
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
     setIsPasswordModalOpen(true);
   };
 
@@ -109,7 +115,9 @@ const SettingPage = () => {
     setSaving(true);
     try {
       // Verify current password by re-authenticating
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("ไม่พบผู้ใช้");
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -221,7 +229,10 @@ const SettingPage = () => {
             <div className="border-t border-gray-100" />
 
             {/* Change Password */}
-            <div onClick={handleOpenPasswordModal} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all group/item cursor-pointer">
+            <div
+              onClick={handleOpenPasswordModal}
+              className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all group/item cursor-pointer"
+            >
               <div className="flex items-center gap-4">
                 <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
                   <Key size={18} strokeWidth={2.5} />
@@ -230,9 +241,7 @@ const SettingPage = () => {
                   <p className="text-sm font-bold text-gray-900">
                     เปลี่ยนรหัสผ่าน
                   </p>
-                  <p className="text-xs text-inactive">
-                    อัปเดตรหัสผ่านของคุณ
-                  </p>
+                  <p className="text-xs text-inactive">อัปเดตรหัสผ่านของคุณ</p>
                 </div>
               </div>
               <ChevronRight
@@ -240,157 +249,78 @@ const SettingPage = () => {
                 className="text-inactive group-hover/item:text-primary transition-colors"
               />
             </div>
-
-
           </div>
         </div>
       </div>
       {/* Change Password Modal */}
-      {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !saving && setIsPasswordModalOpen(false)}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-white rounded-[32px] p-8 shadow-2xl border border-gray-100 w-full max-w-md">
-            {/* Close button */}
-            <button
-              onClick={() => !saving && setIsPasswordModalOpen(false)}
-              className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-            >
-              <X size={18} strokeWidth={2.5} />
-            </button>
-
-            <h3 className="text-xl font-black text-gray-900 tracking-tighter mb-8 flex items-center gap-3">
-              <div className="p-2.5 bg-primary/10 rounded-xl text-primary border border-primary/20">
-                <Key size={20} strokeWidth={2.5} />
-              </div>
-              เปลี่ยนรหัสผ่าน
-            </h3>
-
-            {/* Success State */}
-            {passwordSuccess ? (
-              <div className="flex flex-col items-center py-8">
-                <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
-                  <CheckCircle2 size={32} className="text-emerald-500" strokeWidth={2} />
-                </div>
-                <p className="text-lg font-bold text-gray-900 mb-1">เปลี่ยนรหัสผ่านสำเร็จ!</p>
-                <p className="text-sm text-inactive">รหัสผ่านของคุณถูกอัปเดตแล้ว</p>
-              </div>
-            ) : (
-              <>
-                {/* Error */}
-                {passwordError && (
-                  <div className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-xs font-bold rounded-2xl flex items-center gap-3">
-                    <div className="shrink-0 w-2 h-2 rounded-full bg-rose-500" />
-                    {passwordError}
-                  </div>
-                )}
-
-                {/* Current Password */}
-                <div className="mb-5">
-                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
-                    รหัสผ่านปัจจุบัน
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                      placeholder="กรอกรหัสผ่านปัจจุบัน"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-gray-600 transition-colors"
-                    >
-                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* New Password */}
-                <div className="mb-5">
-                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
-                    รหัสผ่านใหม่
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                      placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัว)"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-gray-600 transition-colors"
-                    >
-                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm New Password */}
-                <div className="mb-8">
-                  <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
-                    ยืนยันรหัสผ่านใหม่
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                      placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-gray-600 transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => !saving && setIsPasswordModalOpen(false)}
-                    disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm transition-all border border-gray-100 active:scale-95 disabled:opacity-50"
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    onClick={handleChangePassword}
-                    disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        กำลังบันทึก...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={16} strokeWidth={2.5} />
-                        เปลี่ยนรหัสผ่าน
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
+      <Modal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        title="เปลี่ยนรหัสผ่าน"
+        icon={Key}
+        onSave={handleChangePassword}
+        saving={saving}
+        saveText="เปลี่ยนรหัสผ่าน"
+        hideFooter={passwordSuccess}
+      >
+        {/* Success State */}
+        {passwordSuccess ? (
+          <div className="flex flex-col items-center py-8">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
+              <CheckCircle2
+                size={32}
+                className="text-emerald-500"
+                strokeWidth={2}
+              />
+            </div>
+            <p className="text-lg font-bold text-gray-900 mb-1">
+              เปลี่ยนรหัสผ่านสำเร็จ!
+            </p>
+            <p className="text-sm text-inactive">รหัสผ่านของคุณถูกอัปเดตแล้ว</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            {/* Error */}
+            {passwordError && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-xs font-bold rounded-2xl flex items-center gap-3">
+                <div className="shrink-0 w-2 h-2 rounded-full bg-rose-500" />
+                {passwordError}
+              </div>
+            )}
+
+            <div className="space-y-5 mb-8">
+              {/* Current Password */}
+              <TextInput
+                label="รหัสผ่านปัจจุบัน"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="กรอกรหัสผ่านปัจจุบัน"
+                className="mb-5"
+              />
+
+              {/* New Password */}
+              <TextInput
+                label="รหัสผ่านใหม่"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัว)"
+                className="mb-5"
+              />
+
+              {/* Confirm New Password */}
+              <TextInput
+                label="ยืนยันรหัสผ่านใหม่"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+              />
+            </div>
+          </>
+        )}
+      </Modal>
     </>
   );
 };

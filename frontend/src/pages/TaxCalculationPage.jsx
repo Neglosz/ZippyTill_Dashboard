@@ -8,10 +8,9 @@ import {
   ReceiptText,
   ChevronDown,
 } from "lucide-react";
-import { useBranch } from "../contexts/BranchContext";
+import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const TaxCalculationPage = () => {
-  const { activeBranchName } = useBranch();
   // --- PIT State ---
 
   const [income, setIncome] = useState("");
@@ -54,7 +53,7 @@ const TaxCalculationPage = () => {
     return {
       taxableIncome,
       totalTax,
-      currentRateLabel
+      currentRateLabel,
     };
   }, [taxableIncome]);
 
@@ -88,11 +87,6 @@ const TaxCalculationPage = () => {
     }
   };
 
-  const handleNumberInput = (e, setter) => {
-    const value = e.target.value;
-    setter(value === "" ? "" : Number(value));
-  };
-
   // Prevent scroll wheel changes
   const handleWheel = (e) => {
     e.target.blur();
@@ -100,31 +94,14 @@ const TaxCalculationPage = () => {
 
   return (
     <>
-      {/* Background Decorative Blobs - High Dimension */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[5%] right-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
-      </div>
+      <PageBackground />
 
       <div className="relative pb-10 space-y-6 min-h-screen">
-        {/* Header Banner - Aligned with Sales/Finance */}
-        <div className="bg-white rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-premium relative overflow-hidden border border-gray-100 group mb-8">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center border border-primary/20 shrink-0 shadow-sm group-hover:rotate-6 transition-transform duration-500">
-              <Calculator className="w-10 h-10 text-primary" strokeWidth={2} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1 text-gray-900 leading-tight">
-                ภาษี
-                <span className="text-primary">.</span>
-              </h1>
-              <p className="text-sm font-medium text-inactive">
-                คำนวณและจัดการภาษีสำหรับสาขา
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="ภาษี"
+          description="คำนวณและจัดการภาษีสำหรับสาขา"
+          icon={Calculator}
+        />
 
         {/* PIT Section: Horizontal Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
@@ -178,7 +155,9 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(expenses)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setExpenses, 1000000)}
+                  onChange={(e) =>
+                    handleFormattedInput(e, setExpenses, 1000000)
+                  }
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
@@ -195,7 +174,9 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(deductions)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setDeductions, 1000000)}
+                  onChange={(e) =>
+                    handleFormattedInput(e, setDeductions, 1000000)
+                  }
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
                 />
@@ -218,16 +199,36 @@ const TaxCalculationPage = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 relative z-10">
               {[
-                { label: "รายได้รวม", val: income || 0, icon: <TrendingUp className="w-4 h-4" />, iconBg: "bg-emerald-50/50", iconColor: "text-emerald-500" },
-                { label: "ค่าใช้จ่าย", val: expenses || 0, icon: <DollarSign className="w-4 h-4" />, iconBg: "bg-rose-50/50", iconColor: "text-rose-500" },
-                { label: "ค่าลดหย่อน", val: deductions || 0, icon: <Wallet className="w-4 h-4" />, iconBg: "bg-purple-50/50", iconColor: "text-purple-500" },
+                {
+                  label: "รายได้รวม",
+                  val: income || 0,
+                  icon: <TrendingUp className="w-4 h-4" />,
+                  iconBg: "bg-emerald-50/50",
+                  iconColor: "text-emerald-500",
+                },
+                {
+                  label: "ค่าใช้จ่าย",
+                  val: expenses || 0,
+                  icon: <DollarSign className="w-4 h-4" />,
+                  iconBg: "bg-rose-50/50",
+                  iconColor: "text-rose-500",
+                },
+                {
+                  label: "ค่าลดหย่อน",
+                  val: deductions || 0,
+                  icon: <Wallet className="w-4 h-4" />,
+                  iconBg: "bg-purple-50/50",
+                  iconColor: "text-purple-500",
+                },
               ].map((item, idx) => (
                 <div
                   key={idx}
                   className="bg-gray-50/40 backdrop-blur-sm rounded-[24px] p-4 border border-gray-100 hover:border-primary/10 transition-all shadow-sm group/item flex flex-col gap-2"
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.iconBg} ${item.iconColor}`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${item.iconBg} ${item.iconColor}`}
+                    >
                       {item.icon}
                     </div>
                     <span className="text-[10px] font-bold text-inactive uppercase tracking-wider">
@@ -243,8 +244,17 @@ const TaxCalculationPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
               {[
-                { label: "รายได้สุทธิ", val: pitResult.taxableIncome, icon: <ReceiptText className="w-4 h-4" /> },
-                { label: "อัตราภาษีสุดท้าย", val: pitResult.currentRateLabel, isRate: true, icon: <Calculator className="w-4 h-4" /> }
+                {
+                  label: "รายได้สุทธิ",
+                  val: pitResult.taxableIncome,
+                  icon: <ReceiptText className="w-4 h-4" />,
+                },
+                {
+                  label: "อัตราภาษีสุดท้าย",
+                  val: pitResult.currentRateLabel,
+                  isRate: true,
+                  icon: <Calculator className="w-4 h-4" />,
+                },
               ].map((item, idx) => (
                 <div
                   key={idx + 3}
@@ -274,11 +284,16 @@ const TaxCalculationPage = () => {
                   </span>
                   <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2 break-all overflow-hidden flex-wrap">
                     ฿{formatCurrency(pitResult.totalTax)}
-                    <span className="text-xl font-bold text-white/80 tracking-normal uppercase">บาท</span>
+                    <span className="text-xl font-bold text-white/80 tracking-normal uppercase">
+                      บาท
+                    </span>
                   </div>
                 </div>
                 <div className="bg-white/20 h-16 w-16 rounded-[18px] flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
-                  <Calculator className="w-8 h-8 text-white" strokeWidth={2.5} />
+                  <Calculator
+                    className="w-8 h-8 text-white"
+                    strokeWidth={2.5}
+                  />
                 </div>
               </div>
             </div>
@@ -301,7 +316,10 @@ const TaxCalculationPage = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                  VAT 7% <span className="text-primary/60 text-lg font-bold">(ภาษีมูลค่าเพิ่ม)</span>
+                  VAT 7%{" "}
+                  <span className="text-primary/60 text-lg font-bold">
+                    (ภาษีมูลค่าเพิ่ม)
+                  </span>
                 </h2>
                 <p className="text-sm font-medium text-inactive">
                   คำนวณภาษีซื้อและภาษีขายเพื่อสรุปยอดภาษีที่ต้องนำส่ง
@@ -312,11 +330,15 @@ const TaxCalculationPage = () => {
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 bg-emerald-50/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-emerald-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">ภาษีซื้อ = ภาษีจากยอดซื้อ</span>
+                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">
+                  ภาษีซื้อ = ภาษีจากยอดซื้อ
+                </span>
               </div>
               <div className="flex items-center gap-2 bg-blue-50/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-blue-100 shadow-sm animate-in fade-in slide-in-from-right-8 duration-700">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-wider">ภาษีขาย = ภาษีจากยอดขาย</span>
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-wider">
+                  ภาษีขาย = ภาษีจากยอดขาย
+                </span>
               </div>
             </div>
           </div>
@@ -330,24 +352,34 @@ const TaxCalculationPage = () => {
               <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-emerald-500" />
               </div>
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีซื้อ</h2>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                ภาษีซื้อ
+              </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">ยอดรวมซื้อ (รวม VAT)</label>
+                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">
+                  ยอดรวมซื้อ (รวม VAT)
+                </label>
                 <input
                   type="text"
                   value={formatWithCommas(buyVatAmount)}
                   placeholder="0"
-                  onChange={(e) => handleFormattedInput(e, setBuyVatAmount, 1000000)}
+                  onChange={(e) =>
+                    handleFormattedInput(e, setBuyVatAmount, 1000000)
+                  }
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
               </div>
               <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100 overflow-hidden">
-                <span className="text-[10px] font-black text-emerald-600 uppercase shrink-0">VAT 7%</span>
-                <span className="text-2xl font-black text-emerald-600 tracking-tighter break-all text-right ml-2">฿{formatCurrency(buyVat)}</span>
+                <span className="text-[10px] font-black text-emerald-600 uppercase shrink-0">
+                  VAT 7%
+                </span>
+                <span className="text-2xl font-black text-emerald-600 tracking-tighter break-all text-right ml-2">
+                  ฿{formatCurrency(buyVat)}
+                </span>
               </div>
             </div>
           </div>
@@ -358,24 +390,34 @@ const TaxCalculationPage = () => {
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-blue-500" />
               </div>
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีขาย</h2>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                ภาษีขาย
+              </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">ยอดรวมขาย (รวม VAT)</label>
+                <label className="text-[10px] font-black text-inactive uppercase tracking-wider">
+                  ยอดรวมขาย (รวม VAT)
+                </label>
                 <input
                   type="text"
                   value={formatWithCommas(sellVatAmount)}
                   placeholder="0"
-                  onChange={(e) => handleFormattedInput(e, setSellVatAmount, 1000000)}
+                  onChange={(e) =>
+                    handleFormattedInput(e, setSellVatAmount, 1000000)
+                  }
                   onWheel={handleWheel}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
                 />
               </div>
               <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100 overflow-hidden">
-                <span className="text-[10px] font-black text-blue-600 uppercase shrink-0">VAT 7%</span>
-                <span className="text-2xl font-black text-blue-600 tracking-tighter break-all text-right ml-2">฿{formatCurrency(sellVat)}</span>
+                <span className="text-[10px] font-black text-blue-600 uppercase shrink-0">
+                  VAT 7%
+                </span>
+                <span className="text-2xl font-black text-blue-600 tracking-tighter break-all text-right ml-2">
+                  ฿{formatCurrency(sellVat)}
+                </span>
               </div>
             </div>
           </div>
@@ -388,23 +430,35 @@ const TaxCalculationPage = () => {
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-sm">
                 <ReceiptText className="w-5 h-5 text-primary" />
               </div>
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">ภาษีที่ต้องนำส่ง</h2>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                ภาษีที่ต้องนำส่ง
+              </h2>
             </div>
 
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
-                <span className="text-[10px] font-black text-inactive uppercase shrink-0">ภาษีขาย</span>
-                <span className="text-lg font-black text-blue-600 leading-none break-all text-right ml-2">฿{formatCurrency(sellVat)}</span>
+                <span className="text-[10px] font-black text-inactive uppercase shrink-0">
+                  ภาษีขาย
+                </span>
+                <span className="text-lg font-black text-blue-600 leading-none break-all text-right ml-2">
+                  ฿{formatCurrency(sellVat)}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
-                <span className="text-[10px] font-black text-inactive uppercase shrink-0">ภาษีซื้อ</span>
-                <span className="text-lg font-black text-rose-500 leading-none break-all text-right ml-2">฿{formatCurrency(buyVat)}</span>
+                <span className="text-[10px] font-black text-inactive uppercase shrink-0">
+                  ภาษีซื้อ
+                </span>
+                <span className="text-lg font-black text-rose-500 leading-none break-all text-right ml-2">
+                  ฿{formatCurrency(buyVat)}
+                </span>
               </div>
 
               <div className="pt-4 mt-2">
                 <div className="bg-primary rounded-2xl p-6 text-center shadow-lg hover:scale-[1.02] transition-transform overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
-                  <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">ยอดสุทธิที่ต้องนำส่ง</span>
+                  <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">
+                    ยอดสุทธิที่ต้องนำส่ง
+                  </span>
                   <div className="text-4xl font-black text-white tracking-tighter relative z-10 break-all">
                     ฿{formatCurrency(netVat)}
                   </div>
@@ -439,33 +493,78 @@ const TaxCalculationPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {[
-                  { range: "0 - 150,000", min: 0, max: 150000, rate: "ยกเว้น (0%)" },
-                  { range: "150,001 - 300,000", min: 150001, max: 300000, rate: "5%" },
-                  { range: "300,001 - 500,000", min: 300001, max: 500000, rate: "10%" },
-                  { range: "500,001 - 750,000", min: 500001, max: 750000, rate: "15%" },
-                  { range: "750,001 - 1,000,000", min: 750001, max: 1000000, rate: "20%" },
-                  { range: "1,000,001 - 2,000,000", min: 1000001, max: 2000000, rate: "25%" },
-                  { range: "2,000,001 - 5,000,000", min: 2000001, max: 5000000, rate: "30%" },
-                  { range: "มากกว่า 5,000,000", min: 5000001, max: Infinity, rate: "35%" },
+                  {
+                    range: "0 - 150,000",
+                    min: 0,
+                    max: 150000,
+                    rate: "ยกเว้น (0%)",
+                  },
+                  {
+                    range: "150,001 - 300,000",
+                    min: 150001,
+                    max: 300000,
+                    rate: "5%",
+                  },
+                  {
+                    range: "300,001 - 500,000",
+                    min: 300001,
+                    max: 500000,
+                    rate: "10%",
+                  },
+                  {
+                    range: "500,001 - 750,000",
+                    min: 500001,
+                    max: 750000,
+                    rate: "15%",
+                  },
+                  {
+                    range: "750,001 - 1,000,000",
+                    min: 750001,
+                    max: 1000000,
+                    rate: "20%",
+                  },
+                  {
+                    range: "1,000,001 - 2,000,000",
+                    min: 1000001,
+                    max: 2000000,
+                    rate: "25%",
+                  },
+                  {
+                    range: "2,000,001 - 5,000,000",
+                    min: 2000001,
+                    max: 5000000,
+                    rate: "30%",
+                  },
+                  {
+                    range: "มากกว่า 5,000,000",
+                    min: 5000001,
+                    max: Infinity,
+                    rate: "35%",
+                  },
                 ].map((row, idx) => {
-                  const isActive = taxableIncome >= row.min && taxableIncome <= row.max;
+                  const isActive =
+                    taxableIncome >= row.min && taxableIncome <= row.max;
                   return (
                     <tr
                       key={idx}
-                      className={`transition-all duration-300 group border-l-4 ${isActive
-                        ? "bg-primary/5 border-primary"
-                        : "hover:bg-gray-50/50 border-transparent"
-                        }`}
+                      className={`transition-all duration-300 group border-l-4 ${
+                        isActive
+                          ? "bg-primary/5 border-primary"
+                          : "hover:bg-gray-50/50 border-transparent"
+                      }`}
                     >
-                      <td className={`px-8 py-4 text-xs font-bold ${isActive ? "text-primary" : "text-gray-600"}`}>
+                      <td
+                        className={`px-8 py-4 text-xs font-bold ${isActive ? "text-primary" : "text-gray-600"}`}
+                      >
                         {row.range}
                       </td>
                       <td className="px-8 py-4 text-right">
                         <span
-                          className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-300 ${isActive
-                            ? "bg-primary text-white shadow-md scale-110"
-                            : "bg-gray-100 text-inactive group-hover:bg-orange-50 group-hover:text-orange-600 border border-transparent group-hover:border-orange-100"
-                            }`}
+                          className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-300 ${
+                            isActive
+                              ? "bg-primary text-white shadow-md scale-110"
+                              : "bg-gray-100 text-inactive group-hover:bg-orange-50 group-hover:text-orange-600 border border-transparent group-hover:border-orange-100"
+                          }`}
                         >
                           {row.rate}
                         </span>

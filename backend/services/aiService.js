@@ -1,8 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const path = require("path");
 const saleService = require("./saleService");
 const productService = require("./productService");
-require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);

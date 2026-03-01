@@ -182,23 +182,21 @@ const productService = {
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
     const sevenDaysStr = sevenDaysFromNow.toISOString().split("T")[0];
 
+    // Filter by branchId directly in the query using !inner
     const { data: expiredData, error: expiredError } = await supabase
       .from("product_batches")
       .select("*, products!inner(name, store_id, image_url, deleted_at)")
+      .eq("products.store_id", branchId)
       .lt("expire_date", today)
       .gt("remaining_qty", 0)
-      .is("products.deleted_at", null)
-      .returns();
+      .is("products.deleted_at", null);
 
     if (expiredError) throw expiredError;
-
-    const filteredExpired = expiredData.filter(
-      (b) => b.products?.store_id === branchId,
-    );
 
     const { data: soonData, error: soonError } = await supabase
       .from("product_batches")
       .select("*, products!inner(name, store_id, image_url, deleted_at)")
+      .eq("products.store_id", branchId)
       .gte("expire_date", today)
       .lte("expire_date", sevenDaysStr)
       .is("products.deleted_at", null)
@@ -206,22 +204,19 @@ const productService = {
 
     if (soonError) throw soonError;
 
-    const filteredSoon = soonData.filter(
-      (b) => b.products?.store_id === branchId,
-    );
-
-    const { data: productsWithThreshold, error: thresholdError } =
-      await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", branchId)
-        .is("deleted_at", null);
+    // For low stock, we can't easily filter by a dynamic threshold per product in a single simple query 
+    // if the threshold is a column, but we can try to filter at least the base stock.
+    // However, the original code filtered by p.stock_qty <= (p.low_stock_threshold || 5).
+    // We can use a PostgREST filter for this if we use a computed column or just a raw filter.
+    // Actually, we can use .or or just filter those that are definitely low.
+    const { data: lowStockProducts, error: thresholdError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("store_id", branchId)
+      .is("deleted_at", null)
+      .or("stock_qty.lte.5,stock_qty.lte.low_stock_threshold");
 
     if (thresholdError) throw thresholdError;
-
-    const filteredLowStock = productsWithThreshold.filter(
-      (p) => p.stock_qty <= (p.low_stock_threshold || 5),
-    );
 
     const formatBatch = (batch) => {
       const expDate = new Date(batch.expire_date);
@@ -238,9 +233,9 @@ const productService = {
     };
 
     return {
-      expired: filteredExpired.map(formatBatch),
-      expiringSoon: filteredSoon.map(formatBatch),
-      lowStock: filteredLowStock.map((p) => ({
+      expired: expiredData.map(formatBatch),
+      expiringSoon: soonData.map(formatBatch),
+      lowStock: lowStockProducts.map((p) => ({
         name: p.name,
         imageUrl: p.image_url,
         qty: p.stock_qty,

@@ -2,9 +2,12 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
-const apiRoutes = require("./routes/api");
 
+// Load environment variables before requiring any other files
 dotenv.config({ path: path.join(__dirname, ".env") });
+
+const apiRoutes = require("./routes/api");
+const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -21,11 +24,8 @@ app.get("/", (req, res) => {
   res.send("ZippyTill Backend API is running...");
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong!" });
-});
+// Use centralized error handling middleware
+app.use(errorMiddleware);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

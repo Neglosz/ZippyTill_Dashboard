@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Lock, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import TextInput from "../components/common/TextInput";
+import SubmitButton from "../components/common/SubmitButton";
 
 const UpdatePasswordPage = () => {
   const navigate = useNavigate();
@@ -10,8 +12,6 @@ const UpdatePasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     // Check if user came from password reset email
@@ -161,83 +161,31 @@ const UpdatePasswordPage = () => {
               )}
 
               <form className="space-y-8" onSubmit={handleUpdatePassword}>
-                <div className="relative group/input">
-                  <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                    รหัสผ่านใหม่
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 pr-12 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-primary transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff size={18} strokeWidth={2} />
-                      ) : (
-                        <Eye size={18} strokeWidth={2} />
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <TextInput
+                  label="รหัสผ่านใหม่"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                />
 
-                <div className="relative group/input">
-                  <label className="block text-[11px] font-bold text-inactive uppercase tracking-wider mb-3 ml-2 group-focus-within/input:text-primary transition-colors">
-                    ยืนยันรหัสผ่านใหม่
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 pr-12 text-sm font-bold text-gray-900 placeholder-inactive/50 focus:bg-white focus:border-primary/30 transition-all outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-inactive hover:text-primary transition-colors"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff size={18} strokeWidth={2} />
-                      ) : (
-                        <Eye size={18} strokeWidth={2} />
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <TextInput
+                  label="ยืนยันรหัสผ่านใหม่"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                />
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-primary text-white font-bold py-5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 hover:bg-[#d66515] active:scale-[0.98] mt-4"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2
-                        className="animate-spin mr-3"
-                        size={20}
-                        strokeWidth={2}
-                      />
-                      กำลังบันทึก...
-                    </>
-                  ) : (
-                    <span className="flex items-center gap-3 tracking-wider uppercase text-[11px]">
-                      <Lock size={16} strokeWidth={2.5} />
-                      บันทึกรหัสผ่านใหม่
-                    </span>
-                  )}
-                </button>
+                <SubmitButton
+                  loading={loading}
+                  loadingText="กำลังบันทึก..."
+                  text="บันทึกรหัสผ่านใหม่"
+                  icon={Lock}
+                  className="mt-4"
+                />
               </form>
             </>
           )}
