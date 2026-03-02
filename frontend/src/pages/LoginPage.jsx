@@ -11,23 +11,75 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(null);
+  const [countdown, setCountdown] = useState(0);
+
+  // Timer effect for lockdown countdown
+  React.useEffect(() => {
+    let interval;
+    if (lockoutUntil) {
+      interval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = lockoutUntil - now;
+
+        if (distance <= 0) {
+          clearInterval(interval);
+          setLockoutUntil(null);
+          setCountdown(0);
+          setError(null);
+          // Optional: Reset attempts to 4 to allow 1 more try before locking again
+          // setFailedAttempts(4);
+        } else {
+          setCountdown(Math.ceil(distance / 1000));
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (lockoutUntil) {
+      return; // Prevent login while locked out
+    }
+
     setError(null);
     setLoading(true);
 
     try {
       await authService.login(email, password);
+      // Reset on success
+      setFailedAttempts(0);
+      setLockoutUntil(null);
       // Navigate to select-branch on success with history replacement
       navigate("/select-branch", { replace: true });
     } catch (err) {
       console.error("Login Error:", err);
-      // Supabase typically returns an error object with a message property
-      setError(
-        err.message ||
-          "เกิดข้อผิดพลาดในการเข้าสู่ระบบ โปรดตรวจสอบอีเมลและรหัสผ่าน",
-      );
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+
+      let lockDurationMs = 0;
+      if (newAttempts >= 8)
+        lockDurationMs = 10 * 60 * 1000; // 10 minutes
+      else if (newAttempts === 7)
+        lockDurationMs = 5 * 60 * 1000; // 5 minutes
+      else if (newAttempts === 6)
+        lockDurationMs = 3 * 60 * 1000; // 3 minutes
+      else if (newAttempts === 5) lockDurationMs = 1 * 60 * 1000; // 1 minute
+
+      if (lockDurationMs > 0) {
+        const unlockTime = new Date().getTime() + lockDurationMs;
+        setLockoutUntil(unlockTime);
+        setCountdown(lockDurationMs / 1000);
+      } else {
+        // Supabase typically returns an error object with a message property
+        setError(
+          err.message ||
+            `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -120,10 +172,22 @@ const LoginPage = () => {
             </p>
           </div>
 
-          {error && (
+          {(error || lockoutUntil) && (
             <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-[10px] font-bold rounded-2xl flex items-center gap-3">
               <div className="shrink-0 w-2 h-2 rounded-full bg-rose-500"></div>
-              {error}
+              {lockoutUntil ? (
+                <span>
+                  บัญชีถูกระงับชั่วคราวเนื่องจากใส่รหัสผิดหลายครั้ง
+                  กรุณาลองใหม่ในอีก{" "}
+                  <span className="text-rose-600 px-1">
+                    {Math.floor(countdown / 60)}:
+                    {(countdown % 60).toString().padStart(2, "0")}
+                  </span>{" "}
+                  นาที
+                </span>
+              ) : (
+                error
+              )}
             </div>
           )}
 
@@ -135,6 +199,7 @@ const LoginPage = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@zippytill.com"
               required
+              disabled={lockoutUntil !== null}
             />
 
             <TextInput
@@ -144,10 +209,11 @@ const LoginPage = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
               required
+              disabled={lockoutUntil !== null}
               rightElement={
                 <Link
                   to="/reset-password"
-                  className="text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all"
+                  className={`text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all ${lockoutUntil !== null ? "pointer-events-none opacity-50" : ""}`}
                 >
                   ลืมรหัสผ่าน?
                 </Link>
@@ -157,8 +223,13 @@ const LoginPage = () => {
             <SubmitButton
               loading={loading}
               loadingText="กำลังตรวจสอบ..."
-              text="เข้าสู่ระบบ"
+              text={
+                lockoutUntil
+                  ? `ลองใหม่ใน ${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, "0")}`
+                  : "เข้าสู่ระบบ"
+              }
               className="mt-4"
+              disabled={lockoutUntil !== null}
             />
           </form>
         </div>
