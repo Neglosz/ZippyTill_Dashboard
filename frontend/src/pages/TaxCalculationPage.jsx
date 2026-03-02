@@ -138,9 +138,9 @@ const TaxCalculationPage = () => {
                   type="text"
                   value={formatWithCommas(income)}
                   placeholder="0.00"
-                  onChange={(e) => handleFormattedInput(e, setIncome, 10000000)}
+                  onChange={(e) => handleFormattedInput(e, setIncome)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right"
                 />
               </div>
 
@@ -156,10 +156,10 @@ const TaxCalculationPage = () => {
                   value={formatWithCommas(expenses)}
                   placeholder="0.00"
                   onChange={(e) =>
-                    handleFormattedInput(e, setExpenses, 1000000)
+                    handleFormattedInput(e, setExpenses)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right"
                 />
               </div>
 
@@ -175,10 +175,10 @@ const TaxCalculationPage = () => {
                   value={formatWithCommas(deductions)}
                   placeholder="0.00"
                   onChange={(e) =>
-                    handleFormattedInput(e, setDeductions, 1000000)
+                    handleFormattedInput(e, setDeductions)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter overflow-hidden truncate"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right"
                 />
               </div>
             </div>
@@ -235,7 +235,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-2xl font-black tracking-tighter text-gray-900 break-all overflow-hidden line-clamp-2">
+                  <div className="text-2xl font-black tracking-tighter text-gray-900 whitespace-nowrap overflow-hidden text-right">
                     ฿{formatCurrency(item.val)}
                   </div>
                 </div>
@@ -268,7 +268,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-3xl font-black tracking-tighter text-orange-600 break-all overflow-hidden line-clamp-2">
+                  <div className="text-3xl font-black tracking-tighter text-orange-600 whitespace-nowrap overflow-hidden text-right">
                     {item.isRate ? item.val : `฿${formatCurrency(item.val)}`}
                   </div>
                 </div>
@@ -282,9 +282,9 @@ const TaxCalculationPage = () => {
                   <span className="text-[11px] font-bold text-white/90 uppercase tracking-[0.1em] block mb-2">
                     ภาษีที่ต้องชำระ (ประเมินเบื้องต้น)
                   </span>
-                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2 break-all overflow-hidden flex-wrap">
-                    ฿{formatCurrency(pitResult.totalTax)}
-                    <span className="text-xl font-bold text-white/80 tracking-normal uppercase">
+                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline justify-end gap-2 overflow-hidden whitespace-nowrap">
+                    <span>฿{formatCurrency(pitResult.totalTax)}</span>
+                    <span className="text-xl font-bold text-white/80 tracking-normal uppercase shrink-0">
                       บาท
                     </span>
                   </div>
@@ -367,17 +367,17 @@ const TaxCalculationPage = () => {
                   value={formatWithCommas(buyVatAmount)}
                   placeholder="0"
                   onChange={(e) =>
-                    handleFormattedInput(e, setBuyVatAmount, 1000000)
+                    handleFormattedInput(e, setBuyVatAmount)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right"
                 />
               </div>
               <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100 overflow-hidden">
                 <span className="text-[10px] font-black text-emerald-600 uppercase shrink-0">
                   VAT 7%
                 </span>
-                <span className="text-2xl font-black text-emerald-600 tracking-tighter break-all text-right ml-2">
+                <span className="text-2xl font-black text-emerald-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2">
                   ฿{formatCurrency(buyVat)}
                 </span>
               </div>
@@ -405,17 +405,17 @@ const TaxCalculationPage = () => {
                   value={formatWithCommas(sellVatAmount)}
                   placeholder="0"
                   onChange={(e) =>
-                    handleFormattedInput(e, setSellVatAmount, 1000000)
+                    handleFormattedInput(e, setSellVatAmount)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all overflow-hidden truncate"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right"
                 />
               </div>
               <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100 overflow-hidden">
                 <span className="text-[10px] font-black text-blue-600 uppercase shrink-0">
                   VAT 7%
                 </span>
-                <span className="text-2xl font-black text-blue-600 tracking-tighter break-all text-right ml-2">
+                <span className="text-2xl font-black text-blue-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2">
                   ฿{formatCurrency(sellVat)}
                 </span>
               </div>
@@ -440,7 +440,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-inactive uppercase shrink-0">
                   ภาษีขาย
                 </span>
-                <span className="text-lg font-black text-blue-600 leading-none break-all text-right ml-2">
+                <span className="text-lg font-black text-blue-600 leading-none whitespace-nowrap overflow-hidden text-right ml-2">
                   ฿{formatCurrency(sellVat)}
                 </span>
               </div>
@@ -448,7 +448,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-inactive uppercase shrink-0">
                   ภาษีซื้อ
                 </span>
-                <span className="text-lg font-black text-rose-500 leading-none break-all text-right ml-2">
+                <span className="text-lg font-black text-rose-500 leading-none whitespace-nowrap overflow-hidden text-right ml-2">
                   ฿{formatCurrency(buyVat)}
                 </span>
               </div>
@@ -459,7 +459,7 @@ const TaxCalculationPage = () => {
                   <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">
                     ยอดสุทธิที่ต้องนำส่ง
                   </span>
-                  <div className="text-4xl font-black text-white tracking-tighter relative z-10 break-all">
+                  <div className="text-4xl font-black text-white tracking-tighter relative z-10 whitespace-nowrap overflow-hidden text-right">
                     ฿{formatCurrency(netVat)}
                   </div>
                 </div>
@@ -547,11 +547,10 @@ const TaxCalculationPage = () => {
                   return (
                     <tr
                       key={idx}
-                      className={`transition-all duration-300 group border-l-4 ${
-                        isActive
-                          ? "bg-primary/5 border-primary"
-                          : "hover:bg-gray-50/50 border-transparent"
-                      }`}
+                      className={`transition-all duration-300 group border-l-4 ${isActive
+                        ? "bg-primary/5 border-primary"
+                        : "hover:bg-gray-50/50 border-transparent"
+                        }`}
                     >
                       <td
                         className={`px-8 py-4 text-xs font-bold ${isActive ? "text-primary" : "text-gray-600"}`}
@@ -560,11 +559,10 @@ const TaxCalculationPage = () => {
                       </td>
                       <td className="px-8 py-4 text-right">
                         <span
-                          className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-300 ${
-                            isActive
-                              ? "bg-primary text-white shadow-md scale-110"
-                              : "bg-gray-100 text-inactive group-hover:bg-orange-50 group-hover:text-orange-600 border border-transparent group-hover:border-orange-100"
-                          }`}
+                          className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-300 ${isActive
+                            ? "bg-primary text-white shadow-md scale-110"
+                            : "bg-gray-100 text-inactive group-hover:bg-orange-50 group-hover:text-orange-600 border border-transparent group-hover:border-orange-100"
+                            }`}
                         >
                           {row.rate}
                         </span>

@@ -31,6 +31,7 @@ router.post("/products", validate(productValidation.createProduct), productContr
 router.put("/products/:id", productController.updateProduct);
 router.delete("/products/:id", productController.deleteProduct);
 router.get("/products/categories", validate(productValidation.branchQuery), productController.getAllCategories);
+router.post("/products/categories", productController.createCategory);
 router.get("/products/notifications", validate(productValidation.branchQuery), productController.getDashboardNotifications);
 router.get("/products/movements", validate(productValidation.branchQuery), productController.getStockMovements);
 router.post("/products/removal", productController.recordStockRemoval);

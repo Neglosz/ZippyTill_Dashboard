@@ -59,6 +59,8 @@ const productService = {
           stock_qty: initialQty,
           unit_type: productData.unitType || "ชิ้น",
           is_weightable: productData.isWeightable || false,
+          low_stock_threshold: productData.lowStockThreshold || 0,
+          image_url: productData.image_url,
           store_id: branchId,
         },
       ])
@@ -104,9 +106,15 @@ const productService = {
   async updateProduct(id, productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
+    const formattedData = { ...productData };
+    if (formattedData.lowStockThreshold !== undefined) {
+      formattedData.low_stock_threshold = formattedData.lowStockThreshold;
+      delete formattedData.lowStockThreshold;
+    }
+
     const { data, error } = await supabase
       .from("products")
-      .update(productData)
+      .update(formattedData)
       .eq("id", id)
       .eq("store_id", branchId)
       .select()
@@ -233,9 +241,9 @@ const productService = {
     };
 
     return {
-      expired: expiredData.map(formatBatch),
-      expiringSoon: soonData.map(formatBatch),
-      lowStock: lowStockProducts.map((p) => ({
+      expired: (expiredData || []).map(formatBatch),
+      expiringSoon: (soonData || []).map(formatBatch),
+      lowStock: (lowStockProducts || []).map((p) => ({
         name: p.name,
         imageUrl: p.image_url,
         qty: p.stock_qty,
