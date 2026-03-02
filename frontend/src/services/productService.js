@@ -30,6 +30,14 @@ export const productService = {
     return apiClient.get(`/products/categories?branchId=${branchId}`);
   },
 
+  async createCategory(categoryName, branchId, categoryType) {
+    return apiClient.post("/products/categories", {
+      categoryName,
+      branchId,
+      categoryType,
+    });
+  },
+
   async getDashboardNotifications(branchId) {
     return apiClient.get(`/products/notifications?branchId=${branchId}`);
   },

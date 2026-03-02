@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Upload } from "lucide-react";
+import { X, Calendar, Upload, Plus, Check, Trash2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
+import BEDatePicker from "../../common/BEDatePicker";
 
 const EditProductModal = ({
   isOpen,
@@ -26,6 +27,8 @@ const EditProductModal = ({
 
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -33,12 +36,20 @@ const EditProductModal = ({
     }
   }, [isOpen, product, activeBranchId]);
 
+  const fetchCategories = async () => {
+    try {
+      const cats = await productService.getAllCategories(activeBranchId);
+      setCategories(cats);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
       // 1. Fetch Categories
-      const cats = await productService.getAllCategories(activeBranchId);
-      setCategories(cats);
+      await fetchCategories();
 
       // 2. Map Product Data
       if (product) {
@@ -67,6 +78,7 @@ const EditProductModal = ({
           productType: ["กก.", "กรัม", "ขีด", "กิโลกรัม", "กิโล"].includes(product.unit_type)
             ? "weighted"
             : "general",
+          lowStockThreshold: product.low_stock_threshold || "",
         });
       }
     } catch (err) {
@@ -81,6 +93,53 @@ const EditProductModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === "__add_new__") {
+      setIsAddingCategory(true);
+      setFormData((prev) => ({ ...prev, category: "" }));
+    } else {
+      setIsAddingCategory(false);
+      setFormData((prev) => ({ ...prev, category: value }));
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert("กรุณากรอกชื่อหมวดหมู่");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const newCategory = await productService.createCategory(
+        newCategoryName.trim(),
+        activeBranchId,
+        formData.productType,
+      );
+
+      // Refresh categories list
+      await fetchCategories();
+
+      // Auto-select the newly created category
+      setFormData((prev) => ({ ...prev, category: newCategory.id }));
+
+      // Reset and close inline form
+      setNewCategoryName("");
+      setIsAddingCategory(false);
+    } catch (err) {
+      console.error("Error creating category:", err);
+      alert("ไม่สามารถสร้างหมวดหมู่ได้: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setIsAddingCategory(false);
+    setNewCategoryName("");
   };
 
   // Filter categories based on current product type
@@ -114,6 +173,15 @@ const EditProductModal = ({
         };
       };
       reader.readAsDataURL(file);
+    }
+    // Reset input so the same file can be picked again
+    e.target.value = "";
+  };
+
+  const handleDeleteImage = (e) => {
+    e.stopPropagation(); // Don't trigger file input
+    if (confirm("คุณต้องการลบรูปภาพใช่หรือไม่?")) {
+      setFormData((prev) => ({ ...prev, image: "" }));
     }
   };
 
@@ -194,7 +262,7 @@ const EditProductModal = ({
           </div>
         </div>
 
-        <div className="p-8 flex flex-col lg:flex-row gap-8">
+        <div className="p-6 flex flex-col lg:flex-row gap-6">
           {/* Left Column: Image - Upload Focus (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col justify-center items-center">
             {/* Premium Image Frame */}
@@ -203,22 +271,59 @@ const EditProductModal = ({
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
               {/* Main Container - View Only */}
-              <div className="w-full h-full bg-white rounded-[32px] flex items-center justify-center p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(27,37,89,0.15)] group-hover:-translate-y-1">
+              <div
+                onClick={handleImageClick}
+                className="w-full h-full bg-white rounded-[32px] flex items-center justify-center p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(27,37,89,0.15)] group-hover:-translate-y-1 cursor-pointer"
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+
                 {/* Subtle Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white/20 opacity-50" />
 
-                <img
-                  src={
-                    formData.image ||
-                    "https://via.placeholder.com/300x400?text=No+Image"
-                  }
-                  alt={formData.name}
-                  className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
-                  onError={(e) => {
-                    e.target.src =
-                      "https://via.placeholder.com/300x400?text=No+Image";
-                  }}
-                />
+                {formData.image ? (
+                  <>
+                    <img
+                      src={formData.image}
+                      alt={formData.name}
+                      className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/300x400?text=No+Image";
+                      }}
+                    />
+                    {/* Hover Controls */}
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl text-white border border-white/30">
+                          <Upload size={24} strokeWidth={3} />
+                        </div>
+                        <p className="text-white font-black text-lg">เปลี่ยนรูปภาพ</p>
+                      </div>
+                      <button
+                        onClick={handleDeleteImage}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-rose-500/20 active:scale-95"
+                      >
+                        <Trash2 size={18} />
+                        ลบรูปภาพ
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 text-gray-300 group-hover:text-primary transition-colors relative z-10">
+                    <div className="w-16 h-16 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
+                      <Upload size={24} strokeWidth={2.5} />
+                    </div>
+                    <p className="text-sm font-bold text-gray-400 group-hover:text-primary/70">
+                      อัปโหลดรูปภาพ
+                    </p>
+                  </div>
+                )}
 
                 {/* Shiny Corner Effect */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/80 to-transparent opacity-50 pointer-events-none" />
@@ -227,174 +332,227 @@ const EditProductModal = ({
           </div>
 
           {/* Right Column: Form (40%) */}
-          <div className="w-full lg:w-[40%] space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-              {/* Product ID */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  รหัสสินค้า
-                </label>
-                <input
-                  type="text"
-                  name="id"
-                  value={formData.id}
-                  onChange={handleChange}
-                  className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
-                  placeholder="รหัสสินค้า"
-                />
+          <div className="w-full lg:w-[40%] space-y-5">
+            {/* Section: Basic Info */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-1 h-4 bg-primary rounded-full" />
+                <h3 className="text-base font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3>
               </div>
 
-              {/* Product Name */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  ชื่อสินค้า
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
-                  placeholder="ชื่อสินค้า"
-                />
-              </div>
-
-              {/* Category */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  หมวดหมู่
-                </label>
-                <div className="relative group">
-                  <select
-                    name="category"
-                    value={formData.category}
+              <div className="grid grid-cols-1 gap-3">
+                {/* Product Name */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
+                    <Check size={12} className="text-primary" /> ชื่อสินค้า
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
-                    className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
-                  >
-                    <option value="">เลือกหมวดหมู่</option>
-                    {filteredCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 transition-transform group-hover:translate-y-[-40%]">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M3.5 5.5L7 9L10.5 5.5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                    className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
+                    placeholder="ระบุชื่อสินค้า"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Product ID */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
+                      <Plus size={12} className="text-primary" /> รหัสสินค้า
+                    </label>
+                    <input
+                      type="text"
+                      name="id"
+                      value={formData.id}
+                      onChange={handleChange}
+                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
+                      placeholder="รหัสสินค้า"
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
+                      <X size={12} className="text-primary rotate-45" /> หมวดหมู่
+                    </label>
+                    <div className="relative group">
+                      <select
+                        name="category"
+                        value={isAddingCategory ? "__add_new__" : formData.category}
+                        onChange={handleCategoryChange}
+                        className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
+                      >
+                        <option value="">เลือกหมวดหมู่</option>
+                        {filteredCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                        <option
+                          value="__add_new__"
+                          className="text-primary font-black"
+                        >
+                          + เพิ่มหมวดหมู่ใหม่
+                        </option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-primary transition-all">
+                        <Plus size={16} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inline Category Creation Form */}
+                {isAddingCategory && (
+                  <div className="relative z-50 p-4 bg-gradient-to-br from-primary/5 to-orange-50/30 rounded-[18px] border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-200 shadow-lg shadow-primary/5">
+                    <label className="text-xs font-bold text-[#1B2559] block mb-2 px-1">
+                      ชื่อหมวดหมู่ใหม่
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="flex-1 bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-gray-400"
+                        placeholder="พิมพ์ชื่อ..."
+                        autoFocus
                       />
-                    </svg>
+                      <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        className="p-2.5 bg-primary text-white rounded-[14px] hover:bg-primary/90 transition-all shadow-sm hover:shadow-md active:scale-95"
+                      >
+                        <Check size={18} strokeWidth={3} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelAddCategory}
+                        className="p-2.5 bg-gray-200 text-gray-600 rounded-[14px] hover:bg-gray-300 transition-all shadow-sm active:scale-95"
+                      >
+                        <X size={18} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section: Pricing */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-1 h-4 bg-emerald-500 rounded-full" />
+                <h3 className="text-base font-bold text-[#1B2559]">ราคา</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 block px-1">ราคาทุน</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      name="cost"
+                      value={formData.cost}
+                      onChange={handleChange}
+                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20"
+                      placeholder="0.00"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-black">THB</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 block px-1">ราคาขาย</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      className="w-full bg-emerald-50 text-emerald-600 border-none rounded-[16px] px-4 py-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all text-right pr-12 shadow-md shadow-emerald-200/20"
+                      placeholder="0.00"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Inventory */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-1 h-4 bg-orange-400 rounded-full" />
+                <h3 className="text-base font-bold text-[#1B2559]">สต็อกสินค้า</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 block px-1">จำนวนคงเหลือ</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      name="qty"
+                      value={formData.qty}
+                      onChange={handleChange}
+                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12 shadow-sm"
+                      placeholder="0"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 block px-1 whitespace-nowrap overflow-hidden text-ellipsis italic">แจ้งเตือนขั้นต่ำ</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      name="lowStockThreshold"
+                      value={formData.lowStockThreshold}
+                      onChange={handleChange}
+                      className="w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[16px] px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12 shadow-sm"
+                      placeholder="0"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Quantity */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  จำนวน
+              {/* Expiry Date */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 block px-1 flex items-center gap-2">
+                  <Calendar size={12} className="text-primary" /> วันหมดอายุ
                 </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    name="qty"
-                    value={formData.qty}
+                <div className="scale-95 origin-left">
+                  <BEDatePicker
+                    value={formData.exp}
                     onChange={handleChange}
-                    className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 text-right pr-16 shadow-sm shadow-indigo-100/20"
-                    placeholder="0"
                   />
-                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">
-                    {formData.unit || "ชิ้น"}
-                  </span>
                 </div>
-              </div>
-
-              {/* Cost Price */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  ราคาทุน
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    name="cost"
-                    value={formData.cost}
-                    onChange={handleChange}
-                    className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 text-right pr-16 shadow-sm shadow-indigo-100/20"
-                    placeholder="0.00"
-                  />
-                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">
-                    บาท
-                  </span>
-                </div>
-              </div>
-
-              {/* Selling Price */}
-              <div className="space-y-2">
-                <label className="text-base font-bold text-[#1B2559] block px-1">
-                  ราคาขาย
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 text-right pr-16 shadow-sm shadow-indigo-100/20"
-                    placeholder="0.00"
-                  />
-                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">
-                    บาท
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Expiry Date */}
-            <div className="space-y-2">
-              <label className="text-base font-bold text-[#1B2559] block px-1">
-                วันหมดอายุ
-              </label>
-              <div className="relative group">
-                <input
-                  type="date"
-                  name="exp"
-                  value={formData.exp}
-                  onChange={handleChange}
-                  className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 appearance-none"
-                />
-                <Calendar
-                  size={20}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-primary transition-colors"
-                />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-4 flex justify-center">
+            <div className="pt-2 flex justify-center">
               <button
                 onClick={() => onSave(formData)}
                 disabled={isLoading}
-                className="group relative bg-gradient-to-r from-primary to-orange-600 text-white text-base font-black px-12 py-4 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300 active:scale-95 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative w-full bg-primary text-white text-base font-black py-4 rounded-[20px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
-                {/* Internal Glow Flare */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                <span className="relative flex items-center gap-2">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center justify-center gap-3">
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Check size={20} strokeWidth={3} />
+                  )}
                   {isLoading
                     ? "กำลังบันทึก..."
                     : product
-                      ? "แก้ไขรายการ"
-                      : "เพิ่มสินค้า"}
+                      ? "บันทึกการแก้ไข"
+                      : "เพิ่มสินค้าใหม่เข้าสต็อก"}
                 </span>
               </button>
             </div>

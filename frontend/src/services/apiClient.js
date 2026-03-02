@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const API_URL = "http://localhost:5001/api";
 
 const getHeaders = async () => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -21,7 +21,7 @@ export const apiClient = {
     const response = await fetch(`${API_URL}${endpoint}`, {
       headers,
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || error.error || "Something went wrong");

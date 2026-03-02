@@ -16,6 +16,7 @@ import {
   Edit,
   Trash2,
   Sparkles,
+  ShoppingBasket,
 } from "lucide-react";
 
 import ExportModal from "../components/features/outstanding/ExportModal";
@@ -25,7 +26,6 @@ import StockReport from "../components/features/inventory/StockReport";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
 
-const DEFAULT_PRODUCT_IMAGE = "https://via.placeholder.com/150";
 
 const InventoryPage = () => {
   const { activeBranchId } = useBranch();
@@ -171,6 +171,7 @@ const InventoryPage = () => {
           cost_price: parseFloat(updatedFormData.cost),
           price: parseFloat(updatedFormData.price),
           image_url: updatedFormData.image,
+          low_stock_threshold: parseFloat(updatedFormData.lowStockThreshold) || 0,
         };
         await productService.updateProduct(
           updatedFormData.dbId,
@@ -189,22 +190,13 @@ const InventoryPage = () => {
           image_url: updatedFormData.image,
           unitType: updatedFormData.unit || "ชิ้น",
           isWeightable: updatedFormData.isWeightable || false,
+          lowStockThreshold: parseFloat(updatedFormData.lowStockThreshold) || 0,
         };
 
         const newProduct = await productService.createProduct(
           payload,
           activeBranchId,
         );
-
-        if (updatedFormData.image && newProduct?.id) {
-          await productService.updateProduct(
-            newProduct.id,
-            {
-              image_url: updatedFormData.image,
-            },
-            activeBranchId,
-          );
-        }
       }
 
       fetchProducts(); // Refresh list after save
@@ -317,21 +309,19 @@ const InventoryPage = () => {
         <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-[20px] w-fit shadow-sm border border-white/20">
           <button
             onClick={() => setActiveTab("products")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-              activeTab === "products"
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "text-gray-500 hover:text-primary hover:bg-primary/5"
-            }`}
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "products"
+              ? "bg-primary text-white shadow-lg shadow-primary/20"
+              : "text-gray-500 hover:text-primary hover:bg-primary/5"
+              }`}
           >
             รายการสินค้า
           </button>
           <button
             onClick={() => setActiveTab("report")}
-            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-              activeTab === "report"
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "text-gray-500 hover:text-primary hover:bg-primary/5"
-            }`}
+            className={`px-6 py-3 rounded-[16px] font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "report"
+              ? "bg-primary text-white shadow-lg shadow-primary/20"
+              : "text-gray-500 hover:text-primary hover:bg-primary/5"
+              }`}
           >
             รายงานสต็อก
           </button>
@@ -446,18 +436,17 @@ const InventoryPage = () => {
                 <div className="relative" ref={filterRef}>
                   <button
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${
-                      selectedCategory
-                        ? "border-primary text-primary bg-primary/5"
-                        : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 bg-white border rounded-2xl font-black transition-all text-[10px] uppercase tracking-widest ${selectedCategory
+                      ? "border-primary text-primary bg-primary/5"
+                      : "border-gray-100 text-inactive hover:text-gray-900 hover:bg-gray-50"
+                      }`}
                   >
                     <Filter size={16} />
                     {selectedCategory
                       ? selectedCategory === "no-category"
                         ? "ทั่วไป"
                         : categories.find((c) => c.id === selectedCategory)
-                            ?.name || "ตัวกรอง"
+                          ?.name || "ตัวกรอง"
                       : "ตัวกรอง"}
                   </button>
 
@@ -469,11 +458,10 @@ const InventoryPage = () => {
                           setSelectedCategory(null);
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                          !selectedCategory
-                            ? "bg-primary text-white"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${!selectedCategory
+                          ? "bg-primary text-white"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
                         ทั้งหมด
                       </button>
@@ -482,26 +470,24 @@ const InventoryPage = () => {
                           setSelectedCategory("no-category");
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                          selectedCategory === "no-category"
-                            ? "bg-primary text-white"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === "no-category"
+                          ? "bg-primary text-white"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
                         ทั่วไป
                       </button>
-                      {categories.map((category) => (
+                      {(categories || []).map((category) => (
                         <button
                           key={category.id}
                           onClick={() => {
                             setSelectedCategory(category.id);
                             setIsFilterOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                            selectedCategory === category.id
-                              ? "bg-primary text-white"
-                              : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                          className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${selectedCategory === category.id
+                            ? "bg-primary text-white"
+                            : "text-gray-700 hover:bg-gray-50"
+                            }`}
                         >
                           {category.name}
                         </button>
@@ -532,7 +518,7 @@ const InventoryPage = () => {
                   </p>
                 </div>
               ) : (
-                filteredAndSortedProducts.map((product) => {
+                (filteredAndSortedProducts || []).map((product) => {
                   // Find earliest expiry date
                   const sortedBatches =
                     product.product_batches?.sort(
@@ -543,8 +529,8 @@ const InventoryPage = () => {
                   const expDate =
                     sortedBatches.length > 0
                       ? new Date(
-                          sortedBatches[0].expire_date,
-                        ).toLocaleDateString("th-TH")
+                        sortedBatches[0].expire_date,
+                      ).toLocaleDateString("th-TH")
                       : "-";
 
                   // Low stock threshold check (only if threshold is set)
@@ -579,15 +565,26 @@ const InventoryPage = () => {
                       {/* Top Section: Image and Info */}
                       <div className="flex flex-col sm:flex-row gap-6">
                         {/* Left: Image with Status Indicator */}
-                        <div className="w-full sm:w-40 h-56 sm:h-40 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md">
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="h-full w-full object-cover relative z-10"
-                            onError={(e) => {
-                              e.target.src = DEFAULT_PRODUCT_IMAGE;
-                            }}
-                          />
+                        <div className="w-full sm:w-40 h-56 sm:h-40 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md bg-gray-50">
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="h-full w-full object-cover relative z-10"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`absolute inset-0 flex items-center justify-center bg-gray-50 ${product.image_url ? "hidden" : "flex"}`}
+                          >
+                            <ShoppingBasket
+                              className="w-16 h-16 text-gray-200"
+                              strokeWidth={1.5}
+                            />
+                          </div>
                           {/* Status Badges */}
                           {isOutOfStock && (
                             <div className="absolute top-2 left-2 z-20 bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
@@ -691,13 +688,12 @@ const InventoryPage = () => {
                                 </svg>
                               </span>
                               <span
-                                className={`text-sm font-bold ${
-                                  isExpired
-                                    ? "text-rose-600"
-                                    : isExpiringSoon
-                                      ? "text-orange-500"
-                                      : "text-[#1B2559]"
-                                }`}
+                                className={`text-sm font-bold ${isExpired
+                                  ? "text-rose-600"
+                                  : isExpiringSoon
+                                    ? "text-orange-500"
+                                    : "text-[#1B2559]"
+                                  }`}
                               >
                                 หมดอายุ: {expDate}
                               </span>
@@ -717,7 +713,7 @@ const InventoryPage = () => {
                             <span
                               className={
                                 product.low_stock_threshold &&
-                                product.stock_qty <= product.low_stock_threshold
+                                  product.stock_qty <= product.low_stock_threshold
                                   ? "text-rose-500"
                                   : "text-[#1B2559]"
                               }
@@ -794,16 +790,26 @@ const InventoryPage = () => {
             </div>
 
             {/* Product Info */}
-            <div className="px-8 pb-6">
+            <div className="px-8 pb-6 text-left">
               <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
-                <img
-                  src={deleteConfirm.image_url}
-                  alt={deleteConfirm.name}
-                  className="w-16 h-16 rounded-xl object-cover"
-                  onError={(e) => {
-                    e.target.src = DEFAULT_PRODUCT_IMAGE;
-                  }}
-                />
+                <div className="w-16 h-16 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                  {deleteConfirm.image_url ? (
+                    <img
+                      src={deleteConfirm.image_url}
+                      alt={deleteConfirm.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`items-center justify-center w-full h-full bg-gray-50 ${deleteConfirm.image_url ? "hidden" : "flex"}`}
+                  >
+                    <ShoppingBasket className="w-8 h-8 text-gray-200" />
+                  </div>
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-bold text-gray-900 truncate">
                     {deleteConfirm.name}

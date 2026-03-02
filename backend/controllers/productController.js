@@ -82,6 +82,20 @@ const productController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  async createCategory(req, res) {
+    try {
+      const { categoryName, branchId, categoryType } = req.body;
+      const data = await productService.createCategory(
+        categoryName,
+        branchId,
+        categoryType,
+      );
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = productController;
