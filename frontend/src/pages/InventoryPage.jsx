@@ -172,6 +172,7 @@ const InventoryPage = () => {
           price: parseFloat(updatedFormData.price),
           image_url: updatedFormData.image,
           low_stock_threshold: parseFloat(updatedFormData.lowStockThreshold) || 0,
+          expireDate: updatedFormData.exp,
         };
         await productService.updateProduct(
           updatedFormData.dbId,
@@ -191,6 +192,7 @@ const InventoryPage = () => {
           unitType: updatedFormData.unit || "ชิ้น",
           isWeightable: updatedFormData.isWeightable || false,
           lowStockThreshold: parseFloat(updatedFormData.lowStockThreshold) || 0,
+          expireDate: updatedFormData.exp,
         };
 
         const newProduct = await productService.createProduct(
@@ -329,7 +331,7 @@ const InventoryPage = () => {
 
         {/* Stats Cards - Only for Products Tab */}
         {activeTab === "products" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1: Total Products */}
             <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
@@ -417,7 +419,7 @@ const InventoryPage = () => {
         ) : (
           <>
             {/* Filters Section */}
-            <div className="bg-white rounded-[24px] p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10">
+            <div className="bg-white rounded-[24px] p-2 sm:p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10 w-full overflow-hidden">
               {/* Search & Filter */}
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <div className="relative w-full lg:w-[320px]">
@@ -618,7 +620,7 @@ const InventoryPage = () => {
                                 {product.name}
                               </h4>
                               <span className="inline-flex items-center text-xs font-bold text-white bg-[#1B2559] px-2.5 py-1 rounded-lg shadow-sm">
-                                #{product.barcode || product.id.slice(0, 8)}
+                                #{(product.barcode || product.id || "").toString().slice(0, 13)}
                               </span>
                             </div>
                             <div className="flex gap-2">
@@ -743,7 +745,7 @@ const InventoryPage = () => {
                         </div>
 
                         {/* Right: Pricing Box */}
-                        <div className="ml-auto bg-[#F8FAFD] rounded-[20px] px-5 py-2.5 flex items-center justify-end gap-10 group-hover:bg-primary/5 transition-colors duration-500">
+                        <div className="ml-auto bg-[#F8FAFD] rounded-[20px] px-5 py-2.5 flex items-center justify-end gap-6 group-hover:bg-primary/5 transition-colors duration-500">
                           <div className="flex flex-col gap-0.5 text-right">
                             <p className="text-[8px] font-black text-inactive uppercase tracking-tighter">
                               ราคาทุน

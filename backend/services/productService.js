@@ -69,6 +69,17 @@ const productService = {
 
     if (error) throw error;
 
+    // Create initial batch if expireDate is provided
+    if (productData.expireDate && data?.id) {
+      await supabase.from("product_batches").insert({
+        product_id: data.id,
+        expire_date: productData.expireDate,
+        initial_qty: initialQty,
+        remaining_qty: initialQty,
+        batch_no: `BATCH-${Date.now()}`
+      });
+    }
+
     if (initialQty > 0 && data?.id) {
       const { data: userData } = await supabase.auth.getUser();
       await supabase.from("inventory_transactions").insert({
@@ -106,21 +117,65 @@ const productService = {
   async updateProduct(id, productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
-    const formattedData = { ...productData };
-    if (formattedData.lowStockThreshold !== undefined) {
-      formattedData.low_stock_threshold = formattedData.lowStockThreshold;
-      delete formattedData.lowStockThreshold;
-    }
+    // Explicitly map allowed product columns to avoid schema errors with extra fields
+    const updateData = {};
+    if (productData.name !== undefined) updateData.name = productData.name;
+    if (productData.barcode !== undefined) updateData.barcode = productData.barcode;
+
+    // Handle both camelCase and snake_case for compatibility
+    const categoryId = productData.categoryId || productData.category_id;
+    if (categoryId !== undefined) updateData.category_id = categoryId;
+
+    if (productData.price !== undefined) updateData.price = productData.price;
+
+    const costPrice = productData.costPrice || productData.cost_price;
+    if (costPrice !== undefined) updateData.cost_price = costPrice;
+
+    const stockQty = productData.stockQty || productData.stock_qty;
+    if (stockQty !== undefined) updateData.stock_qty = stockQty;
+
+    if (productData.image_url !== undefined) updateData.image_url = productData.image_url;
+
+    const lowStockThreshold = productData.lowStockThreshold || productData.low_stock_threshold;
+    if (lowStockThreshold !== undefined) updateData.low_stock_threshold = lowStockThreshold;
 
     const { data, error } = await supabase
       .from("products")
-      .update(formattedData)
+      .update(updateData)
       .eq("id", id)
       .eq("store_id", branchId)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Handle batch update if expireDate is provided
+    const expireDate = productData.expireDate;
+    if (expireDate) {
+      const { data: batches } = await supabase
+        .from("product_batches")
+        .select("*")
+        .eq("product_id", id)
+        .order("expire_date", { ascending: false });
+
+      if (batches && batches.length > 0) {
+        // Update the most recent batch
+        await supabase
+          .from("product_batches")
+          .update({ expire_date: expireDate })
+          .eq("id", batches[0].id);
+      } else {
+        // Create a new batch if none exists
+        await supabase.from("product_batches").insert({
+          product_id: id,
+          expire_date: expireDate,
+          initial_qty: data.stock_qty || 0,
+          remaining_qty: data.stock_qty || 0,
+          batch_no: `BATCH-${Date.now()}`
+        });
+      }
+    }
+
     return data;
   },
 
