@@ -1,10 +1,13 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
 import { authService } from "../../services/authService";
+import ConfirmModal from "../modals/ConfirmModal";
+import { useState } from "react";
 
 const ProfileDropdown = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   if (!isOpen) return null;
 
   const displayName =
@@ -45,7 +48,10 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
 
         <div className="p-2">
           <button
-            onClick={() => { navigate("/dashboard/profile"); onClose(); }}
+            onClick={() => {
+              navigate("/dashboard/profile");
+              onClose();
+            }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group"
           >
             <User
@@ -65,7 +71,10 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
             สลับสาขา
           </button>
           <button
-            onClick={() => { navigate("/dashboard/settings"); onClose(); }}
+            onClick={() => {
+              navigate("/dashboard/settings");
+              onClose();
+            }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group"
           >
             <Settings
@@ -79,7 +88,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
         <div className="p-2 border-t border-gray-50">
           <button
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all group"
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
           >
             <LogOut
               size={18}
@@ -89,6 +98,16 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        title="ออกจากระบบ"
+        message="คุณต้องการออกจากระบบใช่หรือไม่?"
+        confirmText="ออกจากระบบ"
+        isDestructive={true}
+      />
     </>
   );
 };

@@ -3,7 +3,6 @@ import {
   MapPin,
   TrendingUp,
   ShoppingCart,
-  Users,
   BarChart3,
   ArrowRight,
 } from "lucide-react";
@@ -20,6 +19,7 @@ const BranchCard = ({
   onSelect,
   isOpen = true,
   isDark = false,
+  className = "",
 }) => {
   const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ const BranchCard = ({
         isDark
           ? "bg-[#1E2022] border-white/10 shadow-2xl shadow-black/60 hover:shadow-black/80"
           : "bg-white border-gray-100 shadow-premium hover:shadow-float"
-      }`}
+      } ${className}`}
     >
       {/* Edge lighting effect - High Dimension */}
       <div
@@ -50,12 +50,14 @@ const BranchCard = ({
             isOpen
               ? isDark
                 ? "bg-white/10 text-emerald-400 border-white/10 shadow-lg"
-                : "bg-white/80 text-emerald-600 border-emerald-100 shadow-sm"
-              : "bg-black/40 text-gray-400 border-white/5"
+                : "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm"
+              : isDark
+                ? "bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-lg"
+                : "bg-rose-50 text-rose-600 border-rose-200 shadow-sm"
           }`}
         >
           <div
-            className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]" : "bg-gray-400"}`}
+            className={`w-2 h-2 rounded-full ${isOpen ? "bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]" : "bg-rose-500"}`}
           ></div>
           {isOpen ? "Online" : "Offline"}
         </div>
@@ -75,19 +77,28 @@ const BranchCard = ({
 
         <div className="flex items-start justify-between gap-4 mb-2 relative z-10">
           <h3
-            className={`text-2xl font-black transition-all duration-500 tracking-tighter ${
+            className={`text-2xl font-black transition-all duration-500 tracking-tighter line-clamp-2 break-words flex-1 ${
               isDark
                 ? "text-white group-hover:text-primary"
                 : "text-gray-900 group-hover:text-primary"
             }`}
+            title={branchName}
           >
             {branchName}
           </h3>
           <div
             className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-transform group-hover:scale-105 duration-500 shrink-0 ${
-              isDark
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-                : "bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
+              growth > 0
+                ? isDark
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                  : "bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
+                : growth < 0
+                  ? isDark
+                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]"
+                    : "bg-rose-50 text-rose-600 border border-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.05)]"
+                  : isDark
+                    ? "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                    : "bg-gray-100 text-gray-600 border border-gray-200"
             }`}
           >
             <BarChart3 size={12} strokeWidth={3} />
@@ -95,96 +106,74 @@ const BranchCard = ({
           </div>
         </div>
         <div
-          className={`flex items-center text-[10px] font-black uppercase tracking-widest mb-8 relative z-10 ${
+          className={`flex items-start text-[10px] font-black uppercase tracking-widest mb-8 relative z-10 ${
             isDark ? "text-inactive opacity-60" : "text-inactive"
           }`}
         >
           <MapPin
             size={12}
-            className={`mr-2 ${isDark ? "text-primary/60" : "text-primary"}`}
+            className={`mr-2 shrink-0 mt-0.5 ${isDark ? "text-primary/60" : "text-primary"}`}
           />
-          {address}
+          <span className="line-clamp-2 break-words" title={address}>
+            {address}
+          </span>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 mb-10 relative z-10">
           {/* Sales Row - Higher Dimension */}
           <div
-            className={`flex items-center justify-between p-5 rounded-[24px] transition-all duration-500 border ${
+            className={`flex items-center p-5 rounded-[24px] transition-all duration-500 border ${
               isDark
                 ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
                 : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
             }`}
           >
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-11 h-11 rounded-[18px] flex items-center justify-center border shadow-sm group-hover:rotate-12 transition-all duration-500 ${
-                  isDark
-                    ? "bg-primary/20 text-primary border-primary/30"
-                    : "bg-white text-primary border-gray-100 shadow-inner-light"
-                }`}
-              >
-                <TrendingUp size={20} strokeWidth={2.5} />
-              </div>
+            <div
+              className={`w-11 h-11 shrink-0 rounded-[18px] flex items-center justify-center border shadow-sm group-hover:rotate-12 transition-all duration-500 mr-4 ${
+                isDark
+                  ? "bg-primary/20 text-primary border-primary/30"
+                  : "bg-white text-primary border-gray-100 shadow-inner-light"
+              }`}
+            >
+              <TrendingUp size={20} strokeWidth={2.5} />
+            </div>
+
+            <div className="flex flex-col gap-1">
               <span className="text-[10px] font-black text-inactive uppercase tracking-[0.1em]">
                 ยอดขายวันนี้
               </span>
+              <span
+                className={`text-2xl font-black tracking-tighter leading-none ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                ฿{salesToday.toLocaleString()}
+              </span>
             </div>
-            <span
-              className={`text-xl font-black tracking-tighter ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              ฿{salesToday.toLocaleString()}
-            </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Orders */}
             <div
-              className={`flex flex-col p-5 rounded-[24px] transition-all duration-500 border ${
+              className={`flex items-center justify-between p-5 rounded-[24px] transition-all duration-500 border ${
                 isDark
                   ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
                   : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
               }`}
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3">
                 <ShoppingCart
-                  size={14}
+                  size={16}
                   className="text-blue-500 opacity-80"
                   strokeWidth={2.5}
                 />
-                <span className="text-[9px] font-black text-inactive uppercase tracking-widest">
+                <span className="text-[10px] font-black text-inactive uppercase tracking-widest">
                   คำสั่งซื้อ
                 </span>
               </div>
               <span
                 className={`text-lg font-black tracking-tighter ${isDark ? "text-white" : "text-gray-900"}`}
               >
-                {ordersToday} Items
-              </span>
-            </div>
-
-            {/* Staff */}
-            <div
-              className={`flex flex-col p-5 rounded-[24px] transition-all duration-500 border ${
-                isDark
-                  ? "bg-white/5 hover:bg-white/10 border-white/10 shadow-inner"
-                  : "bg-gray-50/50 hover:bg-white border-gray-100 hover:shadow-premium-lg"
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Users
-                  size={14}
-                  className="text-amber-500 opacity-80"
-                  strokeWidth={2.5}
-                />
-                <span className="text-[9px] font-black text-inactive uppercase tracking-widest">
-                  พนักงาน
-                </span>
-              </div>
-              <span
-                className={`text-lg font-black tracking-tighter ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                {staffCount} Staffs
+                {ordersToday} รายการ
               </span>
             </div>
           </div>
