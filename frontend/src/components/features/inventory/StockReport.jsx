@@ -10,6 +10,7 @@ import {
   TrendingDown,
   TrendingUp,
   History,
+  ShoppingBasket,
 } from "lucide-react";
 import { useBranch } from "./../../../contexts/BranchContext";
 import { productService } from "../../../services/productService";
