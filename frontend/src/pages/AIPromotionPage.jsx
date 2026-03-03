@@ -338,7 +338,14 @@ const AIPromotionPage = () => {
         }
       });
 
-      setChartData(months);
+      // Transform 0 to null to prevent minPointSize from showing a bar for 0
+      const finalData = months.map((m) => ({
+        ...m,
+        withPromo: m.withPromo > 0 ? m.withPromo : null,
+        noPromo: m.noPromo > 0 ? m.noPromo : null,
+      }));
+
+      setChartData(finalData);
     } catch (err) {
       console.error("fetchChartData error:", err);
     } finally {
@@ -565,10 +572,11 @@ const AIPromotionPage = () => {
                 <button
                   onClick={handleRefreshRecs}
                   disabled={isRecLoading}
-                  className={`p-2 rounded-xl transition-all duration-300 flex items-center justify-center ${isRecLoading
+                  className={`p-2 rounded-xl transition-all duration-300 flex items-center justify-center ${
+                    isRecLoading
                       ? "text-gray-300 cursor-not-allowed"
                       : "text-inactive hover:text-primary hover:bg-primary/10 hover:rotate-180"
-                    }`}
+                  }`}
                   title="โหลดคำแนะนำใหม่"
                 >
                   <RotateCw
@@ -851,6 +859,7 @@ const AIPromotionPage = () => {
                         fill="#ED7117"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={50}
+                        minPointSize={5}
                         animationDuration={1500}
                       />
                       <Bar
@@ -859,6 +868,7 @@ const AIPromotionPage = () => {
                         fill="#9CA3AF"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={50}
+                        minPointSize={5}
                         animationDuration={1500}
                       />
                     </BarChart>

@@ -7,7 +7,8 @@ const saleService = {
     // 1. Fetch all order items for this store that are NOT cancelled
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select(`
+      .select(
+        `
         product_id,
         qty,
         subtotal,
@@ -22,7 +23,8 @@ const saleService = {
         orders!inner (
           payment_status
         )
-      `)
+      `,
+      )
       .eq("products.store_id", branchId)
       .is("products.deleted_at", null)
       .neq("orders.payment_status", "cancelled");
@@ -47,7 +49,9 @@ const saleService = {
         };
       }
       const qty = parseFloat(item.qty) || 0;
-      const itemSubtotal = parseFloat(item.subtotal) || (qty * (parseFloat(item.products.price) || 0));
+      const itemSubtotal =
+        parseFloat(item.subtotal) ||
+        qty * (parseFloat(item.products.price) || 0);
 
       productMap[pId].sold_qty += qty;
       productMap[pId].revenue += itemSubtotal;
@@ -82,12 +86,18 @@ const saleService = {
       let hasMore = true;
 
       while (hasMore) {
-        let query = supabase.from("orders").select("id").eq("store_id", branchId).neq("payment_status", "cancelled").order("id", { ascending: true }).limit(1000);
+        let query = supabase
+          .from("orders")
+          .select("id")
+          .eq("store_id", branchId)
+          .neq("payment_status", "cancelled")
+          .order("id", { ascending: true })
+          .limit(1000);
         if (lastId) query = query.gt("id", lastId);
         const { data } = await query;
         if (!data || data.length === 0) hasMore = false;
         else {
-          orderIds = [...orderIds, ...data.map(o => o.id)];
+          orderIds = [...orderIds, ...data.map((o) => o.id)];
           lastId = data[data.length - 1].id;
           if (data.length < 1000) hasMore = false;
         }
@@ -103,17 +113,21 @@ const saleService = {
         const chunk = orderIds.slice(i, i + chunkSize);
         const { data: items } = await supabase
           .from("order_items")
-          .select(`
+          .select(
+            `
             subtotal,
             products (
               product_categories (name)
             )
-          `)
+          `,
+          )
           .in("order_id", chunk);
 
         if (items) {
           items.forEach((item) => {
-            const catName = item.products?.product_categories?.name || "หมวดหมู่อื่นๆ / สินค้าที่ลบออก";
+            const catName =
+              item.products?.product_categories?.name ||
+              "หมวดหมู่อื่นๆ / สินค้าที่ลบออก";
             const revenue = parseFloat(item.subtotal) || 0;
 
             if (!categoryMap[catName]) {
@@ -145,7 +159,10 @@ const saleService = {
         .select("stock_qty")
         .eq("store_id", branchId)
         .is("deleted_at", null);
-      const totalStock = (products || []).reduce((sum, p) => sum + (parseFloat(p.stock_qty) || 0), 0);
+      const totalStock = (products || []).reduce(
+        (sum, p) => sum + (parseFloat(p.stock_qty) || 0),
+        0,
+      );
 
       // 2. Fetch ALL non-cancelled orders using pagination to bypass 1000-row limit
       let allOrders = [];
@@ -175,14 +192,17 @@ const saleService = {
         }
       }
 
-      const revenueFromOrders = allOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+      const revenueFromOrders = allOrders.reduce(
+        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        0,
+      );
 
       // 3. Fetch ALL order items for these orders to get total sold qty and verify revenue
       // We process this in chunks to avoid URL length issues or heavy memory usage
       let totalSold = 0;
       let revenueFromItems = 0;
 
-      const orderIds = allOrders.map(o => o.id);
+      const orderIds = allOrders.map((o) => o.id);
       const chunkSize = 200;
 
       for (let i = 0; i < orderIds.length; i += chunkSize) {
@@ -203,7 +223,7 @@ const saleService = {
       return {
         totalProducts: totalStock || 0,
         totalSold: totalSold || 0,
-        totalRevenue: Math.max(revenueFromOrders, revenueFromItems)
+        totalRevenue: Math.max(revenueFromOrders, revenueFromItems),
       };
     } catch (error) {
       console.error("getSalesSummary Error:", error);
@@ -217,12 +237,18 @@ const saleService = {
     try {
       const now = new Date();
       // Get "today" in Thai time (UTC+7) reliably using Intl, regardless of server timezone.
-      const thaiFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" });
+      const thaiFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Bangkok",
+      });
       const thaiTodayStr = thaiFormatter.format(now); // "YYYY-MM-DD"
 
       // 1. Query today's orders directly from orders table using created_at date range (UTC+7)
-      const todayStartUTC = new Date(`${thaiTodayStr}T00:00:00+07:00`).toISOString();
-      const todayEndUTC = new Date(`${thaiTodayStr}T23:59:59.999+07:00`).toISOString();
+      const todayStartUTC = new Date(
+        `${thaiTodayStr}T00:00:00+07:00`,
+      ).toISOString();
+      const todayEndUTC = new Date(
+        `${thaiTodayStr}T23:59:59.999+07:00`,
+      ).toISOString();
 
       console.log("[DEBUG getDashboardMetrics] thaiTodayStr:", thaiTodayStr);
       console.log("[DEBUG getDashboardMetrics] todayStartUTC:", todayStartUTC);
@@ -238,13 +264,17 @@ const saleService = {
         .lte("created_at", todayEndUTC);
 
       console.log("[DEBUG getDashboardMetrics] todayErr:", todayErr);
-      console.log("[DEBUG getDashboardMetrics] todayOrders count:", todayOrders?.length, todayOrders);
+      console.log(
+        "[DEBUG getDashboardMetrics] todayOrders count:",
+        todayOrders?.length,
+        todayOrders,
+      );
 
       if (todayErr) throw todayErr;
 
       const todayRevenue = (todayOrders || []).reduce(
         (sum, o) => sum + (parseFloat(o.total_amount) || 0),
-        0
+        0,
       );
 
       console.log("[DEBUG getDashboardMetrics] todayRevenue:", todayRevenue);
@@ -277,11 +307,14 @@ const saleService = {
         }
       }
 
-      const totalRevenue = allOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+      const totalRevenue = allOrders.reduce(
+        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        0,
+      );
 
       // 3. Fetch order items in chunks for totalSold
       let totalSold = 0;
-      const orderIds = allOrders.map(o => o.id);
+      const orderIds = allOrders.map((o) => o.id);
       const chunkSize = 200;
 
       for (let i = 0; i < orderIds.length; i += chunkSize) {
@@ -304,7 +337,10 @@ const saleService = {
         .select("stock_qty")
         .eq("store_id", branchId)
         .is("deleted_at", null);
-      const totalProducts = (products || []).reduce((sum, p) => sum + (parseFloat(p.stock_qty) || 0), 0);
+      const totalProducts = (products || []).reduce(
+        (sum, p) => sum + (parseFloat(p.stock_qty) || 0),
+        0,
+      );
 
       return {
         totalRevenue,
@@ -315,7 +351,13 @@ const saleService = {
       };
     } catch (error) {
       console.error("getDashboardMetrics Error:", error);
-      return { totalRevenue: 0, todayRevenue: 0, totalOrders: 0, totalSold: 0, totalProducts: 0 };
+      return {
+        totalRevenue: 0,
+        todayRevenue: 0,
+        totalOrders: 0,
+        totalSold: 0,
+        totalProducts: 0,
+      };
     }
   },
 
@@ -359,8 +401,10 @@ const saleService = {
       const dateStr = days[i];
       const sales = dailyData[dateStr] || 0;
       currentWeekSales.push({
-        day: new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" })[0],
-        value: sales
+        day: new Date(dateStr).toLocaleDateString("en-US", {
+          weekday: "short",
+        })[0],
+        value: sales,
       });
       currentWeekTotal += sales;
     }
@@ -369,14 +413,17 @@ const saleService = {
       previousWeekTotal += dailyData[days[i]] || 0;
     }
 
-    let growth = previousWeekTotal > 0
-      ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
-      : currentWeekTotal > 0 ? 100 : 0;
+    let growth =
+      previousWeekTotal > 0
+        ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
+        : currentWeekTotal > 0
+          ? 100
+          : 0;
 
     return {
       chartData: currentWeekSales.reverse(),
       growth: Math.round(growth * 10) / 10,
-      totalWeekRevenue: currentWeekTotal
+      totalWeekRevenue: currentWeekTotal,
     };
   },
 
@@ -391,11 +438,16 @@ const saleService = {
 
     if (ordersError) throw ordersError;
 
-    const totalRevenue = (orders || []).reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const totalRevenue = (orders || []).reduce(
+      (sum, o) => sum + (o.total_amount || 0),
+      0,
+    );
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select(`qty, products (cost_price), orders!inner (store_id, payment_status)`)
+      .select(
+        `qty, products (cost_price), orders!inner (store_id, payment_status)`,
+      )
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled");
 
@@ -403,22 +455,31 @@ const saleService = {
 
     const totalExpense = (items || []).reduce(
       (sum, item) => sum + (item.products?.cost_price || 0) * (item.qty || 0),
-      0
+      0,
     );
 
     const paymentStats = {};
     (orders || []).forEach((o) => {
       const method = o.payment_type || "Other";
-      paymentStats[method] = (paymentStats[method] || 0) + (o.total_amount || 0);
+      paymentStats[method] =
+        (paymentStats[method] || 0) + (o.total_amount || 0);
     });
 
     const paymentChannels = Object.keys(paymentStats).map((method) => ({
       method,
       amount: paymentStats[method],
-      percent: totalRevenue > 0 ? Math.round((paymentStats[method] / totalRevenue) * 100) : 0
+      percent:
+        totalRevenue > 0
+          ? Math.round((paymentStats[method] / totalRevenue) * 100)
+          : 0,
     }));
 
-    return { totalRevenue, totalExpense, netProfit: totalRevenue - totalExpense, paymentChannels };
+    return {
+      totalRevenue,
+      totalExpense,
+      netProfit: totalRevenue - totalExpense,
+      paymentChannels,
+    };
   },
 
   getDailyFinance: async (branchId) => {
@@ -440,7 +501,9 @@ const saleService = {
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select(`qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`)
+      .select(
+        `qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`,
+      )
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled")
       .gte("created_at", startOfDay)
@@ -451,15 +514,17 @@ const saleService = {
     const hourlyData = Array.from({ length: 24 }, (_, i) => ({
       name: i.toString().padStart(2, "0"),
       income: 0,
-      expense: 0
+      expense: 0,
     }));
 
     orders.forEach((o) => {
-      hourlyData[new Date(o.created_at).getHours()].income += o.total_amount || 0;
+      hourlyData[new Date(o.created_at).getHours()].income +=
+        o.total_amount || 0;
     });
 
     items.forEach((item) => {
-      hourlyData[new Date(item.created_at).getHours()].expense += (item.products?.cost_price || 0) * (item.qty || 0);
+      hourlyData[new Date(item.created_at).getHours()].expense +=
+        (item.products?.cost_price || 0) * (item.qty || 0);
     });
 
     return hourlyData;
@@ -482,22 +547,39 @@ const saleService = {
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select(`qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`)
+      .select(
+        `qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`,
+      )
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled")
       .gte("created_at", startOfYear);
 
     if (itemsError) throw itemsError;
 
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const monthlyData = months.map((m) => ({ name: m, รายรับ: 0, รายจ่าย: 0 }));
 
     orders.forEach((o) => {
-      monthlyData[new Date(o.created_at).getMonth()].รายรับ += o.total_amount || 0;
+      monthlyData[new Date(o.created_at).getMonth()].รายรับ +=
+        o.total_amount || 0;
     });
 
     items.forEach((item) => {
-      monthlyData[new Date(item.created_at).getMonth()].รายจ่าย += (item.products?.cost_price || 0) * (item.qty || 0);
+      monthlyData[new Date(item.created_at).getMonth()].รายจ่าย +=
+        (item.products?.cost_price || 0) * (item.qty || 0);
     });
 
     return monthlyData;
@@ -508,19 +590,25 @@ const saleService = {
 
     // Use Asia/Bangkok Timezone for calculations
     const now = new Date();
-    const thaiFormatter = new Intl.DateTimeFormat("en-CA", { 
+    const thaiFormatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Bangkok",
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
     });
-    
+
     // Helper to get Thai Date object
     const getThaiDate = (date) => {
       const parts = thaiFormatter.formatToParts(date);
       const dict = {};
-      parts.forEach(p => dict[p.type] = p.value);
-      return new Date(`${dict.year}-${dict.month}-${dict.day}T${dict.hour}:${dict.minute}:${dict.second}`);
+      parts.forEach((p) => (dict[p.type] = p.value));
+      return new Date(
+        `${dict.year}-${dict.month}-${dict.day}T${dict.hour}:${dict.minute}:${dict.second}`,
+      );
     };
 
     let startDate;
@@ -538,8 +626,7 @@ const saleService = {
         groupBy = "day";
         break;
       case "1M":
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 30);
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         groupBy = "day";
         break;
       case "1Y":
@@ -554,13 +641,15 @@ const saleService = {
 
     const { data: items, error } = await supabase
       .from("order_items")
-      .select(`
+      .select(
+        `
         subtotal,
         orders!inner (
           payment_status,
           created_at
         )
-      `)
+      `,
+      )
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled")
       .gte("orders.created_at", startDate.toISOString());
@@ -573,72 +662,110 @@ const saleService = {
       for (let i = 0; i < 24; i++) {
         hourlyMap[`${i.toString().padStart(2, "0")}:00`] = 0;
       }
-      
+
       (items || []).forEach((item) => {
         // Adjust for Thai Timezone (UTC+7)
         const date = new Date(item.orders.created_at);
-        const thaiHour = new Date(date.getTime() + (7 * 60 * 60 * 1000)).getUTCHours();
+        const thaiHour = new Date(
+          date.getTime() + 7 * 60 * 60 * 1000,
+        ).getUTCHours();
         const hourLabel = `${thaiHour.toString().padStart(2, "0")}:00`;
-        
+
         if (hourlyMap[hourLabel] !== undefined) {
           hourlyMap[hourLabel] += parseFloat(item.subtotal) || 0;
         }
       });
-      
-      Object.keys(hourlyMap).sort().forEach((name) => {
-        historyData.push({ name, totalSales: Math.ceil(hourlyMap[name]) });
-      });
+
+      Object.keys(hourlyMap)
+        .sort()
+        .forEach((name) => {
+          historyData.push({ name, totalSales: Math.ceil(hourlyMap[name]) });
+        });
     } else if (groupBy === "day") {
       const dailyMap = {};
-      const daysToFetch = timeRange === "1W" ? 7 : 30;
-      
-      for (let i = daysToFetch - 1; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
-        // Format as YYYY-MM-DD in Thai Timezone
-        const datePart = new Date(d.getTime() + (7 * 60 * 60 * 1000)).toISOString().split("T")[0];
-        
-        let label = d.getDate().toString();
-        if (timeRange === "1W") {
+
+      if (timeRange === "1W") {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          const datePart = new Date(d.getTime() + 7 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0];
           const days = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
-          label = days[d.getDay()];
+          const label = days[d.getDay()];
+          dailyMap[datePart] = { name: label, value: 0, fullDate: datePart };
         }
-        
-        dailyMap[datePart] = { name: label, value: 0, fullDate: datePart };
+      } else {
+        // "1M"
+        const daysInMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+        ).getDate();
+        for (let i = 1; i <= daysInMonth; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth(), i);
+          const datePart = new Date(d.getTime() + 7 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0];
+          dailyMap[datePart] = {
+            name: i.toString(),
+            value: 0,
+            fullDate: datePart,
+          };
+        }
       }
-      
+
       (items || []).forEach((item) => {
         const date = new Date(item.orders.created_at);
-        const datePart = new Date(date.getTime() + (7 * 60 * 60 * 1000)).toISOString().split("T")[0];
-        
+        const datePart = new Date(date.getTime() + 7 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0];
+
         if (dailyMap[datePart]) {
           dailyMap[datePart].value += parseFloat(item.subtotal) || 0;
         }
       });
-      
-      Object.keys(dailyMap).sort().forEach((key) => {
-        historyData.push({
-          name: dailyMap[key].name,
-          totalSales: Math.ceil(dailyMap[key].value),
-          fullDate: dailyMap[key].fullDate
+
+      Object.keys(dailyMap)
+        .sort()
+        .forEach((key) => {
+          historyData.push({
+            name: dailyMap[key].name,
+            totalSales: Math.ceil(dailyMap[key].value),
+            fullDate: dailyMap[key].fullDate,
+          });
         });
-      });
     } else if (groupBy === "month") {
-      const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      const months = [
+        "ม.ค.",
+        "ก.พ.",
+        "มี.ค.",
+        "เม.ย.",
+        "พ.ค.",
+        "มิ.ย.",
+        "ก.ค.",
+        "ส.ค.",
+        "ก.ย.",
+        "ต.ค.",
+        "พ.ย.",
+        "ธ.ค.",
+      ];
       const monthlyMap = {};
       months.forEach((m) => (monthlyMap[m] = 0));
-      
+
       (items || []).forEach((item) => {
         const date = new Date(item.orders.created_at);
-        const thaiMonth = new Date(date.getTime() + (7 * 60 * 60 * 1000)).getUTCMonth();
+        const thaiMonth = new Date(
+          date.getTime() + 7 * 60 * 60 * 1000,
+        ).getUTCMonth();
         monthlyMap[months[thaiMonth]] += parseFloat(item.subtotal) || 0;
       });
-      
+
       months.forEach((name) => {
         historyData.push({ name, totalSales: Math.ceil(monthlyMap[name]) });
       });
     }
-    
+
     return historyData;
   },
 };
