@@ -7,13 +7,34 @@ const storeService = {
       if (!user) throw new Error("User not authenticated");
       userId = user.id;
     }
-    const { data: ownedStores, error: ownedError } = await supabase.from("stores").select("*").eq("owner_id", userId);
-    if (ownedError) throw ownedError;
-    const { data: membershipData, error: memberError } = await supabase.from("store_members").select(`store_id, role, stores (*)`).eq("user_id", userId);
-    if (memberError) throw memberError;
-    const memberStores = membershipData.map((m) => ({ ...m.stores, role: m.role }));
-    const allStores = [...ownedStores.map((s) => ({ ...s, role: "owner" }))];
-    memberStores.forEach((ms) => { if (!allStores.find((s) => s.id === ms.id)) allStores.push(ms); });
+
+    // Get user profile to check role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    let allStores = [];
+
+    if (profile && profile.role === "owner") {
+      // Owner role: see ALL stores in the system
+      const { data: stores, error: storesError } = await supabase
+        .from("stores")
+        .select("*");
+      if (storesError) throw storesError;
+      allStores = stores.map((s) => ({ ...s, role: "owner" }));
+    } else {
+      // Others (e.g. manager): see only associated stores
+      const { data: ownedStores, error: ownedError } = await supabase.from("stores").select("*").eq("owner_id", userId);
+      if (ownedError) throw ownedError;
+      const { data: membershipData, error: memberError } = await supabase.from("store_members").select(`store_id, role, stores (*)`).eq("user_id", userId);
+      if (memberError) throw memberError;
+      const memberStores = membershipData.map((m) => ({ ...m.stores, role: m.role }));
+      allStores = [...ownedStores.map((s) => ({ ...s, role: "owner" }))];
+      memberStores.forEach((ms) => { if (!allStores.find((s) => s.id === ms.id)) allStores.push(ms); });
+    }
+
     allStores.sort((a, b) => (b.last_accessed_at ? new Date(b.last_accessed_at).getTime() : 0) - (a.last_accessed_at ? new Date(a.last_accessed_at).getTime() : 0));
     return allStores;
   },

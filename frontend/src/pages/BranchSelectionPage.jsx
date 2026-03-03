@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SimpleHeader from "../components/layout/SimpleHeader";
 import SummaryCard from "../components/common/SummaryCard";
 import BranchCard from "../components/features/branch/BranchCard";
+import ConfirmModal from "../components/modals/ConfirmModal";
 import { storeService } from "../services/storeService";
 import { authService } from "../services/authService";
 import { useBranch } from "../contexts/BranchContext";
@@ -32,6 +33,7 @@ const BranchSelectionPage = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [showError, setShowError] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [confirmingBranch, setConfirmingBranch] = useState(null);
 
   const [lastAccessedBranchId, setLastAccessedBranchId] = useState(() => {
     return localStorage.getItem("last_accessed_branch_id");
@@ -92,16 +94,40 @@ const BranchSelectionPage = () => {
     }
   };
 
-  const handleSelect = (branch) => {
+  const handleSelect = async (branch, force = false) => {
     if (dragMoved) return;
 
-    // Update last accessed in Supabase (cross-device) + localStorage (fast local fallback)
-    storeService.updateLastAccessed(branch.id);
-    localStorage.setItem("last_accessed_branch_id", branch.id);
-    localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
+    // Check if branch is offline and needs confirmation
+    if (!branch.is_active && !force) {
+      setConfirmingBranch(branch);
+      return;
+    }
 
-    selectBranch(branch);
-    navigate("/dashboard", { replace: true });
+    try {
+      // Update last accessed in Supabase (cross-device) + localStorage (fast local fallback)
+      await storeService.updateLastAccessed(branch.id);
+      localStorage.setItem("last_accessed_branch_id", branch.id);
+      localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
+
+      selectBranch(branch);
+      // Ensure state is updated before navigating
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 0);
+    } catch (err) {
+      console.error("Error selecting branch:", err);
+      // Still select branch even if updateLastAccessed fails
+      selectBranch(branch);
+      navigate("/dashboard", { replace: true });
+    }
+  };
+
+  const handleConfirmOffline = () => {
+    if (confirmingBranch) {
+      const branch = confirmingBranch;
+      setConfirmingBranch(null);
+      handleSelect(branch, true);
+    }
   };
 
   const handleScroll = (direction) => {
@@ -183,16 +209,46 @@ const BranchSelectionPage = () => {
       )
       .subscribe();
 
-    // Fallback auto-refresh interval (polling) every 3 minutes
+    const storesSubscription = supabase
+      .channel("branch-selection-stores")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stores" },
+        () => {
+          if (isMounted) {
+            console.log("Real-time: Store status updated, refreshing dashboard.");
+            fetchStoresData(false);
+          }
+        },
+      )
+      .subscribe();
+
+    // Fallback auto-refresh interval (polling) every 10 seconds for realtime feel
     const intervalId = setInterval(() => {
       if (isMounted) fetchStoresData(false);
-    }, 180000);
+    }, 10000);
+
+    // Refresh immediately when tab becomes visible or gains focus
+    const handleFocus = () => {
+      if (isMounted && !document.hidden) {
+        fetchStoresData(false);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+
       if (ordersSubscription) {
         supabase.removeChannel(ordersSubscription);
+      }
+      if (storesSubscription) {
+        supabase.removeChannel(storesSubscription);
       }
     };
   }, [fetchStoresData]);
@@ -217,6 +273,16 @@ const BranchSelectionPage = () => {
 
   return (
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden bg-[#F9FAFB]">
+      <ConfirmModal
+        isOpen={!!confirmingBranch}
+        onClose={() => setConfirmingBranch(null)}
+        onConfirm={handleConfirmOffline}
+        title="สาขาออฟไลน์"
+        message={`สาขา ${confirmingBranch?.name} กำลังออฟไลน์อยู่ คุณแน่ใจหรือไม่ว่าต้องการเข้าสู่ระบบจัดการสำหรับสาขานี้? ข้อมูลอาจไม่เป็นปัจจุบัน`}
+        confirmText="เข้าสู่ระบบจัดการ"
+        cancelText="ยกเลิก"
+      />
+
       {/* Background Decorative Blob - Refined */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[150px]" />
@@ -255,9 +321,25 @@ const BranchSelectionPage = () => {
               </div>
             </div>
           )}
-          <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6 tracking-tighter leading-tight">
-            เลือกสาขาที่จัดการ
-          </h2>
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tighter leading-tight">
+              เลือกสาขาที่จัดการ
+            </h2>
+            <div
+              className={`px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border shadow-sm transition-colors duration-500 ${isOffline
+                ? "bg-rose-50 text-rose-600 border-rose-200"
+                : "bg-emerald-50 text-emerald-600 border-emerald-200"
+                }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${isOffline
+                  ? "bg-rose-500"
+                  : "bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]"
+                  }`}
+              ></div>
+              {isOffline ? "Offline" : "Online"}
+            </div>
+          </div>
           <p className="text-inactive font-black text-[10px] uppercase tracking-[0.4em] leading-relaxed">
             เชื่อมต่อข้อมูลและบริหารจัดการทุกสาขา{" "}
             <br className="hidden sm:block" /> อย่างมีประสิทธิภาพในที่เดียว
@@ -315,11 +397,10 @@ const BranchSelectionPage = () => {
                 onMouseLeave={stopDragging}
                 onMouseUp={stopDragging}
                 onMouseMove={onDragging}
-                className={`flex overflow-x-auto gap-10 w-full pb-14 pt-4 px-4 scroll-smooth custom-scrollbar no-scrollbar ${
-                  isDragging
-                    ? "cursor-grabbing select-none"
-                    : "cursor-grab snap-x snap-mandatory"
-                }`}
+                className={`flex overflow-x-auto gap-10 w-full pb-14 pt-4 px-4 scroll-smooth custom-scrollbar no-scrollbar ${isDragging
+                  ? "cursor-grabbing select-none"
+                  : "cursor-grab snap-x snap-mandatory"
+                  }`}
                 style={{
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
@@ -340,16 +421,9 @@ const BranchSelectionPage = () => {
                         branch.image_url ||
                         "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
                       }
-                      onSelect={() => {
-                        if (!isOffline) handleSelect(branch);
-                      }}
+                      onSelect={() => handleSelect(branch)}
                       isOpen={branch.is_active}
                       isDark={false}
-                      className={
-                        isOffline
-                          ? "opacity-50 grayscale pointer-events-none"
-                          : ""
-                      }
                     />
                   </div>
                 ))}
@@ -361,15 +435,14 @@ const BranchSelectionPage = () => {
                   {[...Array(Math.ceil(stores.length / 3))].map((_, i) => (
                     <div
                       key={i}
-                      className={`h-2 rounded-full transition-all duration-700 ${
-                        Math.round(
-                          scrollPosition /
-                            (scrollRef.current?.scrollWidth /
-                              (stores.length / 3)),
-                        ) === i
-                          ? "w-10 bg-primary shadow-lg shadow-primary/20"
-                          : "w-2 bg-gray-200"
-                      }`}
+                      className={`h-2 rounded-full transition-all duration-700 ${Math.round(
+                        scrollPosition /
+                        (scrollRef.current?.scrollWidth /
+                          (stores.length / 3)),
+                      ) === i
+                        ? "w-10 bg-primary shadow-lg shadow-primary/20"
+                        : "w-2 bg-gray-200"
+                        }`}
                     />
                   ))}
                 </div>
@@ -394,9 +467,9 @@ const BranchSelectionPage = () => {
 
       <footer className="py-6 text-center relative z-10">
         <div className="inline-flex items-center gap-4 bg-white px-8 py-4 rounded-3xl shadow-premium border border-gray-100 text-[10px] font-black uppercase tracking-widest text-inactive">
-          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
+          <div className={`w-2.5 h-2.5 rounded-full ${isOffline ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.5)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]'}`}></div>
           <span className="text-gray-900">
-            {stores.length > 0 ? "ทุกสาขาพร้อมให้บริการ" : "กรุณาเพิ่มสาขาใหม่"}
+            {isOffline ? "ออฟไลน์ (Offline)" : (stores.length > 0 ? "พร้อมให้บริการ (Online)" : "กรุณาเพิ่มสาขาใหม่")}
           </span>
           <span className="text-gray-200">|</span>
           <span>
