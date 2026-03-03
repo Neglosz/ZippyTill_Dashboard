@@ -5,6 +5,7 @@ const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("[Auth] Missing or invalid authorization header");
       return res.status(401).json({ error: "Missing or invalid authorization token" });
     }
 
@@ -13,6 +14,7 @@ const authMiddleware = async (req, res, next) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.error("[Auth] Supabase getUser error:", error?.message || "No user found");
       return res.status(401).json({ error: "Authentication failed" });
     }
 
@@ -20,7 +22,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error("Auth Middleware Error:", error);
+    console.error("[Auth] Middleware Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
