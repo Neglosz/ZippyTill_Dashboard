@@ -33,13 +33,7 @@ export const StatsCard = ({
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em]">
               {title}
             </p>
-            {activeText && (
-              <div
-                className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border shadow-inner-light ${color} ${iconBg.replace("bg-", "text-")}/60 border-current/10`}
-              >
-                {activeText}
-              </div>
-            )}
+            
           </div>
 
           <div className="flex flex-col gap-1">

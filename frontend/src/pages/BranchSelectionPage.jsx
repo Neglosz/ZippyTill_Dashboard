@@ -325,20 +325,6 @@ const BranchSelectionPage = () => {
             <h2 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tighter leading-tight">
               เลือกสาขาที่จัดการ
             </h2>
-            <div
-              className={`px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border shadow-sm transition-colors duration-500 ${isOffline
-                ? "bg-rose-50 text-rose-600 border-rose-200"
-                : "bg-emerald-50 text-emerald-600 border-emerald-200"
-                }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${isOffline
-                  ? "bg-rose-500"
-                  : "bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]"
-                  }`}
-              ></div>
-              {isOffline ? "Offline" : "Online"}
-            </div>
           </div>
           <p className="text-inactive font-black text-[10px] uppercase tracking-[0.4em] leading-relaxed">
             เชื่อมต่อข้อมูลและบริหารจัดการทุกสาขา{" "}

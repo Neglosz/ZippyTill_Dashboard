@@ -268,9 +268,9 @@ const productService = {
     if (!branchId) throw new Error("Branch ID is required");
 
     const today = new Date().toISOString().split("T")[0];
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-    const sevenDaysStr = sevenDaysFromNow.toISOString().split("T")[0];
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const thirtyDaysStr = thirtyDaysFromNow.toISOString().split("T")[0];
 
     // Filter by branchId directly in the query using !inner
     const { data: expiredData, error: expiredError } = await supabase
@@ -288,7 +288,7 @@ const productService = {
       .select("*, products!inner(name, store_id, image_url, deleted_at)")
       .eq("products.store_id", branchId)
       .gte("expire_date", today)
-      .lte("expire_date", sevenDaysStr)
+      .lte("expire_date", thirtyDaysStr)
       .is("products.deleted_at", null)
       .gt("remaining_qty", 0);
 
