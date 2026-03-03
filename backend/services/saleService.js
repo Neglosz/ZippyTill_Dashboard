@@ -506,14 +506,30 @@ const saleService = {
   getSalesHistory: async (branchId, timeRange) => {
     if (!branchId) throw new Error("Branch ID is required");
 
+    // Use Asia/Bangkok Timezone for calculations
     const now = new Date();
+    const thaiFormatter = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Bangkok",
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+    
+    // Helper to get Thai Date object
+    const getThaiDate = (date) => {
+      const parts = thaiFormatter.formatToParts(date);
+      const dict = {};
+      parts.forEach(p => dict[p.type] = p.value);
+      return new Date(`${dict.year}-${dict.month}-${dict.day}T${dict.hour}:${dict.minute}:${dict.second}`);
+    };
+
     let startDate;
     let groupBy = "day";
 
     switch (timeRange) {
       case "1D":
         startDate = new Date(now);
-        startDate.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0); // Start of day in local time
         groupBy = "hour";
         break;
       case "1W":
@@ -527,7 +543,6 @@ const saleService = {
         groupBy = "day";
         break;
       case "1Y":
-      case "Max":
         startDate = new Date(now.getFullYear(), 0, 1);
         groupBy = "month";
         break;
@@ -540,7 +555,6 @@ const saleService = {
     const { data: items, error } = await supabase
       .from("order_items")
       .select(`
-        qty,
         subtotal,
         orders!inner (
           payment_status,
@@ -556,43 +570,75 @@ const saleService = {
     const historyData = [];
     if (groupBy === "hour") {
       const hourlyMap = {};
-      for (let i = 0; i < 24; i++) hourlyMap[`${i.toString().padStart(2, "0")}:00`] = 0;
+      for (let i = 0; i < 24; i++) {
+        hourlyMap[`${i.toString().padStart(2, "0")}:00`] = 0;
+      }
+      
       (items || []).forEach((item) => {
-        const subtotal = parseFloat(item.subtotal) || 0;
-        hourlyMap[`${new Date(item.orders.created_at).getHours().toString().padStart(2, "0")}:00`] += subtotal;
+        // Adjust for Thai Timezone (UTC+7)
+        const date = new Date(item.orders.created_at);
+        const thaiHour = new Date(date.getTime() + (7 * 60 * 60 * 1000)).getUTCHours();
+        const hourLabel = `${thaiHour.toString().padStart(2, "0")}:00`;
+        
+        if (hourlyMap[hourLabel] !== undefined) {
+          hourlyMap[hourLabel] += parseFloat(item.subtotal) || 0;
+        }
       });
-      Object.keys(hourlyMap).forEach((name) => historyData.push({ name, totalSales: hourlyMap[name] }));
+      
+      Object.keys(hourlyMap).sort().forEach((name) => {
+        historyData.push({ name, totalSales: Math.ceil(hourlyMap[name]) });
+      });
     } else if (groupBy === "day") {
       const dailyMap = {};
       const daysToFetch = timeRange === "1W" ? 7 : 30;
+      
       for (let i = daysToFetch - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(now.getDate() - i);
-        const label = d.toISOString().split("T")[0];
-        dailyMap[label] = { label: d.getDate().toString(), value: 0 };
+        // Format as YYYY-MM-DD in Thai Timezone
+        const datePart = new Date(d.getTime() + (7 * 60 * 60 * 1000)).toISOString().split("T")[0];
+        
+        let label = d.getDate().toString();
+        if (timeRange === "1W") {
+          const days = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+          label = days[d.getDay()];
+        }
+        
+        dailyMap[datePart] = { name: label, value: 0, fullDate: datePart };
       }
+      
       (items || []).forEach((item) => {
-        const label = new Date(item.orders.created_at).toISOString().split("T")[0];
-        if (dailyMap[label]) {
-          const subtotal = parseFloat(item.subtotal) || 0;
-          dailyMap[label].value += subtotal;
+        const date = new Date(item.orders.created_at);
+        const datePart = new Date(date.getTime() + (7 * 60 * 60 * 1000)).toISOString().split("T")[0];
+        
+        if (dailyMap[datePart]) {
+          dailyMap[datePart].value += parseFloat(item.subtotal) || 0;
         }
       });
-      Object.keys(dailyMap).sort().forEach((key) => historyData.push({
-        name: dailyMap[key].label,
-        totalSales: dailyMap[key].value,
-        fullDate: key
-      }));
+      
+      Object.keys(dailyMap).sort().forEach((key) => {
+        historyData.push({
+          name: dailyMap[key].name,
+          totalSales: Math.ceil(dailyMap[key].value),
+          fullDate: dailyMap[key].fullDate
+        });
+      });
     } else if (groupBy === "month") {
       const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
       const monthlyMap = {};
       months.forEach((m) => (monthlyMap[m] = 0));
+      
       (items || []).forEach((item) => {
-        const subtotal = parseFloat(item.subtotal) || 0;
-        monthlyMap[months[new Date(item.orders.created_at).getMonth()]] += subtotal;
+        const date = new Date(item.orders.created_at);
+        const thaiMonth = new Date(date.getTime() + (7 * 60 * 60 * 1000)).getUTCMonth();
+        monthlyMap[months[thaiMonth]] += parseFloat(item.subtotal) || 0;
       });
-      months.forEach((name) => historyData.push({ name, totalSales: monthlyMap[name] }));
+      
+      months.forEach((name) => {
+        historyData.push({ name, totalSales: Math.ceil(monthlyMap[name]) });
+      });
     }
+    
     return historyData;
   },
 };

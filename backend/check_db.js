@@ -1,5 +1,6 @@
-require("dotenv").config({ path: "./backend/.env" });
-const { supabase } = require("./backend/config/supabase");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+const { supabase } = require("./config/supabase");
 
 async function checkSupabase() {
   console.log("Checking Supabase connection from backend config...");

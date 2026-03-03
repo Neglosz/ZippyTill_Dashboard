@@ -51,7 +51,8 @@ const SalesPage = () => {
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [historyData, setHistoryData] = useState([]);
-  const hasAnimated = useRef(false);
+  const isInitialLoad = useRef(true);
+  const prevTimeRange = useRef(timeRange);
 
   const colors = useMemo(
     () => [
@@ -70,14 +71,14 @@ const SalesPage = () => {
   // Unified data fetch function
   const fetchData = useCallback(async (isBackground = false) => {
     if (!activeBranchId) return;
-    
+
     try {
-      if (!isBackground) {
+      if (isInitialLoad.current) {
         setIsLoading(true);
-      } else {
+      } else if (isBackground) {
         setIsRefreshing(true);
       }
-      
+
       console.log("SalesPage: Fetching data for branch:", activeBranchId, "range:", timeRange);
 
       const [topData, catData, metricsData, histData] = await Promise.all([
@@ -87,11 +88,11 @@ const SalesPage = () => {
         saleService.getSalesHistory(activeBranchId, timeRange),
       ]);
 
-      setTopProducts(topData);
-      setHistoryData(histData);
-      setSalesSummary(metricsData);
+      setTopProducts(topData || []);
+      setHistoryData(histData || []);
+      setSalesSummary(metricsData || { totalRevenue: 0, todayRevenue: 0, totalSold: 0, totalProducts: 0 });
 
-      const totalRevenue = parseFloat(metricsData.totalRevenue) || 0;
+      const totalRevenue = parseFloat(metricsData?.totalRevenue) || 0;
       const processedCatData = (catData || [])
         .filter((c) => c.revenue > 0)
         .map((c, index) => ({
@@ -108,10 +109,11 @@ const SalesPage = () => {
       setFetchError(null);
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      if (!isBackground) setFetchError("ไม่สามารถดึงข้อมูลได้");
+      if (isInitialLoad.current) setFetchError("ไม่สามารถดึงข้อมูลได้");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      isInitialLoad.current = false;
     }
   }, [activeBranchId, timeRange, colors]);
 
@@ -123,7 +125,7 @@ const SalesPage = () => {
   // Real-time and Polling
   useEffect(() => {
     if (!activeBranchId) return;
-    
+
     // 1. Real-time subscription for orders
     const ordersChannel = supabase
       .channel(`sales_orders_${activeBranchId}`)
@@ -149,7 +151,7 @@ const SalesPage = () => {
     }, 60000);
 
     return () => {
-      supabase.removeChannel(ordersChannel);
+      if (ordersChannel) supabase.removeChannel(ordersChannel);
       clearInterval(intervalId);
     };
   }, [fetchData, activeBranchId]);
@@ -204,7 +206,14 @@ const SalesPage = () => {
   ];
 
   const chartData = useMemo(() => {
-    return historyData;
+    if (!historyData || historyData.length === 0) return [];
+
+    // Smooth transition for bars based on data points
+    return historyData.map(item => ({
+      ...item,
+      // Add more consistent naming for tooltips if needed
+      displayName: item.fullDate || item.name
+    }));
   }, [historyData]);
 
   // Pie Chart Data
@@ -242,14 +251,12 @@ const SalesPage = () => {
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20 active:scale-95 group ${
-              isRefreshing ? "opacity-70 cursor-not-allowed" : ""
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20 active:scale-95 group ${isRefreshing ? "opacity-70 cursor-not-allowed" : ""
+              }`}
           >
             <RotateCcw
-              className={`w-4 h-4 text-primary ${
-                isRefreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"
-              }`}
+              className={`w-4 h-4 text-primary ${isRefreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"
+                }`}
             />
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">
               {isRefreshing ? "กำลังอัปเดต..." : "อัปเดตข้อมูล"}
@@ -267,7 +274,7 @@ const SalesPage = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Chart: Total Sales */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-premium border border-gray-100">
+          <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -297,7 +304,7 @@ const SalesPage = () => {
               </div>
             </div>
 
-            <div className="h-[350px] w-full relative">
+            <div className="flex-1 min-h-[300px] w-full relative">
               {(isChartLoading || isRefreshing) && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[32px]">
                   <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -306,7 +313,7 @@ const SalesPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={chartData}
-                  margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                 >
                   <defs>
                     <linearGradient
@@ -320,18 +327,8 @@ const SalesPage = () => {
                       <stop
                         offset="100%"
                         stopColor="#F97316"
-                        stopOpacity={0.9}
+                        stopOpacity={0.8}
                       />
-                    </linearGradient>
-                    <linearGradient
-                      id="barGradientActive"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor="#FFB347" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#FF8C00" stopOpacity={1} />
                     </linearGradient>
                     <linearGradient
                       id="areaGradient"
@@ -343,43 +340,14 @@ const SalesPage = () => {
                       <stop
                         offset="0%"
                         stopColor="#ED7117"
-                        stopOpacity={0.15}
+                        stopOpacity={0.2}
                       />
                       <stop
                         offset="100%"
                         stopColor="#ED7117"
-                        stopOpacity={0.01}
+                        stopOpacity={0}
                       />
                     </linearGradient>
-                    <filter
-                      id="barShadow"
-                      x="-20%"
-                      y="-20%"
-                      width="140%"
-                      height="140%"
-                    >
-                      <feGaussianBlur
-                        in="SourceAlpha"
-                        stdDeviation="4"
-                        result="blur"
-                      />
-                      <feOffset dx="0" dy="8" in="blur" result="offsetBlur" />
-                      <feFlood
-                        floodColor="#ED7117"
-                        floodOpacity="0.3"
-                        result="offsetColor"
-                      />
-                      <feComposite
-                        in="offsetColor"
-                        in2="offsetBlur"
-                        operator="in"
-                        result="shadow"
-                      />
-                      <feMerge>
-                        <feMergeNode in="shadow" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
                   </defs>
                   <CartesianGrid
                     strokeDasharray="5 5"
@@ -391,69 +359,65 @@ const SalesPage = () => {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 700 }}
-                    dy={15}
+                    dy={10}
+                    interval={timeRange === "1M" ? 2 : 0}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 700 }}
-                    width={60}
+                    width={50}
                     tickCount={6}
-                    domain={[0, "auto"]}
+                    domain={[0, 'auto']}
                     tickFormatter={(value) =>
                       value === 0
                         ? "0"
                         : value >= 1000
-                        ? `${(value / 1000).toFixed(0)}k`
-                        : value
+                          ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
+                          : value
                     }
                   />
                   <Tooltip
-                    cursor={false}
+                    cursor={{ fill: '#F8FAFC', radius: 10 }}
                     contentStyle={{
-                      borderRadius: "24px",
+                      borderRadius: "20px",
                       border: "none",
-                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-                      padding: "16px 20px",
-                      background: "rgba(255, 255, 255, 0.95)",
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                      padding: "12px 16px",
+                      background: "rgba(255, 255, 255, 0.98)",
                       backdropFilter: "blur(10px)",
-                      zIndex: 1000,
                     }}
                     labelStyle={{
-                      fontWeight: 900,
+                      fontWeight: 800,
                       color: "#1E293B",
-                      marginBottom: "6px",
-                      fontSize: "12px",
+                      marginBottom: "4px",
+                      fontSize: "11px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.1em",
                     }}
                     itemStyle={{
                       fontSize: "13px",
-                      fontWeight: 800,
+                      fontWeight: 900,
                       color: "#ED7117",
-                      padding: "0",
                     }}
-                    labelFormatter={(value) =>
-                      timeRange === "1M" ? `วันที่ ${value}` : value
-                    }
+                    formatter={(value) => [`฿${Number(value).toLocaleString()}`, "ยอดขาย"]}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0 && payload[0].payload.fullDate) {
+                        return payload[0].payload.fullDate;
+                      }
+                      return label;
+                    }}
                   />
                   <Bar
                     dataKey="totalSales"
                     fill="url(#barGradient)"
-                    radius={[10, 10, 2, 2]}
-                    name="ยอดขายรวม"
-                    barSize={timeRange === "1M" ? 8 : 24}
-                    isAnimationActive={!hasAnimated.current}
+                    radius={[6, 6, 0, 0]}
+                    barSize={timeRange === "1M" ? 10 : 32}
+                    isAnimationActive={true}
                     animationDuration={1000}
-                    animationEasing="ease-out"
-                    filter="url(#barShadow)"
-                    onAnimationEnd={() => {
-                      hasAnimated.current = true;
-                    }}
-                    activeBar={{
-                      fill: "url(#barGradientActive)",
-                      filter: "url(#barShadow)",
-                    }}
+                  />
+                  <rect
+                    // Dummy element to ensure gradients are defined
+                    style={{ display: 'none' }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -491,7 +455,10 @@ const SalesPage = () => {
             </div>
 
             {/* Category Cards */}
-            <div className="flex-1 space-y-3 relative">
+            <div
+              className="space-y-3 relative overflow-y-auto pr-1"
+              style={{ maxHeight: "276px", scrollbarWidth: "thin", scrollbarColor: "#E2E8F0 transparent" }}
+            >
               {isRefreshing && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/20 backdrop-blur-[1px] rounded-2xl">
                   <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -654,11 +621,11 @@ const SalesPage = () => {
                             ${rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
-                                ? "bg-slate-400 text-white shadow-slate-200"
-                                : rank === 3
-                                ? "bg-orange-400 text-white shadow-orange-200"
-                                : "bg-gray-100 text-inactive border border-gray-100"
-                            }`}
+                                  ? "bg-slate-400 text-white shadow-slate-200"
+                                  : rank === 3
+                                    ? "bg-orange-400 text-white shadow-orange-200"
+                                    : "bg-gray-100 text-inactive border border-gray-100"
+                              }`}
                           >
                             {rank}
                           </div>

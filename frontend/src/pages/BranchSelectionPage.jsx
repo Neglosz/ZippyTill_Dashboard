@@ -152,62 +152,69 @@ const BranchSelectionPage = () => {
   });
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] gap-5">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
-          <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl animate-pulse" />
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-base font-bold text-primary uppercase tracking-[0.2em] animate-pulse">
-            กำลังโหลดข้อมูล
-          </p>
-          <div className="flex gap-1">
-            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const fetchStoresData = useCallback(async (isInitial = false) => {
     try {
       const user = await authService.getCurrentUser();
-      if (user) {
-        const userStores = (await storeService.getUserStores(user.id)) || [];
+      if (!user) {
+        console.warn("No user session found, redirecting to login");
+        navigate("/", { replace: true });
+        return;
+      }
 
-        // storeService sorts by last_accessed_at already — no manual sort needed
-        setStores(userStores);
+      // Parallel fetch for stores and initial summary to speed up loading
+      const userStores = await storeService.getUserStores(user.id).catch(err => {
+        console.error("Failed to fetch user stores:", err);
+        return [];
+      });
 
-        // Fetch aggregate summary only to avoid network congestion
-        if (userStores && userStores.length > 0) {
-          const storeIds = userStores.map((s) => s.id);
+      if (isMountedRef.current) {
+        setStores(userStores || []);
+      }
 
-          try {
-            const aggregateStats = await storeService.getStoresSummary(storeIds);
-            if (aggregateStats) setSummary(aggregateStats);
-          } catch (err) {
-            console.error("Error fetching summary stats:", err);
-          }
+      if (userStores && userStores.length > 0) {
+        const storeIds = userStores.map((s) => s.id);
+
+        // Fetch aggregate summary AND per-branch stats in parallel
+        const [summaryResult, ...statsResults] = await Promise.allSettled([
+          storeService.getStoresSummary(storeIds),
+          ...userStores.map((s) => storeService.getStoreStats(s.id)),
+        ]);
+
+        if (summaryResult.status === "fulfilled" && summaryResult.value && isMountedRef.current) {
+          setSummary(summaryResult.value);
+        }
+
+        if (isMountedRef.current) {
+          const newStoreStats = {};
+          userStores.forEach((s, i) => {
+            if (statsResults[i]?.status === "fulfilled" && statsResults[i].value) {
+              newStoreStats[s.id] = statsResults[i].value;
+            }
+          });
+          setStoreStats(newStoreStats);
         }
       }
-      setLastUpdated(new Date());
+
+      if (isMountedRef.current) {
+        setLastUpdated(new Date());
+      }
     } catch (error) {
-      console.error("Error fetching stores:", error);
+      console.error("Error in fetchStoresData:", error);
     } finally {
-      if (isInitial) setLoading(false);
+      if (isInitial && isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [navigate]);
+
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
     let isFetching = false;
 
     const debouncedFetch = async (isInitial = false) => {
-      if (!isMounted || isFetching) return;
+      if (!isMountedRef.current || isFetching) return;
       isFetching = true;
       await fetchStoresData(isInitial);
       isFetching = false;
@@ -217,14 +224,13 @@ const BranchSelectionPage = () => {
     debouncedFetch(true);
 
     // Setup Supabase Realtime Subscription for 'orders' table
-    // Instantly refreshes the dashboard sales/orders summary across all stores without refreshing the page
     const ordersSubscription = supabase
       .channel("branch-selection-orders")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
         () => {
-          if (isMounted) {
+          if (isMountedRef.current) {
             console.log("Real-time: Sales updated, refreshing dashboard.");
             debouncedFetch(false);
           }
@@ -238,7 +244,7 @@ const BranchSelectionPage = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "stores" },
         () => {
-          if (isMounted) {
+          if (isMountedRef.current) {
             console.log("Real-time: Store status updated, refreshing dashboard.");
             debouncedFetch(false);
           }
@@ -246,14 +252,12 @@ const BranchSelectionPage = () => {
       )
       .subscribe();
 
-    // Reduced polling frequency to once per minute to lower server load
     const intervalId = setInterval(() => {
-      if (isMounted) debouncedFetch(false);
+      if (isMountedRef.current) debouncedFetch(false);
     }, 60000);
 
-    // Refresh immediately when tab becomes visible or gains focus
     const handleFocus = () => {
-      if (isMounted && !document.hidden) {
+      if (isMountedRef.current && !document.hidden) {
         fetchStoresData(false);
       }
     };
@@ -262,7 +266,7 @@ const BranchSelectionPage = () => {
     document.addEventListener("visibilitychange", handleFocus);
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
