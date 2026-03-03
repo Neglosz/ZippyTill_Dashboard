@@ -179,6 +179,7 @@ const InventoryPage = () => {
           payload,
           activeBranchId,
         );
+        alert("แก้ไขสำเร็จ");
       } else {
         // Create new product
         const payload = {
@@ -199,6 +200,7 @@ const InventoryPage = () => {
           payload,
           activeBranchId,
         );
+        alert("บันทึกสำเร็จ");
       }
 
       fetchProducts(); // Refresh list after save
@@ -405,6 +407,7 @@ const InventoryPage = () => {
           product={editingProduct}
           onSave={handleSaveProduct}
           activeBranchId={activeBranchId}
+          products={products}
         />
 
         <AddProductModal
@@ -412,6 +415,7 @@ const InventoryPage = () => {
           onClose={() => setIsAddModalOpen(false)}
           onSave={handleSaveProduct}
           activeBranchId={activeBranchId}
+          products={products}
         />
 
         {activeTab === "report" ? (

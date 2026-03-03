@@ -233,8 +233,8 @@ const SalesPage = () => {
                     key={range}
                     onClick={() => setTimeRange(range)}
                     className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
-                        ? "bg-white shadow-sm text-primary border border-gray-100"
-                        : "text-inactive hover:text-gray-900"
+                      ? "bg-white shadow-sm text-primary border border-gray-100"
+                      : "text-inactive hover:text-gray-900"
                       }`}
                   >
                     {range}
