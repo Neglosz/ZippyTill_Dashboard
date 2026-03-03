@@ -30,6 +30,7 @@ router.get("/products", validate(productValidation.branchQuery), productControll
 router.post("/products", validate(productValidation.createProduct), productController.createProduct);
 router.put("/products/:id", productController.updateProduct);
 router.delete("/products/:id", productController.deleteProduct);
+router.get("/products/:id/batches", productController.getProductBatches);
 router.get("/products/categories", validate(productValidation.branchQuery), productController.getAllCategories);
 router.post("/products/categories", productController.createCategory);
 router.get("/products/notifications", validate(productValidation.branchQuery), productController.getDashboardNotifications);

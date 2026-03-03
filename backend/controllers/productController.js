@@ -96,6 +96,16 @@ const productController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  async getProductBatches(req, res) {
+    try {
+      const { id } = req.params;
+      const data = await productService.getProductBatches(id);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = productController;

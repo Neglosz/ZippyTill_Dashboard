@@ -14,6 +14,7 @@ const productSchema = {
         unitType: z.string().optional(),
         isWeightable: z.boolean().optional(),
         lowStockThreshold: z.number().nonnegative().optional(),
+        expireDate: z.string().optional(),
       }),
     }),
   }),

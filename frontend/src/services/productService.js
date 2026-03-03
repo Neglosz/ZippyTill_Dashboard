@@ -42,8 +42,8 @@ export const productService = {
     return apiClient.get(`/products/notifications?branchId=${branchId}`);
   },
 
-  async getStockMovements(branchId) {
-    return apiClient.get(`/products/movements?branchId=${branchId}`);
+  async getProductBatches(productId) {
+    return apiClient.get(`/products/${productId}/batches`);
   },
 
   // Remaining product services if any (batches, removal, etc.)
