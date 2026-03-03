@@ -10,6 +10,7 @@ import {
   TrendingDown,
   TrendingUp,
   History,
+  ShoppingBasket,
 } from "lucide-react";
 import { useBranch } from "./../../../contexts/BranchContext";
 import { productService } from "../../../services/productService";
@@ -229,15 +230,21 @@ const StockReportPage = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm">
-                        <img
-                          src={tx.imageUrl}
-                          alt={tx.product}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/150";
-                          }}
-                        />
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center">
+                        {tx.imageUrl ? (
+                          <img
+                            src={tx.imageUrl}
+                            alt={tx.product}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`placeholder-icon ${tx.imageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                          <ShoppingBasket className="w-8 h-8 text-gray-200" strokeWidth={1.5} />
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 px-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors">

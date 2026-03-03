@@ -15,6 +15,7 @@ import {
   Sparkles,
   Clock,
   CheckCircle,
+  ShoppingBasket,
 } from "lucide-react";
 import SystemNotificationModal from "../components/modals/SystemNotificationModal";
 import ReceiptModal from "../components/modals/ReceiptModal";
@@ -208,7 +209,7 @@ const DashboardPage = () => {
         change: Math.max(
           0,
           (sale.amount_paid || sale.total_amount || 0) -
-            (sale.total_amount || 0),
+          (sale.total_amount || 0),
         ),
         store: {
           name: activeBranchName || "ZippyTill",
@@ -366,34 +367,34 @@ const DashboardPage = () => {
                         {/* Rank Badge */}
                         <div
                           className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-[13px] font-black shadow-sm transition-all duration-300
-                          ${
-                            rank === 1
+                          ${rank === 1
                               ? "bg-amber-400 text-white shadow-amber-200"
                               : rank === 2
                                 ? "bg-slate-400 text-white shadow-slate-200"
                                 : rank === 3
                                   ? "bg-orange-400 text-white shadow-orange-200"
                                   : "bg-gray-100 text-inactive border border-gray-100"
-                          }`}
+                            }`}
                         >
                           {rank}
                         </div>
 
                         {/* Product Image */}
-                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/item:scale-110">
-                          <img
-                            src={
-                              getImageUrl(item.image_url) ||
-                              `https://api.dicebear.com/7.x/pixel-art/svg?seed=${item.name}`
-                            }
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src =
-                                "https://api.dicebear.com/7.x/pixel-art/svg?seed=" +
-                                item.name;
-                            }}
-                          />
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/item:scale-110 flex items-center justify-center bg-gray-50">
+                          {item.image_url ? (
+                            <img
+                              src={getImageUrl(item.image_url)}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`placeholder-icon ${item.image_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                            <ShoppingBasket size={24} className="text-gray-200" strokeWidth={1.5} />
+                          </div>
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -416,15 +417,14 @@ const DashboardPage = () => {
                           </div>
                           <div className="w-full bg-gray-50 h-1.5 rounded-full overflow-hidden border border-gray-100/50 shadow-inner relative">
                             <div
-                              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${
-                                rank === 1
+                              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${rank === 1
                                   ? "bg-amber-400"
                                   : rank === 2
                                     ? "bg-slate-400"
                                     : rank === 3
                                       ? "bg-orange-400"
                                       : "bg-primary"
-                              }`}
+                                }`}
                               style={{
                                 width: `${Math.min(100, (item.sold_qty / (bestSellers[0].sold_qty || 1)) * 100)}%`,
                               }}
@@ -483,24 +483,31 @@ const DashboardPage = () => {
                             onClick={() => handleOrderClick(sale)}
                           >
                             <td className="py-1">
-                              <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/row:scale-110">
-                                <img
-                                  src={
-                                    isRegularCustomer
-                                      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`
-                                      : productImage ||
-                                        `https://api.dicebear.com/7.x/shapes/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`
-                                  }
-                                  alt={
-                                    isRegularCustomer
-                                      ? "อวตารลูกค้า"
-                                      : "รูปสินค้า"
-                                  }
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`;
-                                  }}
-                                />
+                              <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/row:scale-110 flex items-center justify-center bg-gray-50">
+                                {isRegularCustomer ? (
+                                  <img
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${sale.order_no}&backgroundColor=f3f4f6`}
+                                    alt="อวตารลูกค้า"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <>
+                                    {productImage ? (
+                                      <img
+                                        src={productImage}
+                                        alt="รูปสินค้า"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.target.style.display = "none";
+                                          e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`placeholder-icon ${productImage ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                                      <ShoppingBasket size={24} className="text-gray-200" strokeWidth={1.5} />
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </td>
                             <td className="py-1">
@@ -543,13 +550,12 @@ const DashboardPage = () => {
                             <td className="py-1 pl-4 text-right">
                               <div className="flex items-center justify-end">
                                 <div
-                                  className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all ${
-                                    sale.payment_status === "completed"
+                                  className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all ${sale.payment_status === "completed"
                                       ? "bg-emerald-50 text-emerald-500"
                                       : sale.payment_status === "pending"
                                         ? "bg-amber-50 text-amber-500"
                                         : "bg-rose-50 text-rose-500"
-                                  }`}
+                                    }`}
                                 >
                                   {sale.payment_status === "completed" ? (
                                     <CheckCircle size={14} strokeWidth={2.5} />
@@ -612,7 +618,7 @@ const DashboardPage = () => {
               className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory px-1"
             >
               {notificationData.expiringSoon.length > 0 ||
-              notificationData.expired.length > 0 ? (
+                notificationData.expired.length > 0 ? (
                 [...notificationData.expired, ...notificationData.expiringSoon]
                   .sort((a, b) => a.days - b.days) // Sort by days remaining (ascending)
                   .map((prod, idx) => (
@@ -622,17 +628,20 @@ const DashboardPage = () => {
                     >
                       <div className="absolute top-0 right-0 h-1 w-full bg-rose-500/10 group-hover/item:bg-rose-500/20" />
                       <div className="relative mb-6 h-32 w-full flex items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-100/50 overflow-hidden group-hover/item:scale-105 transition-transform duration-500">
-                        <img
-                          src={
-                            prod.imageUrl ||
-                            `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`
-                          }
-                          alt={prod.name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.target.src = `https://api.dicebear.com/7.x/icons/svg?seed=${prod.name}&backgroundColor=ffd5dc`;
-                          }}
-                        />
+                        {prod.imageUrl ? (
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`placeholder-icon ${prod.imageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                          <ShoppingBasket size={48} className="text-gray-200" strokeWidth={1.5} />
+                        </div>
                       </div>
                       <h4 className="text-sm font-black text-gray-900 mb-3 truncate w-full tracking-tight">
                         {prod.name}
@@ -783,43 +792,43 @@ const DashboardPage = () => {
             <div className="flex items-end justify-between gap-3 h-28 px-1 mb-6">
               {weeklyAnalytics.chartData.length > 0
                 ? weeklyAnalytics.chartData.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex flex-col items-center flex-1 group/bar relative h-full justify-end"
-                    >
-                      <div className="w-full flex justify-center relative items-end h-[80px] mb-2">
-                        <div className="w-2.5 bg-gray-50 rounded-full h-full absolute bottom-0 shadow-inner"></div>
-                        <div
-                          className="w-2.5 bg-primary rounded-full absolute bottom-0 transition-all duration-1000 ease-out shadow-md group-hover/bar:bg-primary/80"
-                          style={{
-                            height: `${Math.min(100, (item.value / (Math.max(...weeklyAnalytics.chartData.map((d) => d.value)) || 1)) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-black text-inactive group-hover/bar:text-primary tracking-[0.1em] transition-colors duration-300">
-                        {item.day === "M"
-                          ? "จ."
-                          : item.day === "T"
-                            ? "อ./พฤ"
-                            : item.day === "W"
-                              ? "พ."
-                              : item.day === "F"
-                                ? "ศ."
-                                : item.day === "S"
-                                  ? "ส./อา"
-                                  : item.day}
-                      </span>
+                  <div
+                    key={idx}
+                    className="flex flex-col items-center flex-1 group/bar relative h-full justify-end"
+                  >
+                    <div className="w-full flex justify-center relative items-end h-[80px] mb-2">
+                      <div className="w-2.5 bg-gray-50 rounded-full h-full absolute bottom-0 shadow-inner"></div>
+                      <div
+                        className="w-2.5 bg-primary rounded-full absolute bottom-0 transition-all duration-1000 ease-out shadow-md group-hover/bar:bg-primary/80"
+                        style={{
+                          height: `${Math.min(100, (item.value / (Math.max(...weeklyAnalytics.chartData.map((d) => d.value)) || 1)) * 100)}%`,
+                        }}
+                      />
                     </div>
-                  ))
+                    <span className="text-[9px] font-black text-inactive group-hover/bar:text-primary tracking-[0.1em] transition-colors duration-300">
+                      {item.day === "M"
+                        ? "จ."
+                        : item.day === "T"
+                          ? "อ./พฤ"
+                          : item.day === "W"
+                            ? "พ."
+                            : item.day === "F"
+                              ? "ศ."
+                              : item.day === "S"
+                                ? "ส./อา"
+                                : item.day}
+                    </span>
+                  </div>
+                ))
                 : [1, 2, 3, 4, 5, 6, 7].map((_, idx) => (
-                    <div
-                      key={idx}
-                      className="flex-1 flex flex-col items-center justify-end h-full"
-                    >
-                      <div className="w-2.5 bg-gray-50 rounded-full h-12 mb-2 animate-pulse" />
-                      <div className="h-2 w-4 bg-gray-50 rounded animate-pulse" />
-                    </div>
-                  ))}
+                  <div
+                    key={idx}
+                    className="flex-1 flex flex-col items-center justify-end h-full"
+                  >
+                    <div className="w-2.5 bg-gray-50 rounded-full h-12 mb-2 animate-pulse" />
+                    <div className="h-2 w-4 bg-gray-50 rounded animate-pulse" />
+                  </div>
+                ))}
             </div>
 
             <div className="p-5 bg-gray-50/80 rounded-[28px] border border-gray-100 shadow-inner">

@@ -17,6 +17,7 @@ import {
   Package,
   MoreHorizontal,
   AlarmClockOff,
+  ShoppingBasket,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
 import { useBranch } from "../contexts/BranchContext";
@@ -231,11 +232,10 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      timeRange === range
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
                         ? "bg-white shadow-sm text-primary border border-gray-100"
                         : "text-inactive hover:text-gray-900"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -589,30 +589,34 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${
-                              rank === 1
+                            ${rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                            }`}
+                              }`}
                           >
                             {rank}
                           </div>
                         </td>
                         <td className="py-6 pl-4">
-                          <div className="w-14 h-14 rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
-                            <img
-                              src={product.image_url}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.src =
-                                  "https://via.placeholder.com/150?text=No+Image";
-                              }}
-                            />
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-transform duration-500 group-hover:scale-110 flex items-center justify-center bg-gray-50">
+                            {product.image_url ? (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`placeholder-icon ${product.image_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                              <ShoppingBasket className="w-8 h-8 text-gray-200" strokeWidth={1.5} />
+                            </div>
                           </div>
                         </td>
                         <td className="py-6 text-gray-900 font-black tracking-tight">
