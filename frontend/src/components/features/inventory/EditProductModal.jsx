@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Upload, Plus, Check, Trash2 } from "lucide-react";
+import { X, Calendar, Upload, Plus, Check, Trash2, AlertCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 import { productService } from "../../../services/productService";
 import BEDatePicker from "../../common/BEDatePicker";
@@ -10,6 +10,7 @@ const EditProductModal = ({
   product,
   onSave,
   activeBranchId,
+  products = [],
 }) => {
   const fileInputRef = React.useRef(null);
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ const EditProductModal = ({
     unit: "ชิ้น",
     productType: "general",
   });
+  const [errors, setErrors] = useState({});
 
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,12 +90,20 @@ const EditProductModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
+
+  if (!isOpen) return null;
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
@@ -344,32 +354,45 @@ const EditProductModal = ({
                 {/* Product Name */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
-                    <Check size={12} className="text-primary" /> ชื่อสินค้า
+                    <Check size={12} className={errors.name ? "text-rose-500" : "text-primary"} />
+                    ชื่อสินค้า <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
+                    className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.name ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
+                      }`}
                     placeholder="ระบุชื่อสินค้า"
                   />
+                  {errors.name && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">กรุณากรอกชื่อสินค้า</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   {/* Product ID */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
-                      <Plus size={12} className="text-primary" /> รหัสสินค้า
+                      <Plus size={12} className={errors.id ? "text-rose-500" : "text-primary"} />
+                      รหัสสินค้า <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="id"
                       value={formData.id}
                       onChange={handleChange}
-                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.id ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
+                        }`}
                       placeholder="รหัสสินค้า"
                     />
+                    {errors.id && (
+                      <p className="text-[10px] font-bold text-rose-500 px-1">กรุณากรอกรหัสสินค้า</p>
+                    )}
+                    {formData.id && products.some(p => p.barcode === formData.id && p.id !== product.id && p.name.trim() !== formData.name.trim()) && (
+                      <p className="text-[10px] font-bold text-rose-500 px-1">รหัสสินค้าซ้ำ</p>
+                    )}
                   </div>
 
                   {/* Category */}
@@ -385,7 +408,7 @@ const EditProductModal = ({
                         className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
                       >
                         <option value="">เลือกหมวดหมู่</option>
-                        {filteredCategories.map((cat) => (
+                        {(filteredCategories || []).map((cat) => (
                           <option key={cat.id} value={cat.id}>
                             {cat.name}
                           </option>
@@ -453,14 +476,19 @@ const EditProductModal = ({
                     <input
                       type="number"
                       step="any"
+                      min="0"
                       name="cost"
                       value={formData.cost}
                       onChange={handleChange}
-                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20 ${errors.cost ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/20"
+                        }`}
                       placeholder="0.00"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-black">THB</span>
                   </div>
+                  {errors.cost && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-400 block px-1">ราคาขาย</label>
@@ -468,16 +496,32 @@ const EditProductModal = ({
                     <input
                       type="number"
                       step="any"
+                      min="0"
                       name="price"
                       value={formData.price}
                       onChange={handleChange}
-                      className="w-full bg-emerald-50 text-emerald-600 border-none rounded-[16px] px-4 py-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all text-right pr-12 shadow-md shadow-emerald-200/20"
+                      className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[16px] px-4 py-3 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md shadow-emerald-200/20 ${errors.price ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/30"
+                        }`}
                       placeholder="0.00"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span>
                   </div>
+                  {errors.price && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
+                  )}
                 </div>
               </div>
+              {((Number(formData.cost) > Number(formData.price) && Number(formData.price) > 0) ||
+                (formData.cost !== "" && formData.price !== "" && Number(formData.cost) === 0 && Number(formData.price) === 0)) && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
+                    <AlertCircle size={14} className="text-amber-600" />
+                    <p className="text-[10px] font-bold text-amber-700">
+                      {Number(formData.cost) === 0 && Number(formData.price) === 0
+                        ? "ราคาทุนและราคาขายเป็น 0 โปรดตรวจสอบความถูกต้อง"
+                        : "ราคาทุนสูงกว่าราคาขาย โปรดตรวจสอบความถูกต้อง"}
+                    </p>
+                  </div>
+                )}
             </div>
 
             {/* Section: Inventory */}
@@ -494,14 +538,19 @@ const EditProductModal = ({
                     <input
                       type="number"
                       step="any"
+                      min="0"
                       name="qty"
                       value={formData.qty}
                       onChange={handleChange}
-                      className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12 shadow-sm"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.qty ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
+                        }`}
                       placeholder="0"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
                   </div>
+                  {errors.qty && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-400 block px-1 whitespace-nowrap overflow-hidden text-ellipsis italic">แจ้งเตือนขั้นต่ำ</label>
@@ -509,14 +558,19 @@ const EditProductModal = ({
                     <input
                       type="number"
                       step="any"
+                      min="0"
                       name="lowStockThreshold"
                       value={formData.lowStockThreshold}
                       onChange={handleChange}
-                      className="w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[16px] px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12 shadow-sm"
+                      className={`w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[16px] px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
+                        }`}
                       placeholder="0"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
                   </div>
+                  {errors.lowStockThreshold && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
+                  )}
                 </div>
               </div>
 
@@ -531,13 +585,43 @@ const EditProductModal = ({
                     onChange={handleChange}
                   />
                 </div>
+                {formData.exp && new Date(formData.exp).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
+                    <AlertCircle size={14} className="text-amber-600" />
+                    <p className="text-[10px] font-bold text-amber-700">
+                      วันที่เลือกเป็นวันที่ผ่านมาแล้ว โปรดตรวจสอบ
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="pt-2 flex justify-center">
               <button
-                onClick={() => onSave(formData)}
+                onClick={() => {
+                  const newErrors = {};
+                  if (!formData.name.trim()) newErrors.name = true;
+                  if (!formData.id.trim()) newErrors.id = true;
+
+                  // Duplicate barcode check with alert
+                  if (formData.id && products.some(p => p.barcode === formData.id && p.id !== product.id && p.name.trim() !== formData.name.trim())) {
+                    alert("รหัสสินค้าซ้ำ");
+                    return;
+                  }
+
+                  // Negative value validation
+                  if (formData.cost !== "" && Number(formData.cost) < 0) newErrors.cost = true;
+                  if (formData.price !== "" && Number(formData.price) < 0) newErrors.price = true;
+                  if (formData.qty !== "" && Number(formData.qty) < 0) newErrors.qty = true;
+                  if (formData.lowStockThreshold !== "" && Number(formData.lowStockThreshold) < 0) newErrors.lowStockThreshold = true;
+
+                  if (Object.keys(newErrors).length > 0) {
+                    setErrors(newErrors);
+                    return;
+                  }
+                  onSave(formData);
+                }}
                 disabled={isLoading}
                 className="group relative w-full bg-primary text-white text-base font-black py-4 rounded-[20px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
