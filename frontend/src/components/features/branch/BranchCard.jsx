@@ -128,7 +128,7 @@ export const BranchCard = ({
               }`}
           >
             <div
-              className={`w-11 h-11 shrink-0 rounded-[18px] flex items-center justify-center border shadow-sm group-hover:rotate-12 transition-all duration-500 mr-4 ${isDark
+              className={`w-11 h-11 shrink-0 rounded-[18px] flex items-center justify-center border shadow-sm group-hover:rotate-12 transition-all duration-500 mr-4 self-start ${isDark
                 ? "bg-primary/20 text-primary border-primary/30"
                 : "bg-white text-primary border-gray-100 shadow-inner-light"
                 }`}
@@ -136,12 +136,12 @@ export const BranchCard = ({
               <TrendingUp size={20} strokeWidth={2.5} />
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 min-w-0">
               <span className="text-[10px] font-black text-inactive uppercase tracking-[0.1em]">
                 ยอดขายวันนี้
               </span>
               <span
-                className={`text-2xl font-black tracking-tighter leading-none ${isDark ? "text-white" : "text-gray-900"}`}
+                className={`text-2xl font-black tracking-tighter leading-tight break-words ${isDark ? "text-white" : "text-gray-900"}`}
               >
                 ฿{salesToday.toLocaleString()}
               </span>
@@ -179,18 +179,18 @@ export const BranchCard = ({
         <div className="mt-auto relative z-10 w-full">
           <div
             className={`w-full py-4 px-4 sm:py-5 rounded-[24px] font-black text-[9px] sm:text-[10px] uppercase tracking-widest sm:tracking-[0.25em] flex items-center justify-center gap-2 sm:gap-4 relative overflow-hidden transition-all duration-500 shadow-xl hover:-translate-y-1.5 active:scale-95 group/btn cursor-pointer ${isOpen
-                ? isDark
-                  ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
-                  : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
-                : isDark
-                  ? "bg-gray-800 text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500"
-                  : "bg-gray-100 text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-gray-200"
+              ? isDark
+                ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
+                : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
+              : isDark
+                ? "bg-gray-800 text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500"
+                : "bg-gray-100 text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-gray-200"
               }`}
           >
             <div
               className={`absolute inset-0 bg-gradient-to-r ${isOpen
-                  ? isDark ? "from-white/10" : "from-primary/20"
-                  : isDark ? "from-white/5" : "from-gray-300/30"
+                ? isDark ? "from-white/10" : "from-primary/20"
+                : isDark ? "from-white/5" : "from-gray-300/30"
                 } to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500`}
             />
             <span className="relative z-10 flex-1 text-center truncate">{isOpen ? "เข้าสู่ระบบจัดการ" : "เข้าสู่ระบบจัดการ (ออฟไลน์)"}</span>

@@ -41,7 +41,13 @@ const storeService = {
 
   async getStoresSummary(storeIds) {
     if (!storeIds || storeIds.length === 0) return null;
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    // Use UTC+7 (Asia/Bangkok) explicitly to avoid server timezone issues
+    const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const nowUTC = Date.now();
+    const nowThai = new Date(nowUTC + TZ_OFFSET_MS);
+    const thaiDateStr = nowThai.toISOString().slice(0, 10); // 'YYYY-MM-DD' in Thai time
+    const todayStart = new Date(`${thaiDateStr}T00:00:00+07:00`);
+    const todayEnd = new Date(`${thaiDateStr}T23:59:59.999+07:00`);
     const { data: orders } = await supabase.from("orders").select("id, total_amount, store_id").in("store_id", storeIds).eq("payment_status", "paid").gte("created_at", todayStart.toISOString()).lte("created_at", todayEnd.toISOString());
     const totalSales = (orders || []).reduce((sum, o) => sum + (o.total_amount || 0), 0);
     const { count: totalOrders } = await supabase.from("orders").select("id", { count: "exact", head: true }).in("store_id", storeIds).neq("payment_status", "cancelled");
@@ -50,8 +56,15 @@ const storeService = {
   },
 
   async getStoreStats(storeId) {
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1); const yesterdayEnd = new Date(todayStart); yesterdayEnd.setMilliseconds(-1);
+    // Use UTC+7 (Asia/Bangkok) explicitly to avoid server timezone issues
+    const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const nowUTC = Date.now();
+    const nowThai = new Date(nowUTC + TZ_OFFSET_MS);
+    const thaiDateStr = nowThai.toISOString().slice(0, 10); // 'YYYY-MM-DD' in Thai time
+    const todayStart = new Date(`${thaiDateStr}T00:00:00+07:00`);
+    const todayEnd = new Date(`${thaiDateStr}T23:59:59.999+07:00`);
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayEnd = new Date(todayStart.getTime() - 1);
     const { data: todayOrders } = await supabase.from("orders").select("id, total_amount").eq("store_id", storeId).eq("payment_status", "paid").gte("created_at", todayStart.toISOString()).lte("created_at", todayEnd.toISOString());
     const { data: yesterdayOrders } = await supabase.from("orders").select("total_amount").eq("store_id", storeId).eq("payment_status", "paid").gte("created_at", yesterdayStart.toISOString()).lte("created_at", yesterdayEnd.toISOString());
     const { data: members } = await supabase.from("store_members").select("id").eq("store_id", storeId);
@@ -63,7 +76,7 @@ const storeService = {
 
   async updateLastAccessed(storeId) {
     if (!storeId) return;
-    try { await supabase.from("stores").update({ last_accessed_at: new Date().toISOString() }).eq("id", storeId); } catch (err) {}
+    try { await supabase.from("stores").update({ last_accessed_at: new Date().toISOString() }).eq("id", storeId); } catch (err) { }
   },
 };
 

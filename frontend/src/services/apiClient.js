@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-const API_URL = "http://localhost:5001/api";
+const API_URL = "http://127.0.0.1:5001/api";
 
 const getHeaders = async () => {
   try {
@@ -19,8 +19,18 @@ const getHeaders = async () => {
 };
 
 const fetchWithRetry = async (url, options, retries = 2) => {
+  const timeout = 15000; // 15 seconds timeout
+  
   try {
-    const response = await fetch(url, options);
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(id);
     
     // Handle transient 401 (e.g., during token refresh)
     if (response.status === 401 && retries > 0) {
@@ -36,6 +46,10 @@ const fetchWithRetry = async (url, options, retries = 2) => {
     }
     return response.json();
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error("Request timeout - The server is taking too long to respond");
+    }
+    
     // Retry on network errors like ERR_NETWORK_CHANGED or DNS/Fetch failures
     const isNetworkError = 
       error.name === "TypeError" || 
