@@ -30,6 +30,8 @@ const StockReportPage = () => {
 
   useEffect(() => {
     if (activeBranchId) {
+      setTransactions([]); // reset ก่อนเสมอ เพื่อไม่ให้ข้อมูลร้านเก่าค้าง
+      setSummary({ totalOut: 0, totalIn: 0, lowStockCount: 0 });
       fetchStockMovements();
     }
   }, [activeBranchId]);
@@ -99,11 +101,11 @@ const StockReportPage = () => {
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Out Items */}
-        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden">
-          <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm border border-rose-100 shrink-0">
+        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500 h-full">
+          <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm group-hover:rotate-6 transition-transform border border-rose-100 shrink-0">
             <TrendingDown size={28} strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="relative z-10">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
               สินค้าขายออก (ทั้งหมด)
             </p>
@@ -112,14 +114,15 @@ const StockReportPage = () => {
               <span className="text-lg font-black text-inactive">รายการ</span>
             </h3>
           </div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-rose-100/50 transition-colors" />
         </div>
 
-        {/* Total In Items (Placeholder for future) */}
-        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500">
+        {/* Total In Items */}
+        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500 h-full">
           <div className="bg-emerald-50 p-4 rounded-[22px] text-emerald-500 shadow-sm group-hover:rotate-6 transition-transform border border-emerald-100 shrink-0">
             <TrendingUp size={28} strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="relative z-10">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
               สินค้านำเข้า (ทั้งหมด)
             </p>
@@ -132,11 +135,11 @@ const StockReportPage = () => {
         </div>
 
         {/* Low Stock Counter */}
-        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500">
+        <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float transition-all duration-500 h-full">
           <div className="bg-amber-50 p-4 rounded-[22px] text-amber-500 shadow-sm group-hover:rotate-6 transition-transform border border-amber-100 shrink-0">
             <AlertCircle size={28} strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="relative z-10">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
               สินค้าใกล้หมดสต็อก
             </p>
@@ -195,15 +198,15 @@ const StockReportPage = () => {
         </div>
 
         <div className="overflow-x-auto -mx-8 px-8">
-          <table className="w-full text-left border-separate border-spacing-y-4">
+          <table className="w-full text-left border-separate border-spacing-y-4 table-fixed min-w-[900px]">
             <thead>
               <tr className="text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
-                <th className="pb-4 px-4 font-black">วัน/เวลา</th>
-                <th className="pb-4 px-4 font-black">รูป</th>
-                <th className="pb-4 px-4 font-black">สินค้า</th>
-                <th className="pb-4 px-4 font-black text-center">ประเภท</th>
-                <th className="pb-4 px-4 font-black text-right">จำนวน</th>
-                <th className="pb-4 px-4 font-black">หมายเหตุ</th>
+                <th className="pb-4 px-4 font-black w-[140px] text-center">วัน/เวลา</th>
+                <th className="pb-4 px-4 font-black w-[110px] text-center">รูป</th>
+                <th className="pb-4 pl-24 pr-4 font-black w-[300px] text-left">สินค้า</th>
+                <th className="pb-4 px-4 font-black text-center w-[120px]">ประเภท</th>
+                <th className="pb-4 px-4 font-black text-center w-[140px]">จำนวน</th>
+                <th className="pb-4 px-4 font-black text-center w-[200px]">หมายเหตุ</th>
               </tr>
             </thead>
             <tbody className="text-[#1B2559]">
@@ -213,46 +216,46 @@ const StockReportPage = () => {
                     key={tx.id}
                     className="group border-b border-gray-50 hover:bg-gray-50 transition-all duration-300"
                   >
-                    <td className="py-4 px-4 first-of-type:rounded-l-[20px]">
-                      <div className="font-black text-[#1B2559]">
-                        {new Date(tx.created_at).toLocaleTimeString("th-TH", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
-                        น.
-                      </div>
-                      <div className="text-[10px] text-inactive font-bold mt-1 uppercase tracking-tight">
-                        {new Date(tx.created_at).toLocaleDateString("th-TH", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                    <td className="py-4 px-4 first-of-type:rounded-l-[20px] align-middle text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="font-black text-[#1B2559] whitespace-nowrap">
+                          {new Date(tx.created_at).toLocaleTimeString("th-TH", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          น.
+                        </div>
+                        <div className="text-[10px] text-inactive font-bold mt-1 uppercase tracking-tight whitespace-nowrap">
+                          {new Date(tx.created_at).toLocaleDateString("th-TH", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center">
-                        {tx.imageUrl ? (
+                    <td className="py-4 px-4 align-middle text-center">
+                      <div className="flex justify-center">
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-md">
                           <img
                             src={tx.imageUrl}
                             alt={tx.product}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.target.style.display = "none";
-                              e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                              e.target.src = "https://via.placeholder.com/150";
                             }}
                           />
-                        ) : null}
-                        <div className={`placeholder-icon ${tx.imageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                          <ShoppingBasket className="w-8 h-8 text-gray-200" strokeWidth={1.5} />
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4 font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-                      {tx.product}
+                    <td className="py-4 pl-24 pr-4 align-middle">
+                      <div className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors line-clamp-1" title={tx.product}>
+                        {tx.product}
+                      </div>
                     </td>
-                    <td className="py-4 px-4 text-center">
+                    <td className="py-4 px-4 text-center align-middle">
                       <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
+                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap
                         ${tx.type === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : tx.type === "OUT"
@@ -268,7 +271,7 @@ const StockReportPage = () => {
                       </span>
                     </td>
                     <td
-                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
+                      className={`py-4 px-4 text-center font-black text-2xl tracking-tighter align-middle whitespace-nowrap ${tx.type === "OUT" ||
                         (tx.type === "ADJUST" && tx.qty < 0)
                         ? "text-rose-500"
                         : "text-emerald-500"
@@ -279,8 +282,10 @@ const StockReportPage = () => {
                         : "+"}
                       {Math.round(Math.abs(tx.qty)).toLocaleString()}
                     </td>
-                    <td className="py-4 px-4 text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px]">
-                      {tx.note}
+                    <td className="py-4 px-4 text-center text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px] align-middle">
+                      <div className="line-clamp-1" title={tx.note}>
+                        {tx.note}
+                      </div>
                     </td>
                   </tr>
                 ))
