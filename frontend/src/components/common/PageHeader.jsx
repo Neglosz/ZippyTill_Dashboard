@@ -30,8 +30,19 @@ export const PageHeader = ({
 };
 
 export const PageBackground = () => (
-  <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-    <div className="absolute bottom-[-10%] left-[-10%] w-[35%] h-[35%] bg-primary/5 rounded-full blur-[100px]" />
+  <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 bg-gray-50/50">
+    {/* Decorative Bubbles - Premium Theme */}
+    <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[150px] animate-pulse duration-[8000ms]" />
+    <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-400/5 rounded-full blur-[120px] animate-pulse duration-[6000ms]" />
+    <div className="absolute top-[30%] left-[20%] w-[30%] h-[30%] bg-blue-500/5 rounded-full blur-[100px] opacity-40" />
+    
+    {/* Grid Pattern Texture */}
+    <div 
+      className="absolute inset-0 opacity-[0.03]" 
+      style={{ 
+        backgroundImage: `radial-gradient(circle at 2px 2px, #000 1px, transparent 0)`,
+        backgroundSize: '32px 32px' 
+      }} 
+    />
   </div>
 );

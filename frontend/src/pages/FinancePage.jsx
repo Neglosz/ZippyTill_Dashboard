@@ -461,7 +461,7 @@ const FinancePage = () => {
         37,
       );
 
-      const tableData = transactions.map((tx) => [
+      const tableData = (transactions || []).map((tx) => [
         tx.displayName,
         tx.displaySubtitle,
         new Date(tx.created_at).toLocaleDateString("th-TH"),
@@ -645,10 +645,13 @@ const FinancePage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] w-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm font-bold text-inactive uppercase tracking-widest animate-pulse">
-            กำลังโหลดข้อมูล...
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative">
+            <div className="w-14 h-14 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+            <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl animate-pulse" />
+          </div>
+          <p className="text-base font-bold text-primary uppercase tracking-[0.2em] animate-pulse">
+            กำลังโหลดข้อมูล
           </p>
         </div>
       </div>
@@ -988,7 +991,17 @@ const FinancePage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {transactions.map((tx, index) => (
+                  {!(transactions && transactions.length > 0) ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="py-12 text-center text-inactive font-medium"
+                      >
+                        ไม่พบรายการเคลื่อนไหว
+                      </td>
+                    </tr>
+                  ) : (
+                    transactions.map((tx, index) => (
                     <tr
                       key={index}
                       className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}
@@ -1031,17 +1044,7 @@ const FinancePage = () => {
                         </span>
                       </td>
                     </tr>
-                  ))}
-                  {transactions.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="text-center py-8 text-inactive"
-                      >
-                        ไม่มีรายการล่าสุด
-                      </td>
-                    </tr>
-                  )}
+                  )))}
                 </tbody>
               </table>
             </div>

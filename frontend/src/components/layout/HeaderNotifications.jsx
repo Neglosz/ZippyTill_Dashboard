@@ -17,15 +17,25 @@ const HeaderNotifications = ({
     <div className="relative">
       <button
         onClick={() => setShowNotifications(!showNotifications)}
-        className={`relative p-3 rounded-xl transition-all duration-300 border ${
+        className={`relative p-3 rounded-2xl transition-all duration-500 shadow-sm border overflow-hidden group/notif ${
           showNotifications
-            ? "bg-primary/10 text-primary border-primary/20"
-            : "bg-gray-50 text-inactive hover:text-primary hover:bg-gray-100 hover:border-gray-200"
+            ? "bg-primary/10 text-primary border-primary/20 shadow-inner"
+            : "bg-white hover:bg-primary/5 border-gray-100 hover:border-primary/20 hover:shadow-md active:scale-95 cursor-pointer"
         }`}
       >
-        <Bell size={20} className={showNotifications ? "rotate-0" : ""} />
+        {/* Subtle glow effect on hover */}
+        <div className={`absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover/notif:opacity-100 transition-opacity duration-500 ${showNotifications ? "opacity-100" : ""}`} />
+        
+        <Bell 
+          size={18} 
+          strokeWidth={2.5} 
+          className={`relative z-10 transition-all duration-500 ${
+            showNotifications ? "text-primary scale-110" : "text-gray-500 group-hover/notif:text-primary"
+          }`} 
+        />
+        
         {notifications.length > 0 && (
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+          <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-primary rounded-full border-2 border-white z-20 shadow-[0_0_8px_rgba(237,113,23,0.5)] animate-pulse" />
         )}
       </button>
       <NotificationDropdown

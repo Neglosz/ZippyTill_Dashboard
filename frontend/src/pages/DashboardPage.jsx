@@ -90,14 +90,14 @@ const DashboardPage = () => {
             fn: () => creditService.getOverdueItems(activeBranchId),
             setter: (items) => {
               // Calculate outstanding balance and unique customers
-              const totalOutstanding = items.reduce(
+              const totalOutstanding = (items || []).reduce(
                 (sum, item) => sum + (item.amount || 0),
                 0,
               );
               const uniqueCustomers = [
-                ...new Set(items.map((i) => i.customerId)),
+                ...new Set((items || []).map((i) => i.customerId)),
               ];
-              const customerAvatars = items
+              const customerAvatars = (items || [])
                 .slice(0, 4)
                 .map(
                   (i) =>
@@ -226,10 +226,13 @@ const DashboardPage = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] w-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm font-bold text-inactive uppercase tracking-widest animate-pulse">
-            กำลังโหลดข้อมูล...
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative">
+            <div className="w-14 h-14 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+            <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl animate-pulse" />
+          </div>
+          <p className="text-base font-bold text-primary uppercase tracking-[0.2em] animate-pulse">
+            กำลังโหลดข้อมูล
           </p>
         </div>
       </div>
@@ -779,7 +782,7 @@ const DashboardPage = () => {
                       <div
                         className="w-2.5 bg-primary rounded-full absolute bottom-0 transition-all duration-1000 ease-out shadow-md group-hover/bar:bg-primary/80"
                         style={{
-                          height: `${Math.min(100, (item.value / (Math.max(...weeklyAnalytics.chartData.map((d) => d.value)) || 1)) * 100)}%`,
+                          height: `${Math.min(100, (item.value / (Math.max(...(weeklyAnalytics.chartData || []).map((d) => d.value)) || 1)) * 100)}%`,
                         }}
                       />
                     </div>
