@@ -69,10 +69,10 @@ const DebtorDetailModal = ({
   };
 
   const handlePhoneChange = (e) => {
-    const rawValue = e.target.value.replace(/\D/g, "");
+    const rawValue = e.target.value.replace(/\D/g, "").slice(0, 10);
     let formatted = rawValue;
     if (rawValue.length > 6) {
-      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3, 6)}-${rawValue.slice(6, 10)}`;
+      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3, 6)}-${rawValue.slice(6)}`;
     } else if (rawValue.length > 3) {
       formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3)}`;
     }
@@ -81,6 +81,11 @@ const DebtorDetailModal = ({
 
   const handleSave = async () => {
     if (!onSave || !item) return;
+    const phoneDigits = (editForm.phone || "").replace(/\D/g, "");
+    if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+      alert("กรุณาใส่เบอร์โทรศัพท์ให้ครบ 10 หลัก");
+      return;
+    }
     setIsSaving(true);
     try {
       await onSave(item.customerId, {
@@ -214,11 +219,10 @@ const DebtorDetailModal = ({
                 <div className="flex gap-8">
                   <button
                     onClick={() => setActiveTab("info")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${
-                      activeTab === "info"
-                        ? "text-primary"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative ${activeTab === "info"
+                      ? "text-primary"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     ข้อมูลทั่วไป
                     {activeTab === "info" && (
@@ -227,19 +231,17 @@ const DebtorDetailModal = ({
                   </button>
                   <button
                     onClick={() => setActiveTab("bills")}
-                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${
-                      activeTab === "bills"
-                        ? "text-primary"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`pb-5 px-3 font-bold text-base transition-all duration-300 relative flex items-center gap-2.5 ${activeTab === "bills"
+                      ? "text-primary"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     รายการใบแจ้งหนี้
                     <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${
-                        activeTab === "bills"
-                          ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300 ${activeTab === "bills"
+                        ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/30"
+                        : "bg-gray-200 text-gray-600"
+                        }`}
                     >
                       {bills.length}
                     </span>
@@ -295,9 +297,9 @@ const DebtorDetailModal = ({
                           {!isEditing &&
                             getStatusBadge(
                               item.status ||
-                                (item.maxOverdueDays > 0
-                                  ? "เกินกำหนด"
-                                  : "ค้างชำระ"),
+                              (item.maxOverdueDays > 0
+                                ? "เกินกำหนด"
+                                : "ค้างชำระ"),
                               item.overdueDays || item.maxOverdueDays,
                             )}
                         </div>
@@ -337,8 +339,8 @@ const DebtorDetailModal = ({
                             </div>
                             {item.phone
                               ? item.phone
-                                  .replace(/\D/g, "")
-                                  .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
+                                .replace(/\D/g, "")
+                                .replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")
                               : "-"}
                           </div>
                         )}
@@ -511,48 +513,48 @@ const DebtorDetailModal = ({
         transaction={
           selectedBill
             ? {
-                receiptNo: selectedBill.orderNo || "-",
-                date: new Date(
-                  selectedBill.createdAt || selectedBill.dueDate,
-                ).toLocaleDateString("th-TH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                }),
-                paymentMethod: "เครดิต",
-                items: isLoadingDetails
-                  ? [
-                      {
-                        name: "กำลังโหลด...",
-                        quantity: 0,
-                        price: 0,
-                        subtotal: 0,
-                      },
-                    ]
-                  : fullOrderData?.order_items?.map((detail) => ({
-                      name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                      quantity: detail.qty,
-                      unit: detail.products?.unit_type,
-                      price: detail.price_per_unit,
-                      subtotal: detail.subtotal,
-                    })) || [
-                      {
-                        name: `รายการ #${selectedBill.orderNo}`,
-                        quantity: 1,
-                        unit: "ชิ้น",
-                        price: Number(selectedBill.amount),
-                        subtotal: Number(selectedBill.amount),
-                      },
-                    ],
-                total: Number(selectedBill.amount),
-                received: 0,
-                change: 0,
-                store: {
-                  name: item?.name || "ลูกค้า",
-                  address: "-",
-                  phone: item?.phone || "-",
-                },
-              }
+              receiptNo: selectedBill.orderNo || "-",
+              date: new Date(
+                selectedBill.createdAt || selectedBill.dueDate,
+              ).toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+              paymentMethod: "เครดิต",
+              items: isLoadingDetails
+                ? [
+                  {
+                    name: "กำลังโหลด...",
+                    quantity: 0,
+                    price: 0,
+                    subtotal: 0,
+                  },
+                ]
+                : fullOrderData?.order_items?.map((detail) => ({
+                  name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                  quantity: detail.qty,
+                  unit: detail.products?.unit_type,
+                  price: detail.price_per_unit,
+                  subtotal: detail.subtotal,
+                })) || [
+                  {
+                    name: `รายการ #${selectedBill.orderNo}`,
+                    quantity: 1,
+                    unit: "ชิ้น",
+                    price: Number(selectedBill.amount),
+                    subtotal: Number(selectedBill.amount),
+                  },
+                ],
+              total: Number(selectedBill.amount),
+              received: 0,
+              change: 0,
+              store: {
+                name: item?.name || "ลูกค้า",
+                address: "-",
+                phone: item?.phone || "-",
+              },
+            }
             : null
         }
         onClose={() => setSelectedBill(null)}

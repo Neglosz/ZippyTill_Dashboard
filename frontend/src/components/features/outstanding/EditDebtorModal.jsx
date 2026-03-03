@@ -14,14 +14,14 @@ const EditDebtorModal = ({ item, isOpen, onClose, onSave }) => {
   };
 
   const handlePhoneChange = (e) => {
-    const rawValue = e.target.value.replace(/\D/g, "");
+    const rawValue = e.target.value.replace(/\D/g, "").slice(0, 10);
     let formattedValue = rawValue;
 
     if (rawValue.length > 6) {
       formattedValue = `${rawValue.slice(0, 3)}-${rawValue.slice(
         3,
         6
-      )}-${rawValue.slice(6, 10)}`;
+      )}-${rawValue.slice(6)}`;
     } else if (rawValue.length > 3) {
       formattedValue = `${rawValue.slice(0, 3)}-${rawValue.slice(3)}`;
     }
@@ -31,6 +31,11 @@ const EditDebtorModal = ({ item, isOpen, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const phoneDigits = (formData.phone || "").replace(/\D/g, "");
+    if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+      alert("กรุณาใส่เบอร์โทรศัพท์ให้ครบ 10 หลัก");
+      return;
+    }
     onSave(formData);
   };
 
