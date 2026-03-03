@@ -4,7 +4,6 @@ import { X, AlertTriangle, Calendar, Clock, Package, Bell } from "lucide-react";
 const SystemNotificationModal = ({ isOpen, onClose, data }) => {
   if (!isOpen) return null;
 
-  const { expired = [], expiringSoon = [], lowStock = [] } = data;
   const totalItems = expired.length + expiringSoon.length + lowStock.length;
 
   if (totalItems === 0) return null;

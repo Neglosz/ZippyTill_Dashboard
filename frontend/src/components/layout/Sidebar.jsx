@@ -11,9 +11,11 @@ import {
   Sparkles,
   LogOut,
 } from "lucide-react";
+import ConfirmModal from "../modals/ConfirmModal";
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const menuItems = [
     {
       id: "dashboard",
@@ -118,7 +120,7 @@ const Sidebar = () => {
       <div className="p-4">
         <button
           className="flex items-center gap-4 px-6 py-4 w-full text-inactive hover:text-white bg-gray-50 hover:bg-primary rounded-2xl text-sm font-black transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 group border border-transparent hover:border-primary/20"
-          onClick={handleSignOut}
+          onClick={() => setShowLogoutConfirm(true)}
         >
           <LogOut
             size={20}
@@ -128,6 +130,16 @@ const Sidebar = () => {
           <span className="tracking-tight">ออกจากระบบ</span>
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleSignOut}
+        title="ออกจากระบบ"
+        message="คุณต้องการออกจากระบบใช่หรือไม่?"
+        confirmText="ออกจากระบบ"
+        isDestructive={true}
+      />
     </aside>
   );
 };

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import SimpleHeader from "../components/layout/SimpleHeader";
 import SummaryCard from "../components/common/SummaryCard";
 import BranchCard from "../components/features/branch/BranchCard";
@@ -17,19 +17,51 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  WifiOff,
 } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const BranchSelectionPage = () => {
   const { selectBranch } = useBranch();
   const navigate = useNavigate();
+  const location = useLocation();
   const scrollRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState([]);
   const [storeStats, setStoreStats] = useState({});
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [showError, setShowError] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
   const [lastAccessedBranchId, setLastAccessedBranchId] = useState(() => {
     return localStorage.getItem("last_accessed_branch_id");
   });
+
+  useEffect(() => {
+    if (location.state?.error === "unauthorized") {
+      setShowError(true);
+      window.history.replaceState({}, document.title);
+
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
+
+  // Network Status Detection
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -92,44 +124,78 @@ const BranchSelectionPage = () => {
     totalSales: 0,
     totalOrders: 0,
   });
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const fetchStoresData = useCallback(async (isInitial = false) => {
+    try {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const userStores = await storeService.getUserStores(user.id);
+
+        // storeService sorts by last_accessed_at already — no manual sort needed
+        setStores(userStores);
+
+        // Fetch aggregate summary + per-store stats
+        if (userStores.length > 0) {
+          const storeIds = userStores.map((s) => s.id);
+
+          const [aggregateStats, ...perStoreResults] = await Promise.all([
+            storeService.getStoresSummary(storeIds),
+            ...storeIds.map((id) => storeService.getStoreStats(id)),
+          ]);
+
+          if (aggregateStats) setSummary(aggregateStats);
+
+          const statsMap = {};
+          storeIds.forEach((id, idx) => {
+            statsMap[id] = perStoreResults[idx];
+          });
+          setStoreStats(statsMap);
+        }
+      }
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching stores:", error);
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchStoresData = async () => {
-      try {
-        const user = await authService.getCurrentUser();
-        if (user) {
-          const userStores = await storeService.getUserStores(user.id);
+    let isMounted = true;
 
-          // storeService sorts by last_accessed_at already — no manual sort needed
-          setStores(userStores);
+    // Initial data fetch with loading state
+    fetchStoresData(true);
 
-          // Fetch aggregate summary + per-store stats
-          if (userStores.length > 0) {
-            const storeIds = userStores.map((s) => s.id);
-
-            const [aggregateStats, ...perStoreResults] = await Promise.all([
-              storeService.getStoresSummary(storeIds),
-              ...storeIds.map((id) => storeService.getStoreStats(id)),
-            ]);
-
-            if (aggregateStats) setSummary(aggregateStats);
-
-            const statsMap = {};
-            storeIds.forEach((id, idx) => {
-              statsMap[id] = perStoreResults[idx];
-            });
-            setStoreStats(statsMap);
+    // Setup Supabase Realtime Subscription for 'orders' table
+    // Instantly refreshes the dashboard sales/orders summary across all stores without refreshing the page
+    const ordersSubscription = supabase
+      .channel("branch-selection-orders")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => {
+          if (isMounted) {
+            console.log("Real-time: Sales updated, refreshing dashboard.");
+            fetchStoresData(false);
           }
-        }
-      } catch (error) {
-        console.error("Error fetching stores:", error);
-      } finally {
-        setLoading(false);
+        },
+      )
+      .subscribe();
+
+    // Fallback auto-refresh interval (polling) every 3 minutes
+    const intervalId = setInterval(() => {
+      if (isMounted) fetchStoresData(false);
+    }, 180000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+      if (ordersSubscription) {
+        supabase.removeChannel(ordersSubscription);
       }
     };
-
-    fetchStoresData();
-  }, []);
+  }, [fetchStoresData]);
 
   const summaryData = [
     {
@@ -157,13 +223,38 @@ const BranchSelectionPage = () => {
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-500/5 rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative z-10 w-full">
+      <div className="relative z-50 w-full">
         <SimpleHeader isDark={false} />
       </div>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-6 lg:px-14 lg:py-8 flex flex-col items-center relative z-10">
         {/* Page Title Section */}
         <div className="text-center mb-8 w-full max-w-2xl">
+          {showError && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-600 animate-in slide-in-from-top-4 fade-in duration-300 shadow-sm max-w-md mx-auto">
+              <AlertCircle className="w-6 h-6 shrink-0" />
+              <div className="text-left">
+                <p className="font-black text-sm">ไม่มีสิทธิ์เข้าถึงสาขา</p>
+                <p className="text-xs font-bold opacity-80 mt-0.5">
+                  คุณพยายามเข้าถึงสาขาที่ไม่มีสิทธิ์ กรุณาเลือกสาขาใหม่
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isOffline && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl flex items-center gap-3 text-orange-600 animate-in slide-in-from-top-4 fade-in duration-300 shadow-sm max-w-md mx-auto">
+              <WifiOff className="w-6 h-6 shrink-0" />
+              <div className="text-left">
+                <p className="font-black text-sm">
+                  ขาดการเชื่อมต่ออินเทอร์เน็ต
+                </p>
+                <p className="text-xs font-bold opacity-80 mt-0.5">
+                  โปรดตรวจสอบการเชื่อมต่อของคุณ ข้อมูลอาจไม่เป็นปัจจุบัน
+                </p>
+              </div>
+            </div>
+          )}
           <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6 tracking-tighter leading-tight">
             เลือกสาขาที่จัดการ
           </h2>
@@ -249,9 +340,16 @@ const BranchSelectionPage = () => {
                         branch.image_url ||
                         "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop"
                       }
-                      onSelect={() => handleSelect(branch)}
+                      onSelect={() => {
+                        if (!isOffline) handleSelect(branch);
+                      }}
                       isOpen={branch.is_active}
                       isDark={false}
+                      className={
+                        isOffline
+                          ? "opacity-50 grayscale pointer-events-none"
+                          : ""
+                      }
                     />
                   </div>
                 ))}
@@ -303,9 +401,10 @@ const BranchSelectionPage = () => {
           <span className="text-gray-200">|</span>
           <span>
             อัพเดทล่าสุด:{" "}
-            {new Date().toLocaleTimeString("th-TH", {
+            {lastUpdated.toLocaleTimeString("th-TH", {
               hour: "2-digit",
               minute: "2-digit",
+              second: "2-digit",
             })}{" "}
             น.
           </span>

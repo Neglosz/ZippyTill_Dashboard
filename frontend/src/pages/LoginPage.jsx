@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Box, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { authService } from "../services/authService";
 import TextInput from "../components/common/TextInput";
 import SubmitButton from "../components/common/SubmitButton";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,38 @@ const LoginPage = () => {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(null);
   const [countdown, setCountdown] = useState(0);
+
+  // Check for URL errors (e.g., expired reset link)
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+
+    const errorCode =
+      searchParams.get("error_code") || hashParams.get("error_code");
+    const errorDesc =
+      searchParams.get("error_description") ||
+      hashParams.get("error_description");
+
+    if (errorCode || errorDesc) {
+      let displayError = errorDesc
+        ? decodeURIComponent(errorDesc).replace(/\+/g, " ")
+        : "เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์";
+
+      // Specifically handle the expired/used token case
+      if (
+        displayError.toLowerCase().includes("expired") ||
+        displayError.toLowerCase().includes("invalid") ||
+        displayError.toLowerCase().includes("used")
+      ) {
+        displayError = "ลิงก์หมดอายุ หรือถูกใช้งานไปแล้ว (link expired/used)";
+      }
+
+      setError(displayError);
+
+      // Clean up the URL to prevent showing the error again on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   // Timer effect for lockdown countdown
   React.useEffect(() => {
@@ -96,26 +129,26 @@ const LoginPage = () => {
           {/* Header / Logo */}
           <div className="group/logo cursor-pointer">
             <div className="flex items-center gap-5 mb-16 lg:mb-24">
-              <div className="bg-primary text-white font-bold h-14 w-14 flex items-center justify-center rounded-xl text-3xl transition-colors duration-500">
+              <div className="bg-primary text-white font-bold h-16 w-16 flex items-center justify-center rounded-xl text-4xl transition-colors duration-500">
                 Z
               </div>
-              <h1 className="text-3xl lg:text-5xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-gray-900">
                 Zippy Till
               </h1>
             </div>
 
             <div className="mb-16 lg:mb-24">
-              <h2 className="text-4xl lg:text-6xl font-bold mb-8 leading-[1.1] tracking-tight text-gray-900">
+              <h2 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight text-gray-900">
                 จัดการคลังสินค้า
                 <br className="hidden lg:block" />
                 <span className="lg:inline block text-inactive">
                   ที่ทรงพลังและชัดเจน
                 </span>
               </h2>
-              <div className="w-16 h-1.5 bg-primary/20 rounded-full mb-8">
+              <div className="w-20 h-2 bg-primary/20 rounded-full mb-8">
                 <div className="h-full bg-primary w-full" />
               </div>
-              <p className="text-gray-500 text-base lg:text-lg max-w-md leading-relaxed font-medium">
+              <p className="text-gray-500 text-lg lg:text-xl max-w-lg leading-relaxed font-medium">
                 ยกระดับธุรกิจของคุณด้วยระบบ POS ระดับพรีเมียม
                 ที่มาพร้อมกับดีไซน์ที่ล้ำสมัยและการใช้งานที่ทรงประสิทธิภาพ
               </p>
@@ -123,18 +156,18 @@ const LoginPage = () => {
 
             <div className="flex gap-16 lg:gap-24 mb-16">
               <div className="group/stat">
-                <p className="text-4xl lg:text-6xl font-bold tracking-tight text-primary">
+                <p className="text-5xl lg:text-7xl font-bold tracking-tight text-primary">
                   670+
                 </p>
-                <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
+                <p className="text-xs font-bold text-inactive uppercase tracking-wider mt-2">
                   ธุรกิจที่ไว้วางใจ
                 </p>
               </div>
               <div className="group/stat">
-                <p className="text-4xl lg:text-6xl font-bold tracking-tight text-gray-900">
+                <p className="text-5xl lg:text-7xl font-bold tracking-tight text-gray-900">
                   24/7
                 </p>
-                <p className="text-[11px] font-bold text-inactive uppercase tracking-wider mt-2">
+                <p className="text-xs font-bold text-inactive uppercase tracking-wider mt-2">
                   ซัพพอร์ตจากผู้เชี่ยวชาญ
                 </p>
               </div>
@@ -173,7 +206,7 @@ const LoginPage = () => {
           </div>
 
           {(error || lockoutUntil) && (
-            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-[10px] font-bold rounded-2xl flex items-center gap-3">
+            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-500 text-sm font-bold rounded-2xl flex items-center gap-3">
               <div className="shrink-0 w-2 h-2 rounded-full bg-rose-500"></div>
               {lockoutUntil ? (
                 <span>
@@ -213,7 +246,7 @@ const LoginPage = () => {
               rightElement={
                 <Link
                   to="/reset-password"
-                  className={`text-[10px] font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all ${lockoutUntil !== null ? "pointer-events-none opacity-50" : ""}`}
+                  className={`text-xs font-bold text-inactive hover:text-primary uppercase tracking-wider transition-all ${lockoutUntil !== null ? "pointer-events-none opacity-50" : ""}`}
                 >
                   ลืมรหัสผ่าน?
                 </Link>
