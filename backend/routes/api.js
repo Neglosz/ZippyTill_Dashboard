@@ -56,6 +56,7 @@ router.get("/credit/recovery-rate", creditController.getRecoveryRate);
 router.get("/promotions", promotionController.getPromotions);
 router.get("/promotions/:id", promotionController.getPromotionDetails);
 router.post("/promotions", promotionController.createPromotion);
+router.delete("/promotions/:id", promotionController.deletePromotion);
 
 // Sale Routes
 router.get("/sales/top-selling", saleController.getTopSellingProducts);

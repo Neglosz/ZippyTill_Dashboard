@@ -504,6 +504,15 @@ const AIPromotionPage = () => {
           onPromotionCreated={handlePromotionCreated}
         />
 
+        <PromotionDetailModal
+          promo={selectedPromo}
+          onClose={() => setSelectedPromo(null)}
+          onDeleteSuccess={() => {
+            fetchPromos();
+            fetchChartData();
+          }}
+        />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
@@ -556,11 +565,10 @@ const AIPromotionPage = () => {
                 <button
                   onClick={handleRefreshRecs}
                   disabled={isRecLoading}
-                  className={`p-2 rounded-xl transition-all duration-300 flex items-center justify-center ${
-                    isRecLoading
+                  className={`p-2 rounded-xl transition-all duration-300 flex items-center justify-center ${isRecLoading
                       ? "text-gray-300 cursor-not-allowed"
                       : "text-inactive hover:text-primary hover:bg-primary/10 hover:rotate-180"
-                  }`}
+                    }`}
                   title="โหลดคำแนะนำใหม่"
                 >
                   <RotateCw

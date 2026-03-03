@@ -228,7 +228,7 @@ const SalesPage = () => {
                 </p>
               </div>
               <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
-                {["1D", "1W", "1M", "Max"].map((range) => (
+                {["1D", "1W", "1M", "1Y"].map((range) => (
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}

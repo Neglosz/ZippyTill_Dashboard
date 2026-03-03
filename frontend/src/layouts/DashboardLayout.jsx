@@ -15,7 +15,11 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     const verifyAccess = async () => {
-      if (!activeBranchId) {
+      // Use branch ID from context, fallback to sessionStorage to prevent white screen on refresh/fast-nav
+      const currentBranchId = activeBranchId || sessionStorage.getItem("selected_branch_id");
+      
+      if (!currentBranchId) {
+        console.warn("Dashboard: No active branch ID found, redirecting to selection.");
         navigate("/select-branch", { replace: true });
         return;
       }
@@ -28,9 +32,13 @@ const DashboardLayout = () => {
         }
 
         const stores = await storeService.getUserStores(user.id);
-        const hasAccess = stores.some((store) => store.id === activeBranchId);
+        
+        // Ensure stores is an array before calling .some()
+        const storesList = Array.isArray(stores) ? stores : [];
+        const hasAccess = storesList.some((store) => store.id === currentBranchId);
 
         if (!hasAccess) {
+          console.error("Dashboard: Access denied for branch:", currentBranchId);
           clearBranch();
           navigate("/select-branch", {
             replace: true,
@@ -39,6 +47,8 @@ const DashboardLayout = () => {
         }
       } catch (error) {
         console.error("Error verifying branch access:", error);
+        // If it's a network error or something similar, we might still want to show the dashboard
+        // if we have local data, but for security we stay verifying until it works or fails hard.
       } finally {
         setIsVerifying(false);
       }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Target, Calendar, Package } from "lucide-react";
+import { Plus, Target, Calendar, Package, Trash2, AlertCircle } from "lucide-react";
 import { promotionService } from "../../../services/promotionService";
 
 // ─── Helper utilities ───────────────────────────────────────────────
@@ -99,9 +99,11 @@ const getTimeRemaining = (createdAt, endDate) => {
 };
 
 // ─── Component ────────────────────────────────────────────────────────
-const PromotionDetailModal = ({ promo, onClose }) => {
+const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
   const [promoProducts, setPromoProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [, setTick] = useState(0);
 
   // live countdown ticker
@@ -119,7 +121,7 @@ const PromotionDetailModal = ({ promo, onClose }) => {
         const data = await promotionService.getPromotionDetails(promo.id);
         setPromoProducts(
           data?.promotion_items?.map((item) => item.product).filter(Boolean) ||
-            [],
+          [],
         );
       } catch (e) {
         console.error("PromotionDetailModal fetch error:", e);
@@ -130,6 +132,23 @@ const PromotionDetailModal = ({ promo, onClose }) => {
     };
     fetch();
   }, [promo?.id]);
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await promotionService.deletePromotion(promo.id);
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete promotion:", error);
+      alert("ไม่สามารถลบโปรโมชั่นได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsDeleting(false);
+      setShowConfirmDelete(false);
+    }
+  };
 
   if (!promo) return null;
 
@@ -171,12 +190,22 @@ const PromotionDetailModal = ({ promo, onClose }) => {
                 </p>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm shrink-0"
-            >
-              <Plus size={20} className="rotate-45" />
-            </button>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-red-500 hover:bg-red-50 transition-all border border-red-100 shadow-sm shrink-0"
+                title="ลบโปรโมชั่น"
+              >
+                <Trash2 size={20} />
+              </button>
+              <button
+                onClick={onClose}
+                className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm shrink-0"
+                title="ปิด"
+              >
+                <Plus size={20} className="rotate-45" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -280,6 +309,46 @@ const PromotionDetailModal = ({ promo, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6 text-center animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">
+              ยืนยันการลบโปรโมชั่น?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              การลบโปรโมชั่นไม่สามารถกู้คืนได้ และจะหยุดให้ส่วนลดทันที
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>กำลังลบ...</span>
+                  </>
+                ) : (
+                  <span>ยืนยันลบ</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

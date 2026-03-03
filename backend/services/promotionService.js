@@ -36,6 +36,27 @@ const promotionService = {
     } catch (error) { throw error; }
   },
 
+  deletePromotion: async (promotionId) => {
+    if (!promotionId) throw new Error("Promotion ID is required");
+    try {
+      // First delete all promotion items to avoid foreign key constraints
+      const { error: itemsError } = await supabase
+        .from("promotion_items")
+        .delete()
+        .eq("promotion_id", promotionId);
+      if (itemsError) throw itemsError;
+
+      // Then delete the promotion itself
+      const { error: promoError } = await supabase
+        .from("promotions")
+        .delete()
+        .eq("id", promotionId);
+      if (promoError) throw promoError;
+
+      return true;
+    } catch (error) { throw error; }
+  },
+
   calculateEfficiency: (items, totalSales) => {
     return Math.floor(Math.random() * 40) + 60;
   },

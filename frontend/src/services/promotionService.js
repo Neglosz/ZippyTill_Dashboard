@@ -13,6 +13,10 @@ export const promotionService = {
     return apiClient.post("/promotions", { promoData, products });
   },
 
+  deletePromotion: async (promotionId) => {
+    return apiClient.delete(`/promotions/${promotionId}`);
+  },
+
   calculateEfficiency: (items, totalSales) => {
     return Math.floor(Math.random() * 40) + 60;
   },
