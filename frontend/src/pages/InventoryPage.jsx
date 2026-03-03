@@ -141,6 +141,7 @@ const InventoryPage = () => {
 
   useEffect(() => {
     if (activeBranchId) {
+      setActiveTab("products"); // reset tab เมื่อเปลี่ยนร้าน
       fetchProducts();
       fetchCategories();
     }
