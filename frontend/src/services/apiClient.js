@@ -3,74 +3,91 @@ import { supabase } from "../lib/supabase";
 const API_URL = "http://localhost:5001/api";
 
 const getHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (session?.access_token) {
-    headers["Authorization"] = `Bearer ${session.access_token}`;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+    return headers;
+  } catch (error) {
+    console.error("apiClient: Error getting auth session", error);
+    return { "Content-Type": "application/json" };
   }
+};
 
-  return headers;
+const fetchWithRetry = async (url, options, retries = 2) => {
+  try {
+    const response = await fetch(url, options);
+    
+    // Handle transient 401 (e.g., during token refresh)
+    if (response.status === 401 && retries > 0) {
+      console.warn("apiClient: 401 Unauthorized, retrying after delay...");
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const newHeaders = await getHeaders();
+      return fetchWithRetry(url, { ...options, headers: newHeaders }, retries - 1);
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Something went wrong" }));
+      throw new Error(error.message || error.error || "Something went wrong");
+    }
+    return response.json();
+  } catch (error) {
+    // Retry on network errors like ERR_NETWORK_CHANGED or DNS/Fetch failures
+    const isNetworkError = 
+      error.name === "TypeError" || 
+      error.message.toLowerCase().includes("fetch") || 
+      error.message.toLowerCase().includes("network") ||
+      error.message.toLowerCase().includes("failed");
+
+    if (retries > 0 && isNetworkError) {
+      console.warn(`apiClient: Network error (${error.message}), retrying... (${retries} left)`);
+      // Wait longer between retries to allow network to stabilize
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Re-fetch headers to ensure token is still valid
+      const freshHeaders = await getHeaders();
+      return fetchWithRetry(url, { ...options, headers: freshHeaders }, retries - 1);
+    }
+    throw error;
+  }
 };
 
 export const apiClient = {
   async get(endpoint) {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    return fetchWithRetry(`${API_URL}${endpoint}`, {
+      method: "GET",
       headers,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || error.error || "Something went wrong");
-    }
-    return response.json();
   },
 
   async post(endpoint, body) {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    return fetchWithRetry(`${API_URL}${endpoint}`, {
       method: "POST",
       headers,
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || error.error || "Something went wrong");
-    }
-    return response.json();
   },
 
   async put(endpoint, body) {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    return fetchWithRetry(`${API_URL}${endpoint}`, {
       method: "PUT",
       headers,
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || error.error || "Something went wrong");
-    }
-    return response.json();
   },
 
   async delete(endpoint, body) {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    return fetchWithRetry(`${API_URL}${endpoint}`, {
       method: "DELETE",
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || error.error || "Something went wrong");
-    }
-    return response.json();
   },
 };

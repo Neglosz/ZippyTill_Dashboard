@@ -152,31 +152,46 @@ const BranchSelectionPage = () => {
   });
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] gap-5">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+          <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl animate-pulse" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-base font-bold text-primary uppercase tracking-[0.2em] animate-pulse">
+            กำลังโหลดข้อมูล
+          </p>
+          <div className="flex gap-1">
+            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+            <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const fetchStoresData = useCallback(async (isInitial = false) => {
     try {
       const user = await authService.getCurrentUser();
       if (user) {
-        const userStores = await storeService.getUserStores(user.id);
+        const userStores = (await storeService.getUserStores(user.id)) || [];
 
         // storeService sorts by last_accessed_at already — no manual sort needed
         setStores(userStores);
 
-        // Fetch aggregate summary + per-store stats
-        if (userStores.length > 0) {
+        // Fetch aggregate summary only to avoid network congestion
+        if (userStores && userStores.length > 0) {
           const storeIds = userStores.map((s) => s.id);
 
-          const [aggregateStats, ...perStoreResults] = await Promise.all([
-            storeService.getStoresSummary(storeIds),
-            ...storeIds.map((id) => storeService.getStoreStats(id)),
-          ]);
-
-          if (aggregateStats) setSummary(aggregateStats);
-
-          const statsMap = {};
-          storeIds.forEach((id, idx) => {
-            statsMap[id] = perStoreResults[idx];
-          });
-          setStoreStats(statsMap);
+          try {
+            const aggregateStats = await storeService.getStoresSummary(storeIds);
+            if (aggregateStats) setSummary(aggregateStats);
+          } catch (err) {
+            console.error("Error fetching summary stats:", err);
+          }
         }
       }
       setLastUpdated(new Date());
@@ -189,9 +204,17 @@ const BranchSelectionPage = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let isFetching = false;
+
+    const debouncedFetch = async (isInitial = false) => {
+      if (!isMounted || isFetching) return;
+      isFetching = true;
+      await fetchStoresData(isInitial);
+      isFetching = false;
+    };
 
     // Initial data fetch with loading state
-    fetchStoresData(true);
+    debouncedFetch(true);
 
     // Setup Supabase Realtime Subscription for 'orders' table
     // Instantly refreshes the dashboard sales/orders summary across all stores without refreshing the page
@@ -203,7 +226,7 @@ const BranchSelectionPage = () => {
         () => {
           if (isMounted) {
             console.log("Real-time: Sales updated, refreshing dashboard.");
-            fetchStoresData(false);
+            debouncedFetch(false);
           }
         },
       )
@@ -217,16 +240,16 @@ const BranchSelectionPage = () => {
         () => {
           if (isMounted) {
             console.log("Real-time: Store status updated, refreshing dashboard.");
-            fetchStoresData(false);
+            debouncedFetch(false);
           }
         },
       )
       .subscribe();
 
-    // Fallback auto-refresh interval (polling) every 10 seconds for realtime feel
+    // Reduced polling frequency to once per minute to lower server load
     const intervalId = setInterval(() => {
-      if (isMounted) fetchStoresData(false);
-    }, 10000);
+      if (isMounted) debouncedFetch(false);
+    }, 60000);
 
     // Refresh immediately when tab becomes visible or gains focus
     const handleFocus = () => {

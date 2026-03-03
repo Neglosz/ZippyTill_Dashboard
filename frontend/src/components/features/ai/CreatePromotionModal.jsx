@@ -106,7 +106,6 @@ const CreatePromotionModal = ({
         code: error.code,
         full: error,
       });
-      console.error("📦 Promotion data sent:", newPromo);
       console.error("🛍️ Products sent:", selectedProducts);
 
       // Handle error (show toast/alert)
