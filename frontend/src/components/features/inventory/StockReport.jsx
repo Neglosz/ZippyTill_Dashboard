@@ -170,11 +170,10 @@ const StockReportPage = () => {
             <button
               key={type}
               onClick={() => setSelectedType(type)}
-              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                selectedType === type
-                  ? "bg-white text-primary shadow-sm border border-primary/10"
-                  : "text-inactive hover:text-gray-900"
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedType === type
+                ? "bg-white text-primary shadow-sm border border-primary/10"
+                : "text-inactive hover:text-gray-900"
+                }`}
             >
               {type === "ALL" ? "ทั้งหมด" : type === "IN" ? "นำเข้า" : "นำออก"}
             </button>
@@ -246,13 +245,12 @@ const StockReportPage = () => {
                     <td className="py-4 px-4 text-center">
                       <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                        ${
-                          tx.type === "IN"
+                        ${tx.type === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : tx.type === "OUT"
                               ? "bg-rose-50 text-rose-600 border border-rose-100"
                               : "bg-amber-50 text-amber-600 border border-amber-100"
-                        }`}
+                          }`}
                       >
                         {tx.type === "IN"
                           ? "นำเข้า"
@@ -262,12 +260,11 @@ const StockReportPage = () => {
                       </span>
                     </td>
                     <td
-                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${
-                        tx.type === "OUT" ||
+                      className={`py-4 px-4 text-right font-black text-2xl tracking-tighter ${tx.type === "OUT" ||
                         (tx.type === "ADJUST" && tx.qty < 0)
-                          ? "text-rose-500"
-                          : "text-emerald-500"
-                      }`}
+                        ? "text-rose-500"
+                        : "text-emerald-500"
+                        }`}
                     >
                       {tx.type === "OUT" || (tx.type === "ADJUST" && tx.qty < 0)
                         ? "-"
