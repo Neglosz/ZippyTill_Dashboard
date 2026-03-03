@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   BarChart3,
   FileText,
@@ -25,15 +31,7 @@ import { useBranch } from "../contexts/BranchContext";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
 import { StatsCard } from "../components/common/StatsCard";
 import { supabase } from "../lib/supabase";
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Bar,
-  ComposedChart,
-} from "recharts";
+import SalesHistoryChart from "../components/sales/SalesHistoryChart";
 
 const SalesPage = () => {
   const { activeBranchId } = useBranch();
@@ -69,53 +67,85 @@ const SalesPage = () => {
   );
 
   // Unified data fetch function
-  const fetchData = useCallback(async (isBackground = false) => {
-    if (!activeBranchId) return;
+  const fetchData = useCallback(
+    async (isBackground = false) => {
+      if (!activeBranchId) return;
 
-    try {
-      if (isInitialLoad.current) {
-        setIsLoading(true);
-      } else if (isBackground) {
-        setIsRefreshing(true);
+      const isTimeRangeChange =
+        !isInitialLoad.current && prevTimeRange.current !== timeRange;
+      prevTimeRange.current = timeRange;
+
+      try {
+        if (isInitialLoad.current) {
+          setIsLoading(true);
+        } else if (isBackground) {
+          setIsRefreshing(true);
+        }
+
+        console.log(
+          "SalesPage: Fetching data for branch:",
+          activeBranchId,
+          "range:",
+          timeRange,
+          "isTimeRangeChange:",
+          isTimeRangeChange,
+        );
+
+        if (isTimeRangeChange && !isBackground) {
+          // Only fetch history if that's the only thing that changed
+          const histData = await saleService.getSalesHistory(
+            activeBranchId,
+            timeRange,
+          );
+          setHistoryData(histData || []);
+        } else {
+          // Fetch everything (initial load, explicit refresh, or branch change)
+          const [topData, catData, metricsData, histData] = await Promise.all([
+            saleService.getTopSellingProducts(activeBranchId),
+            saleService.getSalesByCategory(activeBranchId),
+            saleService.getDashboardMetrics(activeBranchId),
+            saleService.getSalesHistory(activeBranchId, timeRange),
+          ]);
+
+          setTopProducts(topData || []);
+          setHistoryData(histData || []);
+          setSalesSummary(
+            metricsData || {
+              totalRevenue: 0,
+              todayRevenue: 0,
+              totalSold: 0,
+              totalProducts: 0,
+            },
+          );
+
+          const totalRevenue = parseFloat(metricsData?.totalRevenue) || 0;
+          const processedCatData = (catData || [])
+            .filter((c) => c.revenue > 0)
+            .map((c, index) => ({
+              ...c,
+              percentage:
+                totalRevenue > 0
+                  ? ((c.revenue / totalRevenue) * 100).toFixed(0)
+                  : 0,
+              color: colors[index % colors.length],
+              value: c.revenue,
+            }));
+
+          setCategorySales(processedCatData);
+        }
+        setFetchError(null);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        if (isInitialLoad.current) setFetchError("ไม่สามารถดึงข้อมูลได้");
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsChartLoading(false);
+        isInitialLoad.current = false;
       }
-
-      console.log("SalesPage: Fetching data for branch:", activeBranchId, "range:", timeRange);
-
-      const [topData, catData, metricsData, histData] = await Promise.all([
-        saleService.getTopSellingProducts(activeBranchId),
-        saleService.getSalesByCategory(activeBranchId),
-        saleService.getDashboardMetrics(activeBranchId),
-        saleService.getSalesHistory(activeBranchId, timeRange),
-      ]);
-
-      setTopProducts(topData || []);
-      setHistoryData(histData || []);
-      setSalesSummary(metricsData || { totalRevenue: 0, todayRevenue: 0, totalSold: 0, totalProducts: 0 });
-
-      const totalRevenue = parseFloat(metricsData?.totalRevenue) || 0;
-      const processedCatData = (catData || [])
-        .filter((c) => c.revenue > 0)
-        .map((c, index) => ({
-          ...c,
-          percentage:
-            totalRevenue > 0
-              ? ((c.revenue / totalRevenue) * 100).toFixed(0)
-              : 0,
-          color: colors[index % colors.length],
-          value: c.revenue,
-        }));
-
-      setCategorySales(processedCatData);
-      setFetchError(null);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      if (isInitialLoad.current) setFetchError("ไม่สามารถดึงข้อมูลได้");
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      isInitialLoad.current = false;
-    }
-  }, [activeBranchId, timeRange, colors]);
+    },
+    [activeBranchId, timeRange, colors],
+  );
 
   // Initial and range-change fetch
   useEffect(() => {
@@ -169,7 +199,9 @@ const SalesPage = () => {
         const roundedRevenue = Math.ceil(totalRevenue);
         return (
           <>
-            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+              ฿
+            </span>
             {roundedRevenue.toLocaleString()}
           </>
         );
@@ -186,7 +218,9 @@ const SalesPage = () => {
         const roundedRevenue = Math.ceil(revenue);
         return (
           <>
-            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+              ฿
+            </span>
             {roundedRevenue.toLocaleString()}
           </>
         );
@@ -209,10 +243,10 @@ const SalesPage = () => {
     if (!historyData || historyData.length === 0) return [];
 
     // Smooth transition for bars based on data points
-    return historyData.map(item => ({
+    return historyData.map((item) => ({
       ...item,
       // Add more consistent naming for tooltips if needed
-      displayName: item.fullDate || item.name
+      displayName: item.fullDate || item.name,
     }));
   }, [historyData]);
 
@@ -251,12 +285,16 @@ const SalesPage = () => {
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20 active:scale-95 group ${isRefreshing ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20 active:scale-95 group ${
+              isRefreshing ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
             <RotateCcw
-              className={`w-4 h-4 text-primary ${isRefreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"
-                }`}
+              className={`w-4 h-4 text-primary ${
+                isRefreshing
+                  ? "animate-spin"
+                  : "group-hover:rotate-180 transition-transform duration-500"
+              }`}
             />
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">
               {isRefreshing ? "กำลังอัปเดต..." : "อัปเดตข้อมูล"}
@@ -284,7 +322,9 @@ const SalesPage = () => {
                   </span>
                 </div>
                 <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                  <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+                  <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+                    ฿
+                  </span>
                   {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
                 </p>
               </div>
@@ -293,10 +333,11 @@ const SalesPage = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${timeRange === range
-                      ? "bg-white shadow-sm text-primary border border-gray-100"
-                      : "text-inactive hover:text-gray-900"
-                      }`}
+                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                      timeRange === range
+                        ? "bg-white shadow-sm text-primary border border-gray-100"
+                        : "text-inactive hover:text-gray-900"
+                    }`}
                   >
                     {range}
                   </button>
@@ -304,124 +345,11 @@ const SalesPage = () => {
               </div>
             </div>
 
-            <div className="flex-1 min-h-[300px] w-full relative">
-              {(isChartLoading || isRefreshing) && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[32px]">
-                  <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
-                </div>
-              )}
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="barGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor="#ED7117" stopOpacity={1} />
-                      <stop
-                        offset="100%"
-                        stopColor="#F97316"
-                        stopOpacity={0.8}
-                      />
-                    </linearGradient>
-                    <linearGradient
-                      id="areaGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor="#ED7117"
-                        stopOpacity={0.2}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="#ED7117"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="5 5"
-                    vertical={false}
-                    stroke="#F1F5F9"
-                  />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 700 }}
-                    dy={10}
-                    interval={timeRange === "1M" ? 2 : 0}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 700 }}
-                    width={50}
-                    tickCount={6}
-                    domain={[0, 'auto']}
-                    tickFormatter={(value) =>
-                      value === 0
-                        ? "0"
-                        : value >= 1000
-                          ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
-                          : value
-                    }
-                  />
-                  <Tooltip
-                    cursor={{ fill: '#F8FAFC', radius: 10 }}
-                    contentStyle={{
-                      borderRadius: "20px",
-                      border: "none",
-                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                      padding: "12px 16px",
-                      background: "rgba(255, 255, 255, 0.98)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                    labelStyle={{
-                      fontWeight: 800,
-                      color: "#1E293B",
-                      marginBottom: "4px",
-                      fontSize: "11px",
-                      textTransform: "uppercase",
-                    }}
-                    itemStyle={{
-                      fontSize: "13px",
-                      fontWeight: 900,
-                      color: "#ED7117",
-                    }}
-                    formatter={(value) => [`฿${Number(value).toLocaleString()}`, "ยอดขาย"]}
-                    labelFormatter={(label, payload) => {
-                      if (payload && payload.length > 0 && payload[0].payload.fullDate) {
-                        return payload[0].payload.fullDate;
-                      }
-                      return label;
-                    }}
-                  />
-                  <Bar
-                    dataKey="totalSales"
-                    fill="url(#barGradient)"
-                    radius={[6, 6, 0, 0]}
-                    barSize={timeRange === "1M" ? 10 : 32}
-                    isAnimationActive={true}
-                    animationDuration={1000}
-                  />
-                  <rect
-                    // Dummy element to ensure gradients are defined
-                    style={{ display: 'none' }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+            <SalesHistoryChart
+              data={chartData}
+              timeRange={timeRange}
+              isLoading={isChartLoading || isRefreshing}
+            />
           </div>
 
           {/* Right: Income Structure - Modern Card Design */}
@@ -434,7 +362,9 @@ const SalesPage = () => {
                 </span>
               </div>
               <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+                <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+                  ฿
+                </span>
                 {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
               </p>
             </div>
@@ -457,7 +387,11 @@ const SalesPage = () => {
             {/* Category Cards */}
             <div
               className="space-y-3 relative overflow-y-auto pr-1"
-              style={{ maxHeight: "276px", scrollbarWidth: "thin", scrollbarColor: "#E2E8F0 transparent" }}
+              style={{
+                maxHeight: "276px",
+                scrollbarWidth: "thin",
+                scrollbarColor: "#E2E8F0 transparent",
+              }}
             >
               {isRefreshing && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/20 backdrop-blur-[1px] rounded-2xl">
@@ -598,7 +532,7 @@ const SalesPage = () => {
                       {fetchError}
                     </td>
                   </tr>
-                ) : (!topProducts || topProducts.length === 0) ? (
+                ) : !topProducts || topProducts.length === 0 ? (
                   <tr>
                     <td
                       colSpan="6"
@@ -618,14 +552,15 @@ const SalesPage = () => {
                         <td className="py-6 pl-4 font-black">
                           <div
                             className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-sm
-                            ${rank === 1
+                            ${
+                              rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
                                   ? "bg-slate-400 text-white shadow-slate-200"
                                   : rank === 3
                                     ? "bg-orange-400 text-white shadow-orange-200"
                                     : "bg-gray-100 text-inactive border border-gray-100"
-                              }`}
+                            }`}
                           >
                             {rank}
                           </div>
@@ -639,12 +574,19 @@ const SalesPage = () => {
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   e.target.style.display = "none";
-                                  e.target.parentNode.querySelector('.placeholder-icon').classList.remove('hidden');
+                                  e.target.parentNode
+                                    .querySelector(".placeholder-icon")
+                                    .classList.remove("hidden");
                                 }}
                               />
                             ) : null}
-                            <div className={`placeholder-icon ${product.image_url ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                              <ShoppingBasket className="w-8 h-8 text-gray-200" strokeWidth={1.5} />
+                            <div
+                              className={`placeholder-icon ${product.image_url ? "hidden" : "flex"} items-center justify-center w-full h-full`}
+                            >
+                              <ShoppingBasket
+                                className="w-8 h-8 text-gray-200"
+                                strokeWidth={1.5}
+                              />
                             </div>
                           </div>
                         </td>
