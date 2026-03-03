@@ -176,9 +176,9 @@ export const BranchCard = ({
         </div>
 
         {/* Action Button - High Dimension */}
-        <div className="mt-auto relative z-10">
+        <div className="mt-auto relative z-10 w-full">
           <div
-            className={`w-full py-5 rounded-[24px] font-black text-[10px] uppercase tracking-[0.25em] flex items-center justify-center gap-4 relative overflow-hidden transition-all duration-500 shadow-xl hover:-translate-y-1.5 active:scale-95 group/btn cursor-pointer ${isOpen
+            className={`w-full py-4 px-4 sm:py-5 rounded-[24px] font-black text-[9px] sm:text-[10px] uppercase tracking-widest sm:tracking-[0.25em] flex items-center justify-center gap-2 sm:gap-4 relative overflow-hidden transition-all duration-500 shadow-xl hover:-translate-y-1.5 active:scale-95 group/btn cursor-pointer ${isOpen
                 ? isDark
                   ? "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 border border-white/10"
                   : "bg-primary text-white shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30"
@@ -193,11 +193,11 @@ export const BranchCard = ({
                   : isDark ? "from-white/5" : "from-gray-300/30"
                 } to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500`}
             />
-            <span className="relative z-10">{isOpen ? "เข้าสู่ระบบจัดการ" : "เข้าสู่ระบบจัดการ (ออฟไลน์)"}</span>
+            <span className="relative z-10 flex-1 text-center truncate">{isOpen ? "เข้าสู่ระบบจัดการ" : "เข้าสู่ระบบจัดการ (ออฟไลน์)"}</span>
             <ArrowRight
-              size={18}
+              size={16}
               strokeWidth={3}
-              className="group-hover/btn:translate-x-2 transition-transform duration-500 relative z-10"
+              className="group-hover/btn:translate-x-1 sm:group-hover/btn:translate-x-2 transition-transform duration-500 relative z-10 shrink-0"
             />
           </div>
         </div>

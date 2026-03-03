@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   BarChart3,
   FileText,
@@ -17,11 +17,13 @@ import {
   Package,
   MoreHorizontal,
   AlarmClockOff,
+  RotateCcw,
 } from "lucide-react";
 import { saleService } from "../services/saleService";
 import { useBranch } from "../contexts/BranchContext";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
 import { StatsCard } from "../components/common/StatsCard";
+import { supabase } from "../lib/supabase";
 import {
   XAxis,
   YAxis,
@@ -40,8 +42,11 @@ const SalesPage = () => {
   const [salesSummary, setSalesSummary] = useState({
     totalProducts: 0,
     totalSold: 0,
+    totalRevenue: 0,
+    todayRevenue: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [historyData, setHistoryData] = useState([]);
@@ -61,105 +66,136 @@ const SalesPage = () => {
     [],
   );
 
-  // Initial data fetch (one-time)
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      if (!activeBranchId) return;
-      try {
+  // Unified data fetch function
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!activeBranchId) return;
+    
+    try {
+      if (!isBackground) {
         setIsLoading(true);
-        const [topData, catData, summaryData, histData] = await Promise.all([
-          saleService.getTopSellingProducts(activeBranchId),
-          saleService.getSalesByCategory(activeBranchId),
-          saleService.getSalesSummary(activeBranchId),
-          saleService.getSalesHistory(activeBranchId, timeRange),
-        ]);
-        setTopProducts(topData);
-        setSalesSummary(summaryData);
-        setHistoryData(histData);
-
-        const totalRevenue = catData.reduce(
-          (sum, c) => sum + (c.revenue || 0),
-          0,
-        );
-        const processedCatData = catData
-          .filter((c) => c.revenue > 0)
-          .map((c, index) => ({
-            ...c,
-            percentage:
-              totalRevenue > 0
-                ? ((c.revenue / totalRevenue) * 100).toFixed(0)
-                : 0,
-            color: colors[index % colors.length],
-            value: c.revenue, // Recharts uses 'value'
-          }));
-
-        setCategorySales(processedCatData);
-      } catch (error) {
-        console.error("Failed to fetch initial data:", error);
-        setFetchError("ไม่สามารถดึงข้อมูลได้");
-      } finally {
-        setIsLoading(false);
+      } else {
+        setIsRefreshing(true);
       }
-    };
+      
+      console.log("SalesPage: Fetching data for branch:", activeBranchId, "range:", timeRange);
 
-    fetchInitialData();
+      const [topData, catData, metricsData, histData] = await Promise.all([
+        saleService.getTopSellingProducts(activeBranchId),
+        saleService.getSalesByCategory(activeBranchId),
+        saleService.getDashboardMetrics(activeBranchId),
+        saleService.getSalesHistory(activeBranchId, timeRange),
+      ]);
+
+      setTopProducts(topData);
+      setHistoryData(histData);
+      setSalesSummary(metricsData);
+
+      const totalRevenue = parseFloat(metricsData.totalRevenue) || 0;
+      const processedCatData = catData
+        .filter((c) => c.revenue > 0)
+        .map((c, index) => ({
+          ...c,
+          percentage:
+            totalRevenue > 0
+              ? ((c.revenue / totalRevenue) * 100).toFixed(0)
+              : 0,
+          color: colors[index % colors.length],
+          value: c.revenue,
+        }));
+
+      setCategorySales(processedCatData);
+      setFetchError(null);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      if (!isBackground) setFetchError("ไม่สามารถดึงข้อมูลได้");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, [activeBranchId, timeRange, colors]);
 
-  // Chart data fetch (whenever timeRange changes)
+  // Initial and range-change fetch
   useEffect(() => {
-    const fetchChartData = async () => {
-      if (!activeBranchId || isLoading) return;
-      try {
-        setIsChartLoading(true);
-        const histData = await saleService.getSalesHistory(
-          activeBranchId,
-          timeRange,
-        );
-        setHistoryData(histData);
-      } catch (error) {
-        console.error("Failed to fetch chart data:", error);
-      } finally {
-        setIsChartLoading(false);
-      }
-    };
+    fetchData();
+  }, [fetchData]);
 
-    fetchChartData();
-  }, [timeRange, activeBranchId, isLoading]);
+  // Real-time and Polling
+  useEffect(() => {
+    if (!activeBranchId) return;
+    
+    // 1. Real-time subscription for orders
+    const ordersChannel = supabase
+      .channel(`sales_orders_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        () => {
+          console.log("SalesPage: Real-time update detected from orders table");
+          fetchData(true); // background refresh
+        },
+      )
+      .subscribe();
+
+    // 2. Fallback polling interval (every 1 minute)
+    const intervalId = setInterval(() => {
+      console.log("SalesPage: Polling refresh...");
+      fetchData(true);
+    }, 60000);
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      clearInterval(intervalId);
+    };
+  }, [fetchData, activeBranchId]);
+
+  const handleManualRefresh = () => {
+    fetchData(true);
+  };
 
   const stats = [
     {
       id: 1,
       title: "ยอดขายรวม",
       amount: (() => {
-        const totalRevenue = categorySales.reduce(
-          (sum, c) => sum + (c.revenue || 0),
-          0,
-        );
+        const totalRevenue = salesSummary.totalRevenue || 0;
         const roundedRevenue = Math.ceil(totalRevenue);
-        console.log(
-          "Total Revenue:",
-          totalRevenue,
-          "→ Rounded:",
-          roundedRevenue,
+        return (
+          <>
+            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+            {roundedRevenue.toLocaleString()}
+          </>
         );
-        return "฿" + roundedRevenue.toLocaleString();
       })(),
       color: "bg-rose-50",
       iconBg: "bg-rose-500",
       icon: BarChart3,
     },
     {
-      id: 2,
-      title: "จำนวนสินค้าทั้งหมด",
-      amount: Math.ceil(salesSummary.totalProducts).toLocaleString(),
-      color: "bg-amber-50",
-      iconBg: "bg-amber-500",
-      icon: FileText,
+      id: 0,
+      title: "ยอดขายวันนี้",
+      amount: (() => {
+        const revenue = salesSummary.todayRevenue || 0;
+        const roundedRevenue = Math.ceil(revenue);
+        return (
+          <>
+            <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+            {roundedRevenue.toLocaleString()}
+          </>
+        );
+      })(),
+      color: "bg-orange-50",
+      iconBg: "bg-orange-500",
+      icon: TrendingUp,
     },
     {
       id: 3,
-      title: "จำนวนสินค้าที่ขายไปแล้ว",
-      amount: Math.ceil(salesSummary.totalSold).toLocaleString(),
+      title: "จำนวนสินค้าที่ขายไป",
+      amount: Math.ceil(salesSummary.totalSold || 0).toLocaleString(),
       color: "bg-emerald-50",
       iconBg: "bg-emerald-500",
       icon: Tag,
@@ -198,7 +234,24 @@ const SalesPage = () => {
           title="ยอดขาย"
           description="สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ"
           icon={ShoppingCart}
-        />
+        >
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20 active:scale-95 group ${
+              isRefreshing ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            <RotateCcw
+              className={`w-4 h-4 text-primary ${
+                isRefreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"
+              }`}
+            />
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+              {isRefreshing ? "กำลังอัปเดต..." : "อัปเดตข้อมูล"}
+            </span>
+          </button>
+        </PageHeader>
 
         {/* Top Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -220,10 +273,8 @@ const SalesPage = () => {
                   </span>
                 </div>
                 <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                  ฿
-                  {Math.ceil(
-                    categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0),
-                  ).toLocaleString()}
+                  <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+                  {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
                 </p>
               </div>
               <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
@@ -244,7 +295,7 @@ const SalesPage = () => {
             </div>
 
             <div className="h-[350px] w-full relative">
-              {isChartLoading && (
+              {(isChartLoading || isRefreshing) && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[32px]">
                   <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
                 </div>
@@ -350,8 +401,8 @@ const SalesPage = () => {
                       value === 0
                         ? "0"
                         : value >= 1000
-                          ? `${(value / 1000).toFixed(0)}k`
-                          : value
+                        ? `${(value / 1000).toFixed(0)}k`
+                        : value
                     }
                   />
                   <Tooltip
@@ -416,10 +467,8 @@ const SalesPage = () => {
                 </span>
               </div>
               <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                ฿
-                {Math.ceil(
-                  categorySales.reduce((sum, c) => sum + (c.revenue || 0), 0),
-                ).toLocaleString()}
+                <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">฿</span>
+                {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
               </p>
             </div>
 
@@ -439,7 +488,12 @@ const SalesPage = () => {
             </div>
 
             {/* Category Cards */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 relative">
+              {isRefreshing && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/20 backdrop-blur-[1px] rounded-2xl">
+                  <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              )}
               {pieData.map((item, index) => {
                 const revenue = item.value || 0;
                 return (
@@ -529,7 +583,12 @@ const SalesPage = () => {
         </div>
 
         {/* Top 5 Products Section */}
-        <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100">
+        <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 relative">
+          {isRefreshing && (
+            <div className="absolute top-8 right-8 z-10">
+              <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          )}
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
               <TrendingUp className="w-6 h-6" />
@@ -554,7 +613,7 @@ const SalesPage = () => {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className="py-20 text-center text-inactive font-bold"
                     >
                       กำลังโหลดข้อมูล...
@@ -563,7 +622,7 @@ const SalesPage = () => {
                 ) : fetchError ? (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className="py-20 text-center text-rose-500 font-bold"
                     >
                       {fetchError}
@@ -572,7 +631,7 @@ const SalesPage = () => {
                 ) : topProducts.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className="py-20 text-center text-inactive font-bold"
                     >
                       ไม่พบข้อมูลรายการสินค้า
@@ -593,10 +652,10 @@ const SalesPage = () => {
                               rank === 1
                                 ? "bg-amber-400 text-white shadow-amber-200"
                                 : rank === 2
-                                  ? "bg-slate-400 text-white shadow-slate-200"
-                                  : rank === 3
-                                    ? "bg-orange-400 text-white shadow-orange-200"
-                                    : "bg-gray-100 text-inactive border border-gray-100"
+                                ? "bg-slate-400 text-white shadow-slate-200"
+                                : rank === 3
+                                ? "bg-orange-400 text-white shadow-orange-200"
+                                : "bg-gray-100 text-inactive border border-gray-100"
                             }`}
                           >
                             {rank}

@@ -688,28 +688,6 @@ const DashboardPage = () => {
             <p className="text-[10px] font-black text-inactive mb-8 uppercase tracking-[0.2em] opacity-60">
               ร้านค้าที่กำลังใช้งาน
             </p>
-
-            <div className="grid grid-cols-2 gap-3 p-5 bg-gray-50/80 rounded-[28px] border border-gray-100 shadow-inner">
-              <div className="space-y-1">
-                <p className="text-[9px] font-black text-inactive uppercase tracking-widest opacity-60 text-center">
-                  ยอดขาย
-                </p>
-                <p className="text-xl font-black text-gray-900 tracking-tight">
-                  <span className="text-xs opacity-30 mr-0.5 font-bold">฿</span>
-                  {metrics.totalRevenue > 1000
-                    ? Math.round(metrics.totalRevenue / 1000) + "k"
-                    : metrics.totalRevenue}
-                </p>
-              </div>
-              <div className="space-y-1 border-l border-gray-200/50">
-                <p className="text-[9px] font-black text-inactive uppercase tracking-widest opacity-60 text-center">
-                  ออเดอร์
-                </p>
-                <p className="text-xl font-black text-gray-900 tracking-tight">
-                  {metrics.totalOrders}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
