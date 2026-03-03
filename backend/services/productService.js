@@ -212,19 +212,22 @@ const productService = {
 
     if (soonError) throw soonError;
 
-    // For low stock, we can't easily filter by a dynamic threshold per product in a single simple query 
-    // if the threshold is a column, but we can try to filter at least the base stock.
-    // However, the original code filtered by p.stock_qty <= (p.low_stock_threshold || 5).
-    // We can use a PostgREST filter for this if we use a computed column or just a raw filter.
-    // Actually, we can use .or or just filter those that are definitely low.
-    const { data: lowStockProducts, error: thresholdError } = await supabase
+    // For low stock, we need to compare two columns (stock_qty <= low_stock_threshold).
+    // PostgREST doesn't natively support column-to-column comparisons in string filters easily.
+    // So we fetch products that are active and filter them in JS.
+    const { data: allProducts, error: thresholdError } = await supabase
       .from("products")
-      .select("*")
+      .select("name, image_url, stock_qty, unit_type, low_stock_threshold")
       .eq("store_id", branchId)
-      .is("deleted_at", null)
-      .or("stock_qty.lte.5,stock_qty.lte.low_stock_threshold");
+      .is("deleted_at", null);
 
     if (thresholdError) throw thresholdError;
+
+    const lowStockProducts = (allProducts || []).filter(
+      (p) =>
+        (p.low_stock_threshold && p.stock_qty <= p.low_stock_threshold) ||
+        p.stock_qty <= 5,
+    );
 
     const formatBatch = (batch) => {
       const expDate = new Date(batch.expire_date);
@@ -262,10 +265,11 @@ const productService = {
         id,
         qty,
         products (name, image_url),
-        orders!inner(created_at, store_id, order_no)
+        orders!inner(created_at, store_id, order_no, payment_status)
       `,
       )
       .eq("orders.store_id", branchId)
+      .neq("orders.payment_status", "cancelled")
       .order("orders(created_at)", { ascending: false });
 
     if (salesError) throw salesError;

@@ -71,9 +71,10 @@ const StockReportPage = () => {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
+      const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
-        tx.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tx.note.toLowerCase().includes(searchQuery.toLowerCase());
+        (tx.product && tx.product.toLowerCase().includes(searchLower)) ||
+        (tx.note && tx.note.toLowerCase().includes(searchLower));
       const matchesType = selectedType === "ALL" || tx.type === selectedType;
       return matchesSearch && matchesType;
     });
