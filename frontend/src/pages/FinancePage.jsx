@@ -84,7 +84,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const FinancePage = () => {
-  const { activeBranchId, activeBranchName } = useBranch();
+  const {
+    activeBranchId,
+    activeBranchName,
+    activeBranchAddress,
+    activeBranchPhone,
+  } = useBranch();
   const [loading, setLoading] = useState(true);
 
   // Data States
@@ -196,7 +201,7 @@ const FinancePage = () => {
           .then((data) => {
             dataCache.current[prevKey] = data;
           })
-          .catch(() => {}); // Ignore prefetch errors
+          .catch(() => { }); // Ignore prefetch errors
       }
 
       if (!dataCache.current[nextKey]) {
@@ -205,7 +210,7 @@ const FinancePage = () => {
           .then((data) => {
             dataCache.current[nextKey] = data;
           })
-          .catch(() => {}); // Ignore prefetch errors
+          .catch(() => { }); // Ignore prefetch errors
       }
     } catch {
       // Silently fail prefetch
@@ -816,11 +821,10 @@ const FinancePage = () => {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      viewMode === mode
-                        ? "bg-white text-primary shadow-sm"
-                        : "text-inactive hover:text-gray-600"
-                    }`}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-inactive hover:text-gray-600"
+                      }`}
                   >
                     {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
                   </button>
@@ -1002,49 +1006,48 @@ const FinancePage = () => {
                     </tr>
                   ) : (
                     transactions.map((tx, index) => (
-                    <tr
-                      key={index}
-                      className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}
-                      onClick={() => tx.clickable && handleTransactionClick(tx)}
-                    >
-                      <td className="py-4 px-4 text-xs font-bold text-gray-900">
-                        {tx.displayName}
-                        <p className="text-[10px] text-inactive font-medium">
-                          {tx.displaySubtitle}
-                        </p>
-                      </td>
-                      <td className="py-4 px-4 text-xs font-bold text-inactive">
-                        {new Date(tx.created_at).toLocaleDateString("th-TH")}
-                      </td>
-                      <td className="py-4 px-4 text-sm font-bold text-gray-900">
-                        {tx.displayType}
-                      </td>
-                      <td
-                        className={`py-4 px-4 text-sm font-black ${tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
+                      <tr
+                        key={index}
+                        className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}
+                        onClick={() => tx.clickable && handleTransactionClick(tx)}
                       >
-                        {tx.isIncome ? "+" : "-"}
-                        <span className="text-xs mr-0.5">฿</span>
-                        {tx.displayAmount.toLocaleString()}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                            tx.source === "manual"
+                        <td className="py-4 px-4 text-xs font-bold text-gray-900">
+                          {tx.displayName}
+                          <p className="text-[10px] text-inactive font-medium">
+                            {tx.displaySubtitle}
+                          </p>
+                        </td>
+                        <td className="py-4 px-4 text-xs font-bold text-inactive">
+                          {new Date(tx.created_at).toLocaleDateString("th-TH")}
+                        </td>
+                        <td className="py-4 px-4 text-sm font-bold text-gray-900">
+                          {tx.displayType}
+                        </td>
+                        <td
+                          className={`py-4 px-4 text-sm font-black ${tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
+                        >
+                          {tx.isIncome ? "+" : "-"}
+                          <span className="text-xs mr-0.5">฿</span>
+                          {tx.displayAmount.toLocaleString()}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
                               ? "bg-emerald-50 text-emerald-600"
                               : tx.payment_status === "paid"
                                 ? "bg-emerald-50 text-emerald-600"
                                 : "bg-orange-50 text-orange-600"
-                          }`}
-                        >
-                          {tx.source === "manual"
-                            ? "สำเร็จ"
-                            : tx.payment_status === "paid"
-                              ? "จ่ายแล้ว"
-                              : "กำลังรอ"}
-                        </span>
-                      </td>
-                    </tr>
-                  )))}
+                              }`}
+                          >
+                            {tx.source === "manual"
+                              ? "สำเร็จ"
+                              : tx.payment_status === "paid"
+                                ? "จ่ายแล้ว"
+                                : "กำลังรอ"}
+                          </span>
+                        </td>
+                      </tr>
+                    )))}
                 </tbody>
               </table>
             </div>
@@ -1065,90 +1068,93 @@ const FinancePage = () => {
         transaction={
           selectedTransaction
             ? {
-                receiptNo:
-                  selectedTransaction.source === "manual"
-                    ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
-                    : selectedTransaction.order_no || "-",
-                date: new Date(
-                  selectedTransaction.created_at,
-                ).toLocaleDateString("th-TH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                }),
-                paymentMethod:
-                  selectedTransaction.payment_type === "credit_sale" ||
+              receiptNo:
+                selectedTransaction.source === "manual"
+                  ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
+                  : selectedTransaction.order_no || "-",
+              date: new Date(
+                selectedTransaction.created_at,
+              ).toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+              paymentMethod:
+                selectedTransaction.payment_type === "credit_sale" ||
                   selectedTransaction.payment_method === "credit_sale"
-                    ? "เครดิต"
-                    : "เงินสด",
-                items: isLoadingDetails
+                  ? "เครดิต"
+                  : "เงินสด",
+              items: isLoadingDetails
+                ? [
+                  {
+                    name: "กำลังโหลด...",
+                    quantity: 0,
+                    price: 0,
+                    subtotal: 0,
+                  },
+                ]
+                : selectedTransaction.source === "manual" && !fullOrderData
                   ? [
-                      {
-                        name: "กำลังโหลด...",
-                        quantity: 0,
-                        price: 0,
-                        subtotal: 0,
-                      },
-                    ]
-                  : selectedTransaction.source === "manual" && !fullOrderData
-                    ? [
-                        {
-                          name: selectedTransaction.displayName || "รายรับอื่น",
-                          quantity: 1,
-                          unit: "รายการ",
-                          price: Number(selectedTransaction.displayAmount || 0),
-                          subtotal: Number(
-                            selectedTransaction.displayAmount || 0,
-                          ),
-                        },
-                      ]
-                    : fullOrderData?.order_items?.map((detail) => ({
-                        name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                        quantity: detail.qty,
-                        unit: detail.products?.unit_type,
-                        price: detail.price_per_unit,
-                        subtotal: detail.subtotal,
-                      })) || [
-                        {
-                          name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
-                          quantity: 1,
-                          unit: "ชิ้น",
-                          price: Number(
-                            selectedTransaction.total_amount ||
-                              selectedTransaction.displayAmount ||
-                              0,
-                          ),
-                          subtotal: Number(
-                            selectedTransaction.total_amount ||
-                              selectedTransaction.displayAmount ||
-                              0,
-                          ),
-                        },
-                      ],
-                total: isLoadingDetails
-                  ? Number(
-                      selectedTransaction.total_amount ||
+                    {
+                      name: selectedTransaction.displayName || "รายรับอื่น",
+                      quantity: 1,
+                      unit: "รายการ",
+                      price: Number(selectedTransaction.displayAmount || 0),
+                      subtotal: Number(
+                        selectedTransaction.displayAmount || 0,
+                      ),
+                    },
+                  ]
+                  : fullOrderData?.order_items?.map((detail) => ({
+                    name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                    quantity: detail.qty,
+                    unit: detail.products?.unit_type,
+                    price: detail.price_per_unit,
+                    subtotal: detail.subtotal,
+                    promotions: detail.promotions,
+                  })) || [
+                    {
+                      name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
+                      quantity: 1,
+                      unit: "ชิ้น",
+                      price: Number(
+                        selectedTransaction.total_amount ||
                         selectedTransaction.displayAmount ||
                         0,
-                    )
-                  : fullOrderData?.total_amount ||
-                    Number(
-                      selectedTransaction.total_amount ||
+                      ),
+                      subtotal: Number(
+                        selectedTransaction.total_amount ||
                         selectedTransaction.displayAmount ||
                         0,
-                    ),
-                received: 0,
-                change: 0,
-                store: {
-                  name:
-                    selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
-                  address: "-",
-                  phone:
-                    fullOrderData?.customers_info?.phone ||
-                    selectedTransaction.customers_info?.phone ||
-                    "-",
-                },
-              }
+                      ),
+                    },
+                  ],
+              total: isLoadingDetails
+                ? Number(
+                  selectedTransaction.total_amount ||
+                  selectedTransaction.displayAmount ||
+                  0,
+                )
+                : fullOrderData?.total_amount ||
+                Number(
+                  selectedTransaction.total_amount ||
+                  selectedTransaction.displayAmount ||
+                  0,
+                ),
+              received: fullOrderData?.payments?.[0]?.tendered_amount || 0,
+              change: fullOrderData?.payments?.[0]?.change_amount || 0,
+              store: {
+                name:
+                  selectedTransaction.payment_type !== "credit_sale" &&
+                    selectedTransaction.payment_method !== "credit_sale" &&
+                    (selectedTransaction.customers_info?.name === "ลูกค้าทั่วไป" ||
+                      !selectedTransaction.customers_info?.name)
+                    ? activeBranchName || "Goody"
+                    : selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
+                address: activeBranchAddress || "Kasetsart",
+                phone: activeBranchPhone || "0950527411",
+              },
+            }
             : null
         }
         onClose={() => {

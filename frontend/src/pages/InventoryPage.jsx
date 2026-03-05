@@ -147,6 +147,16 @@ const InventoryPage = () => {
     }
   }, [activeBranchId, fetchProducts, fetchCategories]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleExportPDF = () => {
     console.log("Exporting PDF...");
     setIsExportModalOpen(false);
@@ -424,7 +434,7 @@ const InventoryPage = () => {
         ) : (
           <>
             {/* Filters Section */}
-            <div className="bg-white rounded-[24px] p-2 sm:p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10 w-full overflow-hidden">
+            <div className="bg-white rounded-[24px] p-2 sm:p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10 w-full">
               {/* Search & Filter */}
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <div className="relative w-full lg:w-[320px]">
@@ -459,7 +469,7 @@ const InventoryPage = () => {
 
                   {/* Filter Dropdown */}
                   {isFilterOpen && (
-                    <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-float border border-gray-100 p-2 min-w-[200px] z-50 animate-fade-in">
+                    <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-float border border-gray-100 p-2 min-w-[200px] z-50 animate-fade-in max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                       <button
                         onClick={() => {
                           setSelectedCategory(null);
