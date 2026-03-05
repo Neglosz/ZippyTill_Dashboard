@@ -9,11 +9,8 @@ export const BranchProvider = ({ children }) => {
   const [activeBranchName, setActiveBranchName] = useState(() => {
     return sessionStorage.getItem("selected_branch_name");
   });
-  const [activeBranchAddress, setActiveBranchAddress] = useState(() => {
-    return sessionStorage.getItem("selected_branch_address");
-  });
-  const [activeBranchPhone, setActiveBranchPhone] = useState(() => {
-    return sessionStorage.getItem("selected_branch_phone");
+  const [activeBranchImage, setActiveBranchImage] = useState(() => {
+    return sessionStorage.getItem("selected_branch_image");
   });
   const [userRole, setUserRole] = useState(() => {
     return sessionStorage.getItem("user_role");
@@ -23,22 +20,22 @@ export const BranchProvider = ({ children }) => {
     if (!branch) {
       setActiveBranchId(null);
       setActiveBranchName(null);
+      setActiveBranchImage(null);
       setUserRole(null);
       sessionStorage.removeItem("selected_branch_id");
       sessionStorage.removeItem("selected_branch_name");
+      sessionStorage.removeItem("selected_branch_image");
       sessionStorage.removeItem("user_role");
       return;
     }
 
     setActiveBranchId(branch.id);
     setActiveBranchName(branch.name);
-    setActiveBranchAddress(branch.address || "-");
-    setActiveBranchPhone(branch.phone || "-");
+    setActiveBranchImage(branch.image_url);
     setUserRole(branch.role);
     sessionStorage.setItem("selected_branch_id", branch.id);
     sessionStorage.setItem("selected_branch_name", branch.name);
-    sessionStorage.setItem("selected_branch_address", branch.address || "-");
-    sessionStorage.setItem("selected_branch_phone", branch.phone || "-");
+    sessionStorage.setItem("selected_branch_image", branch.image_url || "");
     sessionStorage.setItem("user_role", branch.role);
   };
 
@@ -51,8 +48,8 @@ export const BranchProvider = ({ children }) => {
       value={{
         activeBranchId,
         activeBranchName,
-        activeBranchAddress,
-        activeBranchPhone,
+        activeBranchImage,
+        setActiveBranchImage,
         userRole,
         selectBranch,
         clearBranch,

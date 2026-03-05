@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, X, Printer, ArrowRight } from "lucide-react";
 import { useBranch } from "../../contexts/BranchContext";
 
@@ -263,6 +264,7 @@ export default function ReceiptModal({
 }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const {
     activeBranchName,
@@ -321,6 +323,10 @@ export default function ReceiptModal({
   };
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (visible) {
       setShouldRender(true);
       requestAnimationFrame(() => {
@@ -348,9 +354,9 @@ export default function ReceiptModal({
     }
   };
 
-  if (!shouldRender) return null;
+  if (!shouldRender || !mounted) return null;
 
-  return (
+  const modalContent = (
     <div style={styles.modalWrapper}>
       {/* Embedded CSS for pseudo-classes & scrollbar */}
       <style>{`
@@ -463,54 +469,34 @@ export default function ReceiptModal({
             <span style={{ width: "80px", textAlign: "right" }}>รวม</span>
           </div>
           <div style={styles.itemsList}>
-            {items.map((item, index) => {
-              const unitLabel =
-                item.unit && item.unit !== "ชิ้น" ? ` ${item.unit}` : "";
-              const qtyLabel =
-                item.quantity !== 0 ? ` x${item.quantity}${unitLabel}` : "";
-              const unitPrice = item.price || 0;
-              const subtotal = item.subtotal || unitPrice * item.quantity;
-
-              // Check if it's an AI promotion
-              // backend joined promotions as item.promotions
-              const isAiPromo =
-                item.promotions?.description?.startsWith("AI แนะนำ:") ||
-                item.promotion_description?.startsWith("AI แนะนำ:");
-
-              return (
-                <div key={index} style={styles.itemRow}>
-                  <div style={styles.itemNameCol}>
-                    {item.name}
-                    {qtyLabel}
-                    {isAiPromo && (
-                      <span
-                        style={{
-                          color: "#4A90D9",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                          marginLeft: "4px",
-                          verticalAlign: "middle",
-                        }}
-                      >
-                        (AI)
-                      </span>
-                    )}
-                  </div>
-                  <div style={styles.itemPriceCol}>
-                    {unitPrice.toLocaleString(undefined, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                  </div>
-                  <div style={styles.itemTotalCol}>
-                    {subtotal.toLocaleString(undefined, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            {items.map((item, index) => (
+              <div key={index} style={styles.itemRow}>
+                <span style={styles.itemName}>
+                  {item.name}{" "}
+                  {item.unit && item.unit !== "ชิ้น"
+                    ? `${item.quantity}${item.unit}`
+                    : item.quantity !== 0 && `x${item.quantity}`}
+                  {item.price && item.quantity > 0 && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: "#888",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
+                    </span>
+                  )}
+                </span>
+                <span style={styles.itemPrice}>
+                  ฿
+                  {(item.subtotal || item.price * item.quantity).toLocaleString(
+                    undefined,
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                  )}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -571,4 +557,6 @@ export default function ReceiptModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

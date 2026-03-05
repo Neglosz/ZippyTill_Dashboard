@@ -19,12 +19,18 @@ import { supabase } from "../lib/supabase";
 import { Modal, InfoItem } from "../components/common/ProfileComponents";
 
 const ProfilePage = () => {
-  const { activeBranchId, activeBranchName, selectBranch, userRole } =
-    useBranch();
+  const { 
+    activeBranchId, 
+    activeBranchName, 
+    activeBranchImage, 
+    setActiveBranchImage, 
+    selectBranch, 
+    userRole 
+  } = useBranch();
   const fileInputRef = useRef(null);
 
   // State
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage] = useState(activeBranchImage || null);
   const [branchName, setBranchName] = useState(activeBranchName || "สาขาหลัก");
   const [userProfile, setUserProfile] = useState({
     email: "",
@@ -83,7 +89,7 @@ const ProfilePage = () => {
         if (activeBranchId) {
           const { data: store } = await supabase
             .from("stores")
-            .select("name, address, phone")
+            .select("name, address, phone, image_url")
             .eq("id", activeBranchId)
             .single();
 
@@ -93,6 +99,9 @@ const ProfilePage = () => {
               address: store.address || "",
               phone: store.phone || "",
             });
+            if (store.image_url) {
+              setProfileImage(store.image_url);
+            }
           }
         }
       } catch (err) {
@@ -142,10 +151,23 @@ const ProfilePage = () => {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result);
+        const img = new Image();
+        img.src = reader.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const MAX_WIDTH = 400; // Profile image can be smaller
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+          setPreviewImage(compressedBase64);
+          setImageFile(file);
+        };
       };
       reader.readAsDataURL(file);
     }
@@ -162,11 +184,16 @@ const ProfilePage = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Update store name in database
+      // Update store in database
       if (activeBranchId) {
+        const updateData = { 
+          name: editBranchName.trim(),
+          image_url: previewImage // This will be the compressed base64 or null
+        };
+
         await supabase
           .from("stores")
-          .update({ name: editBranchName.trim() })
+          .update(updateData)
           .eq("id", activeBranchId);
 
         // Update BranchContext
@@ -174,18 +201,13 @@ const ProfilePage = () => {
           id: activeBranchId,
           name: editBranchName.trim(),
           role: userRole,
+          image_url: previewImage
         });
       }
 
       // Update local state
       setBranchName(editBranchName.trim());
-
-      // Update profile image (local only)
-      if (imageFile) {
-        setProfileImage(previewImage);
-      } else if (!previewImage) {
-        setProfileImage(null);
-      }
+      setProfileImage(previewImage);
 
       setIsEditModalOpen(false);
     } catch (err) {

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Target, Calendar, Package, Trash2, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Target,
+  Calendar,
+  Package,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
 import { promotionService } from "../../../services/promotionService";
 
 // ─── Helper utilities ───────────────────────────────────────────────
@@ -45,9 +52,9 @@ const getPromotionLabel = (promo) => {
   }
 };
 
-const getTimeRemaining = (createdAt, endDate) => {
+const getTimeRemaining = (startDate, endDate) => {
   const now = new Date();
-  const start = createdAt ? new Date(createdAt) : now;
+  const start = parseLocalDate(startDate) || now;
   const end = parseLocalDate(endDate, true);
   if (!end)
     return {
@@ -121,7 +128,7 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
         const data = await promotionService.getPromotionDetails(promo.id);
         setPromoProducts(
           data?.promotion_items?.map((item) => item.product).filter(Boolean) ||
-          [],
+            [],
         );
       } catch (e) {
         console.error("PromotionDetailModal fetch error:", e);
@@ -154,7 +161,7 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
 
   const status = getStatusInfo(promo.is_active, promo.end_date);
   const timeRemaining = promo.end_date
-    ? getTimeRemaining(promo.created_at, promo.end_date)
+    ? getTimeRemaining(promo.start_date, promo.end_date)
     : null;
 
   return (
@@ -181,7 +188,7 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
                   ID: {promo.id.slice(0, 8)}
                 </span>
               </div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tighter pt-2">
                 {promo.name}
               </h2>
               {promo.description && (
