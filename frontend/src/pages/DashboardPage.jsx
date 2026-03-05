@@ -188,34 +188,30 @@ const DashboardPage = () => {
       // Transform order data to match ReceiptModal's expected format
       const transaction = {
         receiptNo: sale.order_no,
-        date: new Date(sale.created_at).toLocaleString("th-TH", {
+        date: new Date(sale.created_at).toLocaleDateString("th-TH", {
           year: "numeric",
           month: "long",
           day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
         }),
         paymentMethod:
-          sale.payment_method === "cash"
-            ? "เงินสด"
-            : sale.payment_method === "transfer"
-              ? "โอนเงิน"
-              : sale.payment_method || "เงินสด",
+          sale.payment_type === "credit_sale"
+            ? "เครดิต"
+            : "เงินสด",
         items:
           sale.order_items?.map((item) => ({
-            name: item.products?.name || "N/A",
+            name: item.products?.name || "ไม่ทราบชื่อสินค้า",
             quantity: item.qty || item.quantity || 1,
+            unit: item.products?.unit_type,
             price: item.price_per_unit || item.price || 0,
-            subtotal: item.subtotal || (item.price_per_unit || item.price || 0) * (item.qty || item.quantity || 1),
+            subtotal:
+              item.subtotal ||
+              (item.price_per_unit || item.price || 0) *
+              (item.qty || item.quantity || 1),
             promotions: item.promotions,
           })) || [],
         total: sale.total_amount || 0,
-        received: sale.payments?.[0]?.tendered_amount || sale.amount_paid || sale.total_amount || 0,
-        change: sale.payments?.[0]?.change_amount || Math.max(
-          0,
-          (sale.amount_paid || sale.total_amount || 0) -
-          (sale.total_amount || 0),
-        ),
+        received: sale.payments?.[0]?.tendered_amount || 0,
+        change: sale.payments?.[0]?.change_amount || 0,
         store: {
           name:
             (sale.payment_type !== "credit_sale" &&
@@ -543,13 +539,9 @@ const DashboardPage = () => {
                                   {sale.customers_info?.name || "ลูกค้าทั่วไป"}
                                 </span>
                                 <span className="text-[10px] font-medium text-inactive">
-                                  {sale.payment_status === "completed"
-                                    ? "ชำระเงินแล้ว"
-                                    : sale.payment_status === "pending"
-                                      ? "รอชำระเงิน"
-                                      : sale.payment_method === "cash"
-                                        ? "เงินสด"
-                                        : "โอนเงิน"}
+                                  {sale.payment_type === "credit_sale"
+                                    ? "ค้างชำระ"
+                                    : "เงินสด"}
                                 </span>
                               </div>
                             </td>
