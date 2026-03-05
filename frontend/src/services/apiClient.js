@@ -19,7 +19,7 @@ const getHeaders = async () => {
 };
 
 const fetchWithRetry = async (url, options, retries = 2) => {
-  const timeout = 15000; // 15 seconds timeout
+  const timeout = 60000; // 60 seconds timeout
   
   try {
     const controller = new AbortController();
@@ -34,10 +34,16 @@ const fetchWithRetry = async (url, options, retries = 2) => {
     
     // Handle transient 401 (e.g., during token refresh)
     if (response.status === 401 && retries > 0) {
-      console.warn("apiClient: 401 Unauthorized, retrying after delay...");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const newHeaders = await getHeaders();
-      return fetchWithRetry(url, { ...options, headers: newHeaders }, retries - 1);
+      console.warn("apiClient: 401 Unauthorized, attempting to refresh session and retry...");
+      // Force Supabase to refresh session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const newHeaders = {
+          ...options.headers,
+          "Authorization": `Bearer ${session.access_token}`
+        };
+        return fetchWithRetry(url, { ...options, headers: newHeaders }, retries - 1);
+      }
     }
 
     if (!response.ok) {

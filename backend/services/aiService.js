@@ -57,7 +57,7 @@ const CHAT_PROMPT_TEMPLATES = {
 // CORE AI FUNCTIONS WITH FALLBACK
 // ============================================================
 
-const generateAIContent = async (prompt, modelName = "gemini-3-pro-preview") => {
+const generateAIContent = async (prompt, modelName = "gemini-2.0-flash") => {
   try {
     const model = genAI.getGenerativeModel({ model: modelName });
     const result = await model.generateContent(prompt);
@@ -69,30 +69,18 @@ const generateAIContent = async (prompt, modelName = "gemini-3-pro-preview") => 
     const isModelUnavailable =
       error.message?.includes("404") || error.message?.includes("not found");
     const isModelOverloaded =
-      error.message?.includes("503") || error.message?.includes("overloaded");
+      error.message?.includes("503") ||
+      error.message?.includes("overloaded") ||
+      error.message?.includes("high demand");
 
-    // Primary Fallback: gemini-3-pro -> gemini-3-flash
-    if (
-      modelName === "gemini-3-pro-preview" &&
-      (isModelUnavailable || isModelOverloaded)
-    ) {
-      console.warn("Gemini 3 Pro fails, falling back to Gemini 3 Flash...");
-      return generateAIContent(prompt, "gemini-3-flash-preview");
-    }
-
-    // Secondary Fallback: gemini-3-flash -> gemini-1.5-flash
-    if (modelName === "gemini-3-flash-preview" && isModelUnavailable) {
-      console.warn(
-        "Gemini 3 Flash not found, falling back to Gemini 1.5 Flash...",
-      );
-      return generateAIContent(prompt, "gemini-1.5-flash");
-    }
-
-    if (error.message?.includes("404")) {
-      return `ขออภัยค่ะ ไม่พบโมเดล AI (${modelName}) ในระบบของคุณ กรุณาตรวจสอบสิทธิ์ที่ Google AI Studio หรือลองใช้ Gemini Pro ค่ะ`;
-    }
-    if (isModelOverloaded) {
-      return "ขออภัยค่ะ ขณะนี้โมเดล AI มีผู้ใช้งานจำนวนมากเกินไป (503) กรุณาลองใหม่อีกครั้งในภายหลังค่ะ";
+    // Fallback logic if needed, but keeping gemini-2.0 as primary
+    if (isModelUnavailable || isModelOverloaded) {
+      if (modelName === "gemini-2.5-flash-lite") {
+        console.warn(
+          "Gemini 2.0 Flash fails, falling back to Gemini 1.5 Flash...",
+        );
+        return generateAIContent(prompt, "gemini-1.5-flash");
+      }
     }
     throw error;
   }
@@ -107,18 +95,22 @@ const aiService = {
   async getPromotionRecommendations(branchId, branchName) {
     if (!branchId) throw new Error("Branch ID is required");
 
-    let [topProducts, salesData, notifications, topStockProducts] = await Promise.all([
-      saleService.getTopSellingProducts(branchId),
-      saleService.getWeeklyAnalytics(branchId),
-      productService.getDashboardNotifications(branchId),
-      productService.getTopStockProducts(branchId),
-    ]);
+    let [topProducts, salesData, notifications, topStockProducts] =
+      await Promise.all([
+        saleService.getTopSellingProducts(branchId),
+        saleService.getWeeklyAnalytics(branchId),
+        productService.getDashboardNotifications(branchId),
+        productService.getTopStockProducts(branchId),
+      ]);
 
     const contextData = {
       branchName: branchName || "Unknown Branch",
-      topSellingItems: topProducts.slice(0, 10).map(p => ({
-        id: p.id, name: p.name, category: p.product_categories?.name || "ไม่ระบุประเภท",
-        sold_qty: p.sold_qty, revenue: p.revenue
+      topSellingItems: topProducts.slice(0, 10).map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.product_categories?.name || "ไม่ระบุประเภท",
+        sold_qty: p.sold_qty,
+        revenue: p.revenue,
       })),
       salesGrowth: salesData?.growth || 0,
       inventoryStats: {
@@ -127,10 +119,22 @@ const aiService = {
         expired: notifications?.expired?.length || 0,
       },
       stockIssues: [
-        ...(notifications?.expiringSoon || []).map(p => ({ name: p.name, reason: `ใกล้หมดอายุ - หมดอายุวันที่ ${p.expiryDate}`, id: p.id })),
-        ...(notifications?.lowStock || []).map(p => ({ name: p.name, reason: `สต็อกต่ำ - เหลือ ${p.qty}`, id: p.id })),
+        ...(notifications?.expiringSoon || []).map((p) => ({
+          name: p.name,
+          reason: `ใกล้หมดอายุ - หมดอายุวันที่ ${p.expiryDate}`,
+          id: p.id,
+        })),
+        ...(notifications?.lowStock || []).map((p) => ({
+          name: p.name,
+          reason: `สต็อกต่ำ - เหลือ ${p.qty}`,
+          id: p.id,
+        })),
       ].slice(0, 5),
-      highStockItems: topStockProducts.slice(0, 5).map(p => ({ name: p.name, reason: `สต็อกเยอะ - ${p.stock_qty} ${p.unit_type || "ชิ้น"}`, id: p.id })),
+      highStockItems: topStockProducts.slice(0, 5).map((p) => ({
+        name: p.name,
+        reason: `สต็อกเยอะ - ${p.stock_qty} ${p.unit_type || "ชิ้น"}`,
+        id: p.id,
+      })),
     };
 
     const prompt = `
@@ -239,7 +243,32 @@ const aiService = {
     }
   },
 
-  async chatWithAI(message, history = [], modelName = "gemini-3-pro-preview") {
+  async generatePromoName({ products, type, value }) {
+    const productNames = (products || []).map((p) => p.name || p).join(", ");
+    const typeLabel =
+      type === "percent"
+        ? `ลด ${value || ""}%`
+        : type === "amount"
+          ? `ลด ${value || ""} บาท`
+          : type === "buy_get"
+            ? "ซื้อแถมฟรี"
+            : "โปรพิเศษ";
+
+    const prompt = `สร้างชื่อโปรโมชั่นภาษาไทยสั้นๆ 1 ชื่อ (ไม่เกิน 6 คำ) ที่จำง่าย น่าสนใจ สำหรับร้านค้าปลีก
+ประเภท: ${typeLabel}
+สินค้า: ${productNames || "ทั่วไป"}
+ตอบแค่ชื่อโปรโมชั่นเท่านั้น ไม่ต้องมีเครื่องหมายคำพูดหรือคำอธิบาย`;
+
+    try {
+      const text = await generateAIContent(prompt);
+      return text.replace(/["\u201C\u201D]/g, "").trim();
+    } catch (error) {
+      console.error("Generate Promo Name Error:", error);
+      throw error;
+    }
+  },
+
+  async chatWithAI(message, history = [], modelName = "gemini-1.5-pro") {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -251,25 +280,23 @@ const aiService = {
       return response.text();
     } catch (error) {
       console.error(`Chat Error (${modelName}):`, error);
-      
-      const isModelUnavailable = error.message?.includes("404") || error.message?.includes("not found");
-      const isModelOverloaded = error.message?.includes("503") || error.message?.includes("overloaded");
+
+      const isModelUnavailable =
+        error.message?.includes("404") || error.message?.includes("not found");
+      const isModelOverloaded =
+        error.message?.includes("503") || error.message?.includes("overloaded");
 
       // Primary Fallback for Chat
       if (
-        modelName === "gemini-3-pro-preview" &&
+        modelName === "gemini-1.5-pro" &&
         (isModelUnavailable || isModelOverloaded)
       ) {
-        return this.chatWithAI(message, history, "gemini-3-flash-preview");
-      }
-
-      // Secondary Fallback for Chat
-      if (modelName === "gemini-3-flash-preview" && isModelUnavailable) {
         return this.chatWithAI(message, history, "gemini-1.5-flash");
       }
+
       throw error;
     }
-  }
+  },
 };
 
 module.exports = aiService;

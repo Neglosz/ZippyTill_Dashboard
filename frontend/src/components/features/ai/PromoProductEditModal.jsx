@@ -1,5 +1,5 @@
-import React from "react";
-import { X } from "lucide-react";
+import React, { useMemo } from "react";
+import { X, AlertCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const PromoProductEditModal = ({
@@ -10,6 +10,31 @@ const PromoProductEditModal = ({
   onSave,
   onClose,
 }) => {
+  const validation = useMemo(() => {
+    if (!product || !formData) return { errors: {}, warnings: {}, isValid: true };
+    const errors = {};
+    const warnings = {};
+
+    const qty = parseFloat(formData.quantity);
+    if (isNaN(qty) || qty <= 0) {
+      errors.quantity = "จำนวนต้องมากกว่า 0";
+    } else if (qty > product.stock) {
+      warnings.quantity = "สต็อกไม่เพียงพอ (คงเหลือ " + product.stock + ")";
+    }
+
+    const cost = parseFloat(formData.costPrice);
+    const lastPrice = parseFloat(formData.lastSalePrice);
+    if (!isNaN(cost) && !isNaN(lastPrice) && cost > lastPrice) {
+      warnings.costPrice = "ต้นทุนสูงกว่าราคาขาย (ขาดทุน)";
+    }
+
+    return {
+      errors,
+      warnings,
+      isValid: Object.keys(errors).length === 0,
+    };
+  }, [product, formData]);
+
   if (!isOpen || !product) return null;
 
   return createPortal(
@@ -59,7 +84,7 @@ const PromoProductEditModal = ({
                   {product.name}
                 </p>
                 <p className="text-xs text-gray-500 font-semibold mt-1">
-                  {product.id}
+                  SKU: {product.sku || product.id}
                 </p>
               </div>
             </div>
@@ -73,13 +98,34 @@ const PromoProductEditModal = ({
                 </label>
                 <input
                   type="number"
+                  min="0.01"
+                  step="any"
                   value={formData.quantity}
                   onChange={(e) =>
                     onFormChange({ ...formData, quantity: e.target.value })
                   }
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
+                  onKeyDown={(e) => {
+                    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${
+                    validation.errors.quantity
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+                      : validation.warnings.quantity
+                      ? "border-orange-300 focus:border-orange-500 focus:ring-orange-100"
+                      : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                  }`}
                   placeholder="จำนวน"
                 />
+                {validation.errors.quantity && (
+                  <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 flex items-center gap-1">
+                    <AlertCircle size={10} /> {validation.errors.quantity}
+                  </p>
+                )}
+                {validation.warnings.quantity && !validation.errors.quantity && (
+                  <p className="text-orange-500 text-[10px] font-bold mt-1 ml-1 flex items-center gap-1">
+                    <AlertCircle size={10} /> {validation.warnings.quantity}
+                  </p>
+                )}
               </div>
 
               {/* Expiry Date */}
@@ -108,6 +154,7 @@ const PromoProductEditModal = ({
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={formData.costPrice}
                   onChange={(e) =>
                     onFormChange({
@@ -115,9 +162,21 @@ const PromoProductEditModal = ({
                       costPrice: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
+                  onKeyDown={(e) => {
+                    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${
+                    validation.warnings.costPrice
+                      ? "border-orange-300 focus:border-orange-500 focus:ring-orange-100"
+                      : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                  }`}
                   placeholder="0.00"
                 />
+                {validation.warnings.costPrice && (
+                  <p className="text-orange-500 text-[10px] font-bold mt-1 ml-1 flex items-center gap-1">
+                    <AlertCircle size={10} /> {validation.warnings.costPrice}
+                  </p>
+                )}
               </div>
 
               {/* Acceptable Profit */}
@@ -128,6 +187,7 @@ const PromoProductEditModal = ({
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={formData.acceptableProfit}
                   onChange={(e) =>
                     onFormChange({
@@ -135,6 +195,9 @@ const PromoProductEditModal = ({
                       acceptableProfit: e.target.value,
                     })
                   }
+                  onKeyDown={(e) => {
+                    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                  }}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
                   placeholder="0.00"
                 />
@@ -148,6 +211,7 @@ const PromoProductEditModal = ({
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={formData.lastSalePrice}
                   onChange={(e) =>
                     onFormChange({
@@ -155,6 +219,9 @@ const PromoProductEditModal = ({
                       lastSalePrice: e.target.value,
                     })
                   }
+                  onKeyDown={(e) => {
+                    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                  }}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm font-semibold transition-all"
                   placeholder="0.00"
                 />
@@ -174,7 +241,12 @@ const PromoProductEditModal = ({
             <button
               type="button"
               onClick={onSave}
-              className="flex-[2] py-3 bg-gradient-to-r from-primary to-orange-600 text-white rounded-xl font-black hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg shadow-primary/30"
+              disabled={!validation.isValid}
+              className={`flex-[2] py-3 text-white rounded-xl font-black transition-all shadow-lg ${
+                validation.isValid
+                  ? "bg-gradient-to-r from-primary to-orange-600 hover:shadow-xl hover:scale-[1.02] shadow-primary/30"
+                  : "bg-gray-300 cursor-not-allowed shadow-none"
+              }`}
             >
               บันทึก
             </button>

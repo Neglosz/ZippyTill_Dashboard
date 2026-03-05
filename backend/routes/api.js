@@ -26,15 +26,35 @@ router.post("/auth/logout", authController.logout);
 router.get("/auth/user", authController.getCurrentUser);
 
 // Product Routes
-router.get("/products", validate(productValidation.branchQuery), productController.getAllProducts);
-router.post("/products", validate(productValidation.createProduct), productController.createProduct);
+router.get(
+  "/products",
+  validate(productValidation.branchQuery),
+  productController.getAllProducts,
+);
+router.post(
+  "/products",
+  validate(productValidation.createProduct),
+  productController.createProduct,
+);
 router.put("/products/:id", productController.updateProduct);
 router.delete("/products/:id", productController.deleteProduct);
 router.get("/products/:id/batches", productController.getProductBatches);
-router.get("/products/categories", validate(productValidation.branchQuery), productController.getAllCategories);
+router.get(
+  "/products/categories",
+  validate(productValidation.branchQuery),
+  productController.getAllCategories,
+);
 router.post("/products/categories", productController.createCategory);
-router.get("/products/notifications", validate(productValidation.branchQuery), productController.getDashboardNotifications);
-router.get("/products/movements", validate(productValidation.branchQuery), productController.getStockMovements);
+router.get(
+  "/products/notifications",
+  validate(productValidation.branchQuery),
+  productController.getDashboardNotifications,
+);
+router.get(
+  "/products/movements",
+  validate(productValidation.branchQuery),
+  productController.getStockMovements,
+);
 router.post("/products/removal", productController.recordStockRemoval);
 
 // Order Routes
@@ -77,13 +97,20 @@ router.get("/stores/:id/stats", storeController.getStoreStats);
 router.post("/stores/:id/access", storeController.updateLastAccessed);
 
 // Transaction Routes
-router.get("/transactions/aggregated", transactionController.getAggregatedTransactions);
+router.get(
+  "/transactions/aggregated",
+  transactionController.getAggregatedTransactions,
+);
 router.get("/transactions/recent", transactionController.getRecentTransactions);
-router.get("/transactions/finance-stats", transactionController.getFinanceStats);
+router.get(
+  "/transactions/finance-stats",
+  transactionController.getFinanceStats,
+);
 
 // AI Routes
 router.get("/ai/templates", aiController.getChatTemplates);
 router.get("/ai/promotions", aiController.getPromotionRecommendations);
 router.post("/ai/chat", aiController.chatWithAI);
+router.post("/ai/generate-promo-name", aiController.generatePromoName);
 
 module.exports = router;

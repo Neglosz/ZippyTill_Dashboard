@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -6,6 +6,7 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     const [isOpen, setIsOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState(value ? new Date(value) : new Date());
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const [isReady, setIsReady] = useState(false);
     const containerRef = useRef(null);
     const triggerRef = useRef(null);
 
@@ -19,7 +20,6 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
-                // Also check if the click was inside the portaled element
                 const portalElement = document.getElementById("be-datepicker-portal");
                 if (portalElement && portalElement.contains(event.target)) return;
                 setIsOpen(false);
@@ -37,19 +37,27 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
                 left: rect.left + window.scrollX,
                 width: rect.width
             });
+            setIsReady(true);
         }
     };
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (isOpen) {
+            setIsReady(false);
             updateCoords();
+            
+            // Re-calculate after a tiny delay to ensure proper layout
+            const timer = setTimeout(updateCoords, 0);
+            
             window.addEventListener('scroll', updateCoords, true);
             window.addEventListener('resize', updateCoords);
+            
+            return () => {
+                clearTimeout(timer);
+                window.removeEventListener('scroll', updateCoords, true);
+                window.removeEventListener('resize', updateCoords);
+            };
         }
-        return () => {
-            window.removeEventListener('scroll', updateCoords, true);
-            window.removeEventListener('resize', updateCoords);
-        };
     }, [isOpen]);
 
     const formatDateToBE = (dateStr) => {
@@ -93,12 +101,12 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     const blanks = Array(firstDay).fill(null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-    const dropdown = isOpen ? createPortal(
+    const dropdown = isOpen && isReady ? createPortal(
         <div
             id="be-datepicker-portal"
             className="fixed z-[10001] bg-white rounded-[24px] shadow-2xl border border-gray-100 p-4 animate-in fade-in zoom-in-95 duration-200"
             style={{
-                top: `${coords.top - 200}px`,
+                top: `${coords.top + 8}px`,
                 left: `${coords.left + coords.width / 2}px`,
                 transform: 'translateX(-50%)',
                 width: '280px'

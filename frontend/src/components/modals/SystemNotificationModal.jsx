@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, AlertTriangle, Calendar, Clock, Package, Bell } from "lucide-react";
 
 const SystemNotificationModal = ({ isOpen, onClose, data }) => {
-  if (!isOpen || !data) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !data || !mounted) return null;
 
   const { expired = [], expiringSoon = [], lowStock = [] } = data;
   const totalItems = expired.length + expiringSoon.length + lowStock.length;
 
   if (totalItems === 0) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div
         className="bg-white w-full max-w-5xl rounded-[32px] shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300"
@@ -76,7 +83,8 @@ const SystemNotificationModal = ({ isOpen, onClose, data }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
@@ -115,9 +123,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
       className={`${theme.bg} rounded-[24px] p-5 border ${theme.border} flex flex-col h-full overflow-hidden`}
     >
       <div className="flex items-center gap-2.5 mb-4 shrink-0">
-        <div
-          className={`${theme.iconBg} text-white p-2 rounded-xl shadow-sm`}
-        >
+        <div className={`${theme.iconBg} text-white p-2 rounded-xl shadow-sm`}>
           <Icon size={16} />
         </div>
         <h3

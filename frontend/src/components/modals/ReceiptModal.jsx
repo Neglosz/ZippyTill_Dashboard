@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, X, Printer, ArrowRight } from "lucide-react";
 
 const styles = {
@@ -244,6 +245,7 @@ export default function ReceiptModal({
 }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Default transaction data with null safety
   const safeTransaction = transaction || {};
@@ -267,6 +269,10 @@ export default function ReceiptModal({
       phone: "012-xxx-xxxx",
     },
   } = safeTransaction;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -296,9 +302,9 @@ export default function ReceiptModal({
     }
   };
 
-  if (!shouldRender) return null;
+  if (!shouldRender || !mounted) return null;
 
-  return (
+  const modalContent = (
     <div style={styles.modalWrapper}>
       {/* Embedded CSS for pseudo-classes & scrollbar */}
       <style>{`
@@ -410,15 +416,28 @@ export default function ReceiptModal({
             {items.map((item, index) => (
               <div key={index} style={styles.itemRow}>
                 <span style={styles.itemName}>
-                  {item.name} {item.unit && item.unit !== "ชิ้น" ? `${item.quantity}${item.unit}` : item.quantity !== 0 && `x${item.quantity}`}
+                  {item.name}{" "}
+                  {item.unit && item.unit !== "ชิ้น"
+                    ? `${item.quantity}${item.unit}`
+                    : item.quantity !== 0 && `x${item.quantity}`}
                   {item.price && item.quantity > 0 && (
-                    <span style={{ fontSize: "10px", color: "#888", marginLeft: "4px" }}>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: "#888",
+                        marginLeft: "4px",
+                      }}
+                    >
                       ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
                     </span>
                   )}
                 </span>
                 <span style={styles.itemPrice}>
-                  ฿{(item.subtotal || (item.price * item.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ฿
+                  {(item.subtotal || item.price * item.quantity).toLocaleString(
+                    undefined,
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                  )}
                 </span>
               </div>
             ))}
@@ -482,4 +501,6 @@ export default function ReceiptModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
