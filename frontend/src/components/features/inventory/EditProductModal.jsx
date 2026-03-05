@@ -197,10 +197,10 @@ const EditProductModal = ({
 
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-      <div className="bg-white rounded-[24px] w-full max-w-[1000px] relative shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-[20px] w-full max-w-[900px] relative shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-2xl font-bold text-[#1B2559]">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+          <h2 className="text-xl font-bold text-[#1B2559]">
             {product ? "แก้ไขรายละเอียดสินค้า" : "เพิ่มสินค้าใหม่"}
           </h2>
           <button
@@ -212,10 +212,10 @@ const EditProductModal = ({
         </div>
 
         {/* Product Type Display (Locked for Editing) */}
-        <div className="px-8 pt-6">
-          <div className="bg-[#F8FAFD] p-1.5 rounded-[20px] flex gap-1 items-center max-w-fit shadow-sm border border-gray-100">
+        <div className="px-6 pt-4">
+          <div className="bg-[#F8FAFD] p-1 rounded-[16px] flex gap-1 items-center max-w-fit shadow-sm border border-gray-100">
             {product ? (
-              <div className="flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5 cursor-default">
+              <div className="flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold bg-white text-primary shadow-sm ring-1 ring-black/5 cursor-default">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 {formData.productType === "weighted"
                   ? "สินค้าชั่งขาย"
@@ -232,8 +232,8 @@ const EditProductModal = ({
                       category: "",
                     }))
                   }
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${formData.productType === "general"
-                    ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                  className={`flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold transition-all duration-300 ${formData.productType === "general"
+                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
                     : "text-gray-400 hover:text-gray-600"
                     }`}
                 >
@@ -254,8 +254,8 @@ const EditProductModal = ({
                       category: "",
                     }))
                   }
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-[16px] text-sm font-bold transition-all duration-300 ${formData.productType === "weighted"
-                    ? "bg-white text-primary shadow-md shadow-primary/5 ring-1 ring-black/5"
+                  className={`flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold transition-all duration-300 ${formData.productType === "weighted"
+                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
                     : "text-gray-400 hover:text-gray-600"
                     }`}
                 >
@@ -273,17 +273,17 @@ const EditProductModal = ({
         </div>
 
         <div className="p-6 flex flex-col lg:flex-row gap-6">
-          {/* Left Column: Image - Upload Focus (60%) */}
-          <div className="w-full lg:w-[60%] flex flex-col justify-center items-center">
+          {/* Left Column: Image - Upload Focus (55%) */}
+          <div className="w-full lg:w-[55%] flex flex-col justify-start items-center">
             {/* Premium Image Frame */}
-            <div className="w-full aspect-[4/3] relative group">
+            <div className="w-full aspect-[4/5] relative group">
               {/* Decorative Blur Background */}
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
               {/* Main Container - View Only */}
               <div
                 onClick={handleImageClick}
-                className="w-full h-full bg-white rounded-[32px] flex items-center justify-center p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(27,37,89,0.15)] group-hover:-translate-y-1 cursor-pointer"
+                className="w-full h-full bg-white rounded-[24px] flex items-center justify-center p-4 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_20px_40px_-10px_rgba(27,37,89,0.12)] cursor-pointer"
               >
                 <input
                   type="file"
@@ -301,7 +301,7 @@ const EditProductModal = ({
                     <img
                       src={formData.image}
                       alt={formData.name}
-                      className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[24px]"
+                      className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[16px]"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/300x400?text=No+Image";
@@ -341,13 +341,13 @@ const EditProductModal = ({
             </div>
           </div>
 
-          {/* Right Column: Form (40%) */}
-          <div className="w-full lg:w-[40%] space-y-5">
+          {/* Right Column: Form (45%) */}
+          <div className="w-full lg:w-[45%] space-y-4">
             {/* Section: Basic Info */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="w-1 h-4 bg-primary rounded-full" />
-                <h3 className="text-base font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3>
+                <div className="w-0.5 h-3.5 bg-primary rounded-full" />
+                <h3 className="text-sm font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -362,7 +362,7 @@ const EditProductModal = ({
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.name ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
+                    className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.name ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
                       }`}
                     placeholder="ระบุชื่อสินค้า"
                   />
@@ -383,7 +383,7 @@ const EditProductModal = ({
                       name="id"
                       value={formData.id}
                       onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.id ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.id ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
                         }`}
                       placeholder="รหัสสินค้า"
                     />
@@ -405,7 +405,7 @@ const EditProductModal = ({
                         name="category"
                         value={isAddingCategory ? "__add_new__" : formData.category}
                         onChange={handleCategoryChange}
-                        className="w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
+                        className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
                       >
                         <option value="">เลือกหมวดหมู่</option>
                         {(filteredCategories || []).map((cat) => (
@@ -463,15 +463,15 @@ const EditProductModal = ({
             </div>
 
             {/* Section: Pricing */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="w-1 h-4 bg-emerald-500 rounded-full" />
-                <h3 className="text-base font-bold text-[#1B2559]">ราคา</h3>
+                <div className="w-0.5 h-3.5 bg-emerald-500 rounded-full" />
+                <h3 className="text-sm font-bold text-[#1B2559]">ราคา</h3>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 block px-1">ราคาทุน</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาทุน</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -480,7 +480,7 @@ const EditProductModal = ({
                       name="cost"
                       value={formData.cost}
                       onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20 ${errors.cost ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/20"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20 ${errors.cost ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/20"
                         }`}
                       placeholder="0.00"
                     />
@@ -491,7 +491,7 @@ const EditProductModal = ({
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 block px-1">ราคาขาย</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาขาย</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -500,7 +500,7 @@ const EditProductModal = ({
                       name="price"
                       value={formData.price}
                       onChange={handleChange}
-                      className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[16px] px-4 py-3 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md shadow-emerald-200/20 ${errors.price ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/30"
+                      className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md shadow-emerald-200/20 ${errors.price ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/30"
                         }`}
                       placeholder="0.00"
                     />
@@ -525,15 +525,15 @@ const EditProductModal = ({
             </div>
 
             {/* Section: Inventory */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="w-1 h-4 bg-orange-400 rounded-full" />
-                <h3 className="text-base font-bold text-[#1B2559]">สต็อกสินค้า</h3>
+                <div className="w-0.5 h-3.5 bg-orange-400 rounded-full" />
+                <h3 className="text-sm font-bold text-[#1B2559]">สต็อกสินค้า</h3>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 block px-1">จำนวนคงเหลือ</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">จำนวนคงเหลือ</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -542,7 +542,7 @@ const EditProductModal = ({
                       name="qty"
                       value={formData.qty}
                       onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[16px] px-4 py-3 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.qty ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
+                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.qty ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
                         }`}
                       placeholder="0"
                     />
@@ -553,7 +553,7 @@ const EditProductModal = ({
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-400 block px-1 whitespace-nowrap overflow-hidden text-ellipsis italic">แจ้งเตือนขั้นต่ำ</label>
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1 whitespace-nowrap overflow-hidden text-ellipsis italic">แจ้งเตือนขั้นต่ำ</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -562,7 +562,7 @@ const EditProductModal = ({
                       name="lowStockThreshold"
                       value={formData.lowStockThreshold}
                       onChange={handleChange}
-                      className={`w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[16px] px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
+                      className={`w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[12px] px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
                         }`}
                       placeholder="0"
                     />
@@ -623,7 +623,7 @@ const EditProductModal = ({
                   onSave(formData);
                 }}
                 disabled={isLoading}
-                className="group relative w-full bg-primary text-white text-base font-black py-4 rounded-[20px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative flex items-center justify-center gap-3">
