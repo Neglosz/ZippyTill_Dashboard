@@ -84,7 +84,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const FinancePage = () => {
-  const { activeBranchId, activeBranchName } = useBranch();
+  const {
+    activeBranchId,
+    activeBranchName,
+    activeBranchAddress,
+    activeBranchPhone,
+  } = useBranch();
   const [loading, setLoading] = useState(true);
 
   // Data States
@@ -817,8 +822,8 @@ const FinancePage = () => {
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
-                        ? "bg-white text-primary shadow-sm"
-                        : "text-inactive hover:text-gray-600"
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-inactive hover:text-gray-600"
                       }`}
                   >
                     {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
@@ -1028,10 +1033,10 @@ const FinancePage = () => {
                         <td className="py-4 px-4">
                           <span
                             className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : tx.payment_status === "paid"
                                 ? "bg-emerald-50 text-emerald-600"
-                                : tx.payment_status === "paid"
-                                  ? "bg-emerald-50 text-emerald-600"
-                                  : "bg-orange-50 text-orange-600"
+                                : "bg-orange-50 text-orange-600"
                               }`}
                           >
                             {tx.source === "manual"
@@ -1106,6 +1111,7 @@ const FinancePage = () => {
                     unit: detail.products?.unit_type,
                     price: detail.price_per_unit,
                     subtotal: detail.subtotal,
+                    promotions: detail.promotions,
                   })) || [
                     {
                       name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
@@ -1135,16 +1141,18 @@ const FinancePage = () => {
                   selectedTransaction.displayAmount ||
                   0,
                 ),
-              received: 0,
-              change: 0,
+              received: fullOrderData?.payments?.[0]?.tendered_amount || 0,
+              change: fullOrderData?.payments?.[0]?.change_amount || 0,
               store: {
                 name:
-                  selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
-                address: "-",
-                phone:
-                  fullOrderData?.customers_info?.phone ||
-                  selectedTransaction.customers_info?.phone ||
-                  "-",
+                  selectedTransaction.payment_type !== "credit_sale" &&
+                    selectedTransaction.payment_method !== "credit_sale" &&
+                    (selectedTransaction.customers_info?.name === "ลูกค้าทั่วไป" ||
+                      !selectedTransaction.customers_info?.name)
+                    ? activeBranchName || "Goody"
+                    : selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
+                address: activeBranchAddress || "Kasetsart",
+                phone: activeBranchPhone || "0950527411",
               },
             }
             : null

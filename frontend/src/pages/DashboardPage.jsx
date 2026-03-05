@@ -27,7 +27,12 @@ import { useBranch } from "../contexts/BranchContext";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const DashboardPage = () => {
-  const { activeBranchId, activeBranchName } = useBranch();
+  const {
+    activeBranchId,
+    activeBranchName,
+    activeBranchAddress,
+    activeBranchPhone,
+  } = useBranch();
   const scrollRef = React.useRef(null);
   const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false);
@@ -200,21 +205,27 @@ const DashboardPage = () => {
           sale.order_items?.map((item) => ({
             name: item.products?.name || "N/A",
             quantity: item.qty || item.quantity || 1,
-            price:
-              (item.price_per_unit || item.price || 0) *
-              (item.qty || item.quantity || 1),
+            price: item.price_per_unit || item.price || 0,
+            subtotal: item.subtotal || (item.price_per_unit || item.price || 0) * (item.qty || item.quantity || 1),
+            promotions: item.promotions,
           })) || [],
         total: sale.total_amount || 0,
-        received: sale.amount_paid || sale.total_amount || 0,
-        change: Math.max(
+        received: sale.payments?.[0]?.tendered_amount || sale.amount_paid || sale.total_amount || 0,
+        change: sale.payments?.[0]?.change_amount || Math.max(
           0,
           (sale.amount_paid || sale.total_amount || 0) -
           (sale.total_amount || 0),
         ),
         store: {
-          name: activeBranchName || "ZippyTill",
-          address: "สาขา " + (activeBranchName || "Default"),
-          phone: sale.customers_info?.phone || "-",
+          name:
+            (sale.payment_type !== "credit_sale" &&
+              sale.payment_method !== "credit_sale") ||
+              !sale.customers_info?.name ||
+              sale.customers_info?.name === "ลูกค้าทั่วไป"
+              ? activeBranchName || "Goody"
+              : sale.customers_info?.name,
+          address: activeBranchAddress || "Kasetsart",
+          phone: activeBranchPhone || "0950527411",
         },
       };
       setSelectedTransaction(transaction);
@@ -421,12 +432,12 @@ const DashboardPage = () => {
                           <div className="w-full bg-gray-50 h-1.5 rounded-full overflow-hidden border border-gray-100/50 shadow-inner relative">
                             <div
                               className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${rank === 1
-                                  ? "bg-amber-400"
-                                  : rank === 2
-                                    ? "bg-slate-400"
-                                    : rank === 3
-                                      ? "bg-orange-400"
-                                      : "bg-primary"
+                                ? "bg-amber-400"
+                                : rank === 2
+                                  ? "bg-slate-400"
+                                  : rank === 3
+                                    ? "bg-orange-400"
+                                    : "bg-primary"
                                 }`}
                               style={{
                                 width: `${Math.min(100, (item.sold_qty / (bestSellers[0].sold_qty || 1)) * 100)}%`,
@@ -554,10 +565,10 @@ const DashboardPage = () => {
                               <div className="flex items-center justify-end">
                                 <div
                                   className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all ${sale.payment_status === "completed"
-                                      ? "bg-emerald-50 text-emerald-500"
-                                      : sale.payment_status === "pending"
-                                        ? "bg-amber-50 text-amber-500"
-                                        : "bg-rose-50 text-rose-500"
+                                    ? "bg-emerald-50 text-emerald-500"
+                                    : sale.payment_status === "pending"
+                                      ? "bg-amber-50 text-amber-500"
+                                      : "bg-rose-50 text-rose-500"
                                     }`}
                                 >
                                   {sale.payment_status === "completed" ? (
