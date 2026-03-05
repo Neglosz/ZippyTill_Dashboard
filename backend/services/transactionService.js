@@ -47,17 +47,17 @@ const transactionService = {
     const selectedDate = new Date(date);
     const year = selectedDate.getFullYear(); const month = selectedDate.getMonth(); const day = selectedDate.getDate();
     let startDate, endDate;
-    if (periodType === "day") { 
-      startDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`; 
-      endDate = startDate; 
+    if (periodType === "day") {
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      endDate = startDate;
     }
-    else if (periodType === "month") { 
-      startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`; 
-      endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`; 
+    else if (periodType === "month") {
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
     }
-    else if (periodType === "year") { 
-      startDate = `${year}-01-01`; 
-      endDate = `${year}-12-31`; 
+    else if (periodType === "year") {
+      startDate = `${year}-01-01`;
+      endDate = `${year}-12-31`;
     }
 
     let query = supabase.from("account_transactions").select("*").eq("store_id", storeId);
@@ -66,7 +66,7 @@ const transactionService = {
 
     const { data, error } = await query.order("created_at", { ascending: true });
     if (error) throw error;
-    
+
     // Also include sales from orders that might not be in account_transactions
     let orderQuery = supabase.from("orders").select("total_amount, created_at").eq("store_id", storeId);
     if (periodType === "day") {
@@ -74,9 +74,9 @@ const transactionService = {
     } else {
       orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${endDate}T23:59:59`);
     }
-    
+
     const { data: orderData } = await orderQuery;
-    
+
     const combinedData = [...(data || [])];
     (orderData || []).forEach(o => {
       combinedData.push({
@@ -101,18 +101,18 @@ const transactionService = {
 
   getFinanceStats: async (storeId) => {
     if (!storeId) throw new Error("Store ID is required");
-    
+
     // 1. Get manual transactions
     const { data: transactions } = await supabase.from("account_transactions").select("amount, trans_type").eq("store_id", storeId);
     let totalRevenue = 0, totalExpense = 0;
-    (transactions || []).forEach((tx) => { 
-      if (tx.trans_type === "income") totalRevenue += Number(tx.amount || 0); 
-      else totalExpense += Number(tx.amount || 0); 
+    (transactions || []).forEach((tx) => {
+      if (tx.trans_type === "income") totalRevenue += Number(tx.amount || 0);
+      else totalExpense += Number(tx.amount || 0);
     });
 
     // 2. Get order revenue and payment channels
     const { data: orders } = await supabase.from("orders").select("total_amount, payment_type, payment_method, payment_status").eq("store_id", storeId);
-    
+
     const paymentStats = {
       "cash": 0,
       "transfer": 0,
@@ -120,11 +120,11 @@ const transactionService = {
       "credit_sale": 0,
       "other": 0
     };
-    
+
     (orders || []).forEach(o => {
       const amount = Number(o.total_amount || 0);
       totalRevenue += amount;
-      
+
       const method = o.payment_type || o.payment_method || "cash";
       if (method === "credit_sale") {
         paymentStats["credit_sale"] += amount;
@@ -138,17 +138,17 @@ const transactionService = {
     const totalOrdersRevenue = (orders || []).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const paymentChannels = Object.keys(paymentStats)
       .filter(key => paymentStats[key] > 0)
-      .map((method) => ({ 
-        method: method === "cash" ? "เงินสด" : method === "transfer" ? "โอนเงิน" : method === "credit" ? "เครดิต" : method === "credit_sale" ? "ค้างชำระ" : "อื่นๆ", 
-        amount: paymentStats[method], 
-        percent: totalOrdersRevenue > 0 ? Math.round((paymentStats[method] / totalOrdersRevenue) * 100) : 0 
+      .map((method) => ({
+        method: method === "cash" ? "เงินสด" : method === "transfer" ? "โอนเงิน" : method === "credit" ? "เครดิต" : method === "credit_sale" ? "ค้างชำระ" : "อื่นๆ",
+        amount: paymentStats[method],
+        percent: totalOrdersRevenue > 0 ? Math.round((paymentStats[method] / totalOrdersRevenue) * 100) : 0
       }));
 
-    return { 
-      totalRevenue, 
-      totalExpense, 
-      netProfit: totalRevenue - totalExpense, 
-      paymentChannels: paymentChannels.sort((a, b) => b.amount - a.amount) 
+    return {
+      totalRevenue,
+      totalExpense,
+      netProfit: totalRevenue - totalExpense,
+      paymentChannels: paymentChannels.sort((a, b) => b.amount - a.amount)
     };
   },
 };
