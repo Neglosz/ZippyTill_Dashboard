@@ -63,10 +63,13 @@ const TaxCalculationPage = () => {
   const netVat = sellVat - buyVat;
 
   const formatCurrency = (val) => {
+    const num = Number(val) || 0;
+    // Truncate to 2 decimal places without rounding (using a small epsilon to handle float precision)
+    const truncated = Math.floor(num * 100 + 0.0000001) / 100;
     return new Intl.NumberFormat("th-TH", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val || 0);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(truncated);
   };
 
   const formatWithCommas = (val) => {
@@ -77,7 +80,18 @@ const TaxCalculationPage = () => {
   };
 
   const handleFormattedInput = (e, setter, maxValue = Infinity) => {
-    const rawValue = e.target.value.replace(/,/g, "");
+    let rawValue = e.target.value.replace(/,/g, "");
+
+    // Remove leading zeros if not followed by a decimal point
+    if (
+      rawValue.length > 1 &&
+      rawValue.startsWith("0") &&
+      rawValue[1] !== "."
+    ) {
+      rawValue = rawValue.replace(/^0+/, "");
+      if (rawValue === "") rawValue = "0"; // Keep 0 if entire string was zeros
+    }
+
     if (rawValue === "" || /^\d*\.?\d*$/.test(rawValue)) {
       if (maxValue !== Infinity && Number(rawValue) > maxValue) {
         setter(maxValue.toString());
@@ -235,7 +249,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-2xl font-black tracking-tighter text-gray-900 whitespace-nowrap overflow-hidden text-right">
+                  <div className="text-2xl font-black tracking-tighter text-gray-900 whitespace-nowrap overflow-hidden text-right pr-4">
                     ฿{formatCurrency(item.val)}
                   </div>
                 </div>
@@ -268,7 +282,7 @@ const TaxCalculationPage = () => {
                       {item.label}
                     </span>
                   </div>
-                  <div className="text-3xl font-black tracking-tighter text-orange-600 whitespace-nowrap overflow-hidden text-right">
+                  <div className="text-3xl font-black tracking-tighter text-orange-600 whitespace-nowrap overflow-hidden text-right pr-4">
                     {item.isRate ? item.val : `฿${formatCurrency(item.val)}`}
                   </div>
                 </div>
@@ -278,18 +292,20 @@ const TaxCalculationPage = () => {
             <div className="bg-[#FF5C00] rounded-[24px] p-6 md:p-8 relative z-10 shadow-premium transition-all cursor-default overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-[80px]" />
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
+                <div className="flex-1 min-w-0">
                   <span className="text-[11px] font-bold text-white/90 uppercase tracking-[0.1em] block mb-2">
                     ภาษีที่ต้องชำระ (ประเมินเบื้องต้น)
                   </span>
-                  <div className="text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline justify-end gap-2 overflow-hidden whitespace-nowrap">
-                    <span>฿{formatCurrency(pitResult.totalTax)}</span>
+                  <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2 overflow-hidden whitespace-nowrap">
+                    <span className="truncate">
+                      ฿{formatCurrency(pitResult.totalTax)}
+                    </span>
                     <span className="text-xl font-bold text-white/80 tracking-normal uppercase shrink-0">
                       บาท
                     </span>
                   </div>
                 </div>
-                <div className="bg-white/20 h-16 w-16 rounded-[18px] flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
+                <div className="bg-white/20 h-16 w-16 rounded-[18px] flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0 self-center md:self-auto">
                   <Calculator
                     className="w-8 h-8 text-white"
                     strokeWidth={2.5}
@@ -377,7 +393,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-emerald-600 uppercase shrink-0">
                   VAT 7%
                 </span>
-                <span className="text-2xl font-black text-emerald-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2">
+                <span className="text-2xl font-black text-emerald-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2 pr-4">
                   ฿{formatCurrency(buyVat)}
                 </span>
               </div>
@@ -415,7 +431,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-blue-600 uppercase shrink-0">
                   VAT 7%
                 </span>
-                <span className="text-2xl font-black text-blue-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2">
+                <span className="text-2xl font-black text-blue-600 tracking-tighter whitespace-nowrap overflow-hidden text-right ml-2 pr-4">
                   ฿{formatCurrency(sellVat)}
                 </span>
               </div>
@@ -440,7 +456,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-inactive uppercase shrink-0">
                   ภาษีขาย
                 </span>
-                <span className="text-lg font-black text-blue-600 leading-none whitespace-nowrap overflow-hidden text-right ml-2">
+                <span className="text-lg font-black text-blue-600 leading-none whitespace-nowrap overflow-hidden text-right ml-2 pr-4">
                   ฿{formatCurrency(sellVat)}
                 </span>
               </div>
@@ -448,7 +464,7 @@ const TaxCalculationPage = () => {
                 <span className="text-[10px] font-black text-inactive uppercase shrink-0">
                   ภาษีซื้อ
                 </span>
-                <span className="text-lg font-black text-rose-500 leading-none whitespace-nowrap overflow-hidden text-right ml-2">
+                <span className="text-lg font-black text-rose-500 leading-none whitespace-nowrap overflow-hidden text-right ml-2 pr-4">
                   ฿{formatCurrency(buyVat)}
                 </span>
               </div>
@@ -459,7 +475,7 @@ const TaxCalculationPage = () => {
                   <span className="text-[10px] font-black text-white/80 uppercase mb-1 block tracking-widest relative z-10">
                     ยอดสุทธิที่ต้องนำส่ง
                   </span>
-                  <div className="text-4xl font-black text-white tracking-tighter relative z-10 whitespace-nowrap overflow-hidden text-right">
+                  <div className="text-4xl font-black text-white tracking-tighter relative z-10 whitespace-nowrap overflow-hidden text-right pr-4">
                     ฿{formatCurrency(netVat)}
                   </div>
                 </div>
