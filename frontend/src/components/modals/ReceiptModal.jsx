@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Check, X, Printer, ArrowRight } from "lucide-react";
+import { useBranch } from "../../contexts/BranchContext";
 
 const styles = {
   modalWrapper: {
@@ -37,20 +38,25 @@ const styles = {
   },
   modalHeader: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
+    position: "relative",
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "black",
     margin: 0,
-    color: "#333",
+    color: "#000",
+    letterSpacing: "-0.5px",
   },
   closeButton: {
+    position: "absolute",
+    right: -5,
+    top: -5,
     background: "none",
     border: "none",
-    padding: 4,
+    padding: 8,
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
@@ -65,11 +71,10 @@ const styles = {
     marginBottom: 15,
   },
   successIcon: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     borderRadius: "50%",
-    background:
-      "linear-gradient(135deg, rgba(53, 224, 173, 0.2) 0%, rgba(53, 224, 173, 0.1) 100%)",
+    border: "2px solid #35E0AD",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -92,22 +97,21 @@ const styles = {
     alignItems: "center",
     marginBottom: 15,
     paddingBottom: 15,
-    borderBottom: "1px dashed #E0E0E0",
   },
   storeName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     margin: "0 0 3px 0",
     color: "#333",
   },
   storeAddress: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#666",
     textAlign: "center",
     margin: 0,
   },
   storePhone: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#666",
     margin: 0,
   },
@@ -119,18 +123,18 @@ const styles = {
     marginBottom: 5,
   },
   detailLabel: {
-    fontSize: 13,
-    color: "#666",
+    fontSize: 14,
+    color: "#333",
     width: 100,
     flexShrink: 0,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#333",
     flex: 1,
   },
   itemsContainer: {
-    maxHeight: 120,
+    maxHeight: 250,
     marginBottom: 15,
     overflowY: "auto",
   },
@@ -139,24 +143,38 @@ const styles = {
     flexDirection: "column",
   },
   itemHeader: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#333",
     paddingBottom: 8,
     marginBottom: 10,
-    borderBottom: "1px dashed #E0E0E0",
+    display: "flex",
+    justifyContent: "space-between",
   },
   itemRow: {
     display: "flex",
     justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 8,
+    gap: 10,
   },
-  itemName: {
+  itemNameCol: {
+    flex: "1 1 0%",
     fontSize: 14,
     color: "#333",
+    lineHeight: "1.2",
   },
-  itemPrice: {
+  itemPriceCol: {
+    width: 60,
+    textAlign: "right",
     fontSize: 14,
+    color: "#666",
+  },
+  itemTotalCol: {
+    width: 80,
+    textAlign: "right",
+    fontSize: 14,
+    fontWeight: "bold",
     color: "#333",
   },
   totalsContainer: {
@@ -168,6 +186,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     marginBottom: 5,
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 16,
@@ -176,7 +195,7 @@ const styles = {
   },
   totalValue: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "black",
     color: "#333",
   },
   totalLabelSmall: {
@@ -245,6 +264,12 @@ export default function ReceiptModal({
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
 
+  const {
+    activeBranchName,
+    activeBranchAddress,
+    activeBranchPhone,
+  } = useBranch();
+
   // Default transaction data with null safety
   const safeTransaction = transaction || {};
   const {
@@ -261,12 +286,39 @@ export default function ReceiptModal({
     total = 0,
     received = 0,
     change = 0,
-    store = {
-      name: "เจเค ปาร์ค",
-      address: "100 ถ.ทุ่งสลา อ.ศรีราชา จ.ชลบุรี",
-      phone: "012-xxx-xxxx",
-    },
+    store: providedStore,
   } = safeTransaction;
+
+  // Store display logic:
+  // If not credit sale and name is "ลูกค้าทั่วไป", use branch name.
+  const isCreditSale =
+    paymentMethod === "เครดิต" || paymentMethod === "credit_sale";
+  const rawStoreName = providedStore?.name || "ลูกค้าทั่วไป";
+
+  const displayStoreName =
+    !isCreditSale && (rawStoreName === "ลูกค้าทั่วไป" || !providedStore?.name)
+      ? activeBranchName || "Goody"
+      : rawStoreName;
+
+  const displayAddress =
+    providedStore?.address && providedStore?.address !== "-"
+      ? providedStore.address
+      : activeBranchAddress && activeBranchAddress !== "-"
+        ? activeBranchAddress
+        : "Kasetsart";
+
+  const displayPhone =
+    providedStore?.phone && providedStore?.phone !== "-"
+      ? providedStore.phone
+      : activeBranchPhone && activeBranchPhone !== "-"
+        ? activeBranchPhone
+        : "0950527411";
+
+  const store = {
+    name: displayStoreName,
+    address: displayAddress,
+    phone: displayPhone,
+  };
 
   useEffect(() => {
     if (visible) {
@@ -374,7 +426,7 @@ export default function ReceiptModal({
         {/* Success Icon */}
         <div style={styles.successContainer}>
           <div style={styles.successIcon}>
-            <Check size={40} color="#35E0AD" />
+            <Check size={32} color="#35E0AD" strokeWidth={3} />
           </div>
           <h3 style={styles.successTitle}>ชำระเงินสำเร็จ</h3>
           <p style={styles.successSubtitle}>ขอบคุณที่ใช้บริการ</p>
@@ -405,23 +457,60 @@ export default function ReceiptModal({
 
         {/* Items */}
         <div className="receipt-items-container" style={styles.itemsContainer}>
-          <div style={styles.itemHeader}>รายการสินค้า</div>
+          <div style={styles.itemHeader}>
+            <span style={{ flex: "1" }}>ชื่อสินค้า</span>
+            <span style={{ width: "60px", textAlign: "right" }}>ราคา</span>
+            <span style={{ width: "80px", textAlign: "right" }}>รวม</span>
+          </div>
           <div style={styles.itemsList}>
-            {items.map((item, index) => (
-              <div key={index} style={styles.itemRow}>
-                <span style={styles.itemName}>
-                  {item.name} {item.unit && item.unit !== "ชิ้น" ? `${item.quantity}${item.unit}` : item.quantity !== 0 && `x${item.quantity}`}
-                  {item.price && item.quantity > 0 && (
-                    <span style={{ fontSize: "10px", color: "#888", marginLeft: "4px" }}>
-                      ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
-                    </span>
-                  )}
-                </span>
-                <span style={styles.itemPrice}>
-                  ฿{(item.subtotal || (item.price * item.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+            {items.map((item, index) => {
+              const unitLabel =
+                item.unit && item.unit !== "ชิ้น" ? ` ${item.unit}` : "";
+              const qtyLabel =
+                item.quantity !== 0 ? ` x${item.quantity}${unitLabel}` : "";
+              const unitPrice = item.price || 0;
+              const subtotal = item.subtotal || unitPrice * item.quantity;
+
+              // Check if it's an AI promotion
+              // backend joined promotions as item.promotions
+              const isAiPromo =
+                item.promotions?.description?.startsWith("AI แนะนำ:") ||
+                item.promotion_description?.startsWith("AI แนะนำ:");
+
+              return (
+                <div key={index} style={styles.itemRow}>
+                  <div style={styles.itemNameCol}>
+                    {item.name}
+                    {qtyLabel}
+                    {isAiPromo && (
+                      <span
+                        style={{
+                          color: "#4A90D9",
+                          fontSize: "10px",
+                          fontWeight: "bold",
+                          marginLeft: "4px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        (AI)
+                      </span>
+                    )}
+                  </div>
+                  <div style={styles.itemPriceCol}>
+                    {unitPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
+                  </div>
+                  <div style={styles.itemTotalCol}>
+                    {subtotal.toLocaleString(undefined, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -429,18 +518,18 @@ export default function ReceiptModal({
         <div style={styles.totalsContainer}>
           <div style={styles.totalRow}>
             <span style={styles.totalLabel}>รวมทั้งหมด</span>
-            <span style={styles.totalValue}>฿{total.toFixed(2)}</span>
+            <span style={styles.totalValue}>฿{total.toLocaleString()}</span>
           </div>
           <div style={styles.totalRow}>
             <span style={styles.totalLabelSmall}>รับเงิน</span>
-            <span style={styles.totalValueSmall}>฿{received.toFixed(2)}</span>
+            <span style={styles.totalValueSmall}>฿{received.toLocaleString()}</span>
           </div>
           <div style={styles.totalRow}>
             <span style={{ ...styles.totalLabelSmall, ...styles.changeColor }}>
               เงินทอน
             </span>
             <span style={{ ...styles.totalValueSmall, ...styles.changeColor }}>
-              ฿{change.toFixed(2)}
+              ฿{change.toLocaleString()}
             </span>
           </div>
         </div>
