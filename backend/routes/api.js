@@ -77,6 +77,7 @@ router.get("/promotions", promotionController.getPromotions);
 router.get("/promotions/:id", promotionController.getPromotionDetails);
 router.post("/promotions", promotionController.createPromotion);
 router.delete("/promotions/:id", promotionController.deletePromotion);
+router.delete("/promotions/:id/items/:productId", promotionController.deletePromotionItem);
 
 // Sale Routes
 router.get("/sales/top-selling", saleController.getTopSellingProducts);

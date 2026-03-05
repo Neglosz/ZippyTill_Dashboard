@@ -40,6 +40,16 @@ const promotionController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  async deletePromotionItem(req, res) {
+    try {
+      const { id, productId } = req.params;
+      await promotionService.deletePromotionItem(id, productId);
+      res.json({ message: "Promotion item deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = promotionController;

@@ -110,6 +110,7 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
   const [promoProducts, setPromoProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [, setTick] = useState(0);
 
@@ -120,24 +121,25 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
   }, []);
 
   // fetch products for this promotion
-  useEffect(() => {
+  const fetchProducts = async () => {
     if (!promo) return;
-    const fetch = async () => {
-      setIsLoading(true);
-      try {
-        const data = await promotionService.getPromotionDetails(promo.id);
-        setPromoProducts(
-          data?.promotion_items?.map((item) => item.product).filter(Boolean) ||
-            [],
-        );
-      } catch (e) {
-        console.error("PromotionDetailModal fetch error:", e);
-        setPromoProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetch();
+    setIsLoading(true);
+    try {
+      const data = await promotionService.getPromotionDetails(promo.id);
+      setPromoProducts(
+        data?.promotion_items?.map((item) => item.product).filter(Boolean) ||
+          [],
+      );
+    } catch (e) {
+      console.error("PromotionDetailModal fetch error:", e);
+      setPromoProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, [promo?.id]);
 
   const handleDelete = async () => {
@@ -154,6 +156,25 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
     } finally {
       setIsDeleting(false);
       setShowConfirmDelete(false);
+    }
+  };
+
+  const handleDeleteItem = async (productId) => {
+    if (!window.confirm("คุณต้องการลบสินค้านี้ออกจากโปรโมชั่นใช่หรือไม่?")) return;
+    
+    try {
+      setDeletingProductId(productId);
+      await promotionService.deletePromotionItem(promo.id, productId);
+      // Update local state instead of re-fetching to be faster
+      setPromoProducts(prev => prev.filter(p => p.id !== productId));
+      if (onDeleteSuccess) {
+        onDeleteSuccess(); // Refresh parent to update item count
+      }
+    } catch (error) {
+      console.error("Failed to delete promotion item:", error);
+      alert("ไม่สามารถลบสินค้าออกจากโปรโมชั่นได้");
+    } finally {
+      setDeletingProductId(null);
     }
   };
 
@@ -255,7 +276,7 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
                 <Package size={18} className="text-emerald-500" />
               </div>
               <p className="text-[10px] font-black text-inactive uppercase tracking-wider">
-                สินค้าที่ร่วมรายการ ({promo.itemCount || 0} รายการ)
+                สินค้าที่ร่วมรายการ ({promoProducts.length} รายการ)
               </p>
             </div>
             {isLoading ? (
@@ -271,14 +292,28 @@ const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
                 {promoProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100"
+                    className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100 group"
                   >
                     <span className="text-sm font-bold text-gray-800 truncate flex-1">
                       {product.name}
                     </span>
-                    <span className="text-sm font-black text-primary ml-2 shrink-0">
-                      ฿{product.price?.toLocaleString()}
-                    </span>
+                    <div className="flex items-center gap-2 ml-2">
+                      <span className="text-sm font-black text-primary shrink-0">
+                        ฿{product.price?.toLocaleString()}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteItem(product.id)}
+                        disabled={deletingProductId === product.id}
+                        className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                        title="ลบรายการนี้"
+                      >
+                        {deletingProductId === product.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

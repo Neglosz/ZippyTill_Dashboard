@@ -112,6 +112,21 @@ const promotionService = {
     }
   },
 
+  deletePromotionItem: async (promotionId, productId) => {
+    if (!promotionId || !productId) throw new Error("Promotion ID and Product ID are required");
+    try {
+      const { error } = await supabase
+        .from("promotion_items")
+        .delete()
+        .eq("promotion_id", promotionId)
+        .eq("product_id", productId);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   calculateEfficiency: (items, totalSales) => {
     return Math.floor(Math.random() * 40) + 60;
   },
