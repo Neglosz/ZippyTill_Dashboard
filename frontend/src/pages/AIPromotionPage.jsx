@@ -10,6 +10,8 @@ import {
   Target,
   Calendar,
   Package,
+  Trash2,
+  AlertCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -79,6 +81,9 @@ const AIPromotionPage = () => {
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("monthly");
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // State for delete confirmation
+  const [selectedPromoIds, setSelectedPromoIds] = useState([]); // State for bulk selection
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [, setTick] = useState(0);
   const lastFetchedBranchId = React.useRef(null);
 
@@ -86,6 +91,42 @@ const AIPromotionPage = () => {
     const timer = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleDeletePromotion = async () => {
+    if (!deleteConfirm) return;
+    try {
+      if (Array.isArray(deleteConfirm)) {
+        setIsBulkDeleting(true);
+        await Promise.all(deleteConfirm.map(p => promotionService.deletePromotion(p.id)));
+        setSelectedPromoIds([]);
+      } else {
+        await promotionService.deletePromotion(deleteConfirm.id);
+      }
+      fetchPromos();
+      fetchChartData();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Failed to delete promotion:", error);
+      alert("ไม่สามารถลบโปรโมชั่นได้");
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const toggleSelectPromo = (id, e) => {
+    e.stopPropagation();
+    setSelectedPromoIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllPromos = () => {
+    if (selectedPromoIds.length === sortedPromotions.length) {
+      setSelectedPromoIds([]);
+    } else {
+      setSelectedPromoIds(sortedPromotions.map(p => p.id));
+    }
+  };
 
   const parseLocalDate = useCallback((dateStr, isEndDate = false) => {
     if (!dateStr) return null;
@@ -600,7 +641,7 @@ const AIPromotionPage = () => {
             <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                  โปรโมชั่นที่ใช้งานอยู่
+                  โปรโมชั่นที่ใช้งานอยู่ ({activePromotions.length})
                 </h3>
                 <button
                   onClick={() => setIsViewAllOpen(true)}
@@ -620,10 +661,19 @@ const AIPromotionPage = () => {
                     <div
                       key={promo.id}
                       onClick={() => setSelectedPromo(promo)}
-                      className="bg-gray-50 p-5 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer group"
+                      className="bg-gray-50 p-5 rounded-[24px] border border-gray-100 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer group relative"
                     >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm(promo);
+                        }}
+                        className="absolute top-4 right-4 w-8 h-8 bg-white/80 rounded-xl flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 z-10 border border-gray-100 shadow-sm"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                       <div className="flex justify-between items-start mb-4">
-                        <h4 className="font-black text-gray-900 text-sm group-hover:text-primary truncate">
+                        <h4 className="font-black text-gray-900 text-sm group-hover:text-primary truncate pr-10">
                           {promo.name}
                         </h4>
                         <span
@@ -749,11 +799,34 @@ const AIPromotionPage = () => {
           />
           <div className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden p-8">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900">
-                โปรโมชั่นทั้งหมด
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-black text-gray-900">
+                  โปรโมชั่นทั้งหมด
+                </h2>
+                <button
+                  onClick={selectAllPromos}
+                  className="text-xs font-bold text-primary bg-primary/5 px-4 py-2 rounded-xl border border-primary/10 hover:bg-primary/10 transition-all"
+                >
+                  {selectedPromoIds.length === sortedPromotions.length ? "ยกเลิกเลือกทั้งหมด" : "เลือกทั้งหมด"}
+                </button>
+                {selectedPromoIds.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const promosToDelete = sortedPromotions.filter(p => selectedPromoIds.includes(p.id));
+                      setDeleteConfirm(promosToDelete);
+                    }}
+                    className="flex items-center gap-2 text-xs font-bold text-red-500 bg-red-50 px-4 py-2 rounded-xl border border-red-100 hover:bg-red-100 transition-all shadow-sm"
+                  >
+                    <Trash2 size={14} />
+                    <span>ลบ ({selectedPromoIds.length} รายการ)</span>
+                  </button>
+                )}
+              </div>
               <button
-                onClick={() => setIsViewAllOpen(false)}
+                onClick={() => {
+                  setIsViewAllOpen(false);
+                  setSelectedPromoIds([]);
+                }}
                 className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl text-inactive hover:text-primary transition-all"
               >
                 <Plus size={24} className="rotate-45" />
@@ -762,6 +835,7 @@ const AIPromotionPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
               {sortedPromotions.map((promo) => {
                 const status = getStatusInfo(promo.is_active, promo.end_date);
+                const isSelected = selectedPromoIds.includes(promo.id);
                 return (
                   <div
                     key={promo.id}
@@ -769,10 +843,18 @@ const AIPromotionPage = () => {
                       setSelectedPromo(promo);
                       setIsViewAllOpen(false);
                     }}
-                    className="bg-gray-50 p-5 rounded-[24px] border border-gray-100 hover:border-primary/20 transition-all cursor-pointer"
+                    className={`bg-gray-50 p-5 pb-4 rounded-[24px] border transition-all cursor-pointer relative group ${isSelected ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20" : "border-gray-100 hover:border-primary/20"}`}
                   >
-                    <div className="flex justify-between mb-4">
-                      <h4 className="font-black text-gray-900 text-sm truncate">
+                    {/* Selection Checkbox */}
+                    <div 
+                      onClick={(e) => toggleSelectPromo(promo.id, e)}
+                      className={`absolute top-4 left-4 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all z-10 ${isSelected ? "bg-primary border-primary" : "bg-white border-gray-200 group-hover:border-primary/40"}`}
+                    >
+                      {isSelected && <Plus size={14} className="text-white rotate-0" strokeWidth={4} />}
+                    </div>
+
+                    <div className="flex justify-between mb-4 pl-8">
+                      <h4 className="font-black text-gray-900 text-sm truncate pr-2">
                         {promo.name}
                       </h4>
                       <span
@@ -781,7 +863,7 @@ const AIPromotionPage = () => {
                         {status.label}
                       </span>
                     </div>
-                    <div className="text-[11px] font-bold text-gray-600 space-y-2">
+                    <div className="text-[11px] font-bold text-gray-600 space-y-2 mb-4 pl-8">
                       <div className="flex items-center gap-2">
                         <Target size={12} className="text-primary" />{" "}
                         {promo.discount_value}% Off
@@ -791,9 +873,65 @@ const AIPromotionPage = () => {
                         {new Date(promo.start_date).toLocaleDateString("th-TH")}
                       </div>
                     </div>
+                    
+                    {/* Individual Delete Button at Bottom */}
+                    <div className="pt-3 border-t border-gray-100 flex justify-end">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm(promo);
+                        }}
+                        className="flex items-center gap-1.5 text-[10px] font-black text-red-400 hover:text-red-500 transition-all px-2 py-1 rounded-lg hover:bg-red-50"
+                      >
+                        <Trash2 size={12} />
+                        <span>ลบโปรโมชั่น</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6 text-center animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">
+              {Array.isArray(deleteConfirm) ? `ยืนยันการลบ ${deleteConfirm.length} โปรโมชั่น?` : "ยืนยันการลบโปรโมชั่น?"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {Array.isArray(deleteConfirm) 
+                ? "โปรโมชั่นที่เลือกทั้งหมดจะถูกลบออกถาวร" 
+                : `การลบโปรโมชั่น "${deleteConfirm.name}" ไม่สามารถกู้คืนได้`}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isBulkDeleting}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleDeletePromotion}
+                disabled={isBulkDeleting}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>กำลังลบ...</span>
+                  </>
+                ) : (
+                  <span>ยืนยันลบ</span>
+                )}
+              </button>
             </div>
           </div>
         </div>

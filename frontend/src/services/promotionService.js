@@ -17,6 +17,10 @@ export const promotionService = {
     return apiClient.delete(`/promotions/${promotionId}`);
   },
 
+  deletePromotionItem: async (promotionId, productId) => {
+    return apiClient.delete(`/promotions/${promotionId}/items/${productId}`);
+  },
+
   calculateEfficiency: (items, totalSales) => {
     return Math.floor(Math.random() * 40) + 60;
   },
