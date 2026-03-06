@@ -57,7 +57,7 @@ const CHAT_PROMPT_TEMPLATES = {
 // CORE AI FUNCTIONS WITH FALLBACK
 // ============================================================
 
-const generateAIContent = async (prompt, modelName = "gemini-2.0-flash") => {
+const generateAIContent = async (prompt, modelName = "gemini-2.5-flash-lite") => {
   try {
     const model = genAI.getGenerativeModel({ model: modelName });
     const result = await model.generateContent(prompt);
@@ -79,7 +79,7 @@ const generateAIContent = async (prompt, modelName = "gemini-2.0-flash") => {
         console.warn(
           "Gemini 2.0 Flash fails, falling back to Gemini 1.5 Flash...",
         );
-        return generateAIContent(prompt, "gemini-1.5-flash");
+        return generateAIContent(prompt, "gemini-2.5-flash-lite");
       }
     }
     throw error;
@@ -268,7 +268,7 @@ const aiService = {
     }
   },
 
-  async chatWithAI(message, history = [], modelName = "gemini-1.5-pro") {
+  async chatWithAI(message, history = [], modelName = "gemini-2.5-flash-lite") {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -288,10 +288,10 @@ const aiService = {
 
       // Primary Fallback for Chat
       if (
-        modelName === "gemini-1.5-pro" &&
+        modelName === "gemini-2.5-flash-lite" &&
         (isModelUnavailable || isModelOverloaded)
       ) {
-        return this.chatWithAI(message, history, "gemini-1.5-flash");
+        return this.chatWithAI(message, history, "gemini-2.5-flash-lite");
       }
 
       throw error;

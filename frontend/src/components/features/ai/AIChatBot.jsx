@@ -141,7 +141,7 @@ const AIChatBot = () => {
 
       const chatHistory = validHistory.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+        parts: [{ text: String(msg.content || "") }],
       }));
 
       // Persona = systemInstruction (ใน geminiAPI), Context + Message = inject ที่นี่
@@ -152,10 +152,11 @@ const AIChatBot = () => {
 ${text}`;
       }
 
-      const response = await aiService.chatWithAI(finalPrompt, chatHistory);
+      const result = await aiService.chatWithAI(finalPrompt, chatHistory);
+      const aiText = result.response ?? result.text ?? (typeof result === "string" ? result : JSON.stringify(result));
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: response },
+        { role: "assistant", content: aiText },
       ]);
     } catch (error) {
       console.error("Chatbot Full Error:", error);
@@ -277,7 +278,7 @@ ${text}`;
                 >
                   {msg.role === "assistant" ? (
                     <div className="flex flex-col">
-                      {msg.content
+                      {String(msg.content || "")
                         .split(/(\[PROMO_JSON\][\s\S]*?\[\/PROMO_JSON\])/)
                         .map((part, pIdx) => {
                           if (part.startsWith("[PROMO_JSON]")) {
@@ -325,7 +326,7 @@ ${text}`;
                         })}
                     </div>
                   ) : (
-                    msg.content
+                    String(msg.content || "")
                   )}
                 </div>
               </div>
