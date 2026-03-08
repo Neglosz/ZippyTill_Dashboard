@@ -13,6 +13,10 @@ export const promotionService = {
     return apiClient.post("/promotions", { promoData, products });
   },
 
+  updatePromotion: async (promotionId, promoData) => {
+    return apiClient.put(`/promotions/${promotionId}`, promoData);
+  },
+
   deletePromotion: async (promotionId) => {
     return apiClient.delete(`/promotions/${promotionId}`);
   },

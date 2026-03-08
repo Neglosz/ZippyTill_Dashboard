@@ -31,10 +31,22 @@ const promotionController = {
     }
   },
 
+  async updatePromotion(req, res) {
+    try {
+      const { id } = req.params;
+      const promoData = req.body;
+      const data = await promotionService.updatePromotion(id, promoData);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async deletePromotion(req, res) {
     try {
       const { id } = req.params;
-      await promotionService.deletePromotion(id);
+      const authHeader = req.headers.authorization;
+      await promotionService.deletePromotion(id, authHeader);
       res.json({ message: "Promotion deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: error.message });

@@ -807,7 +807,7 @@ const AIPromotionPage = () => {
                   onClick={selectAllPromos}
                   className="text-xs font-bold text-primary bg-primary/5 px-4 py-2 rounded-xl border border-primary/10 hover:bg-primary/10 transition-all"
                 >
-                  {selectedPromoIds.length === sortedPromotions.length ? "ยกเลิกเลือกทั้งหมด" : "เลือกทั้งหมด"}
+                  {selectedPromoIds.length === sortedPromotions.length ? "เลือกทั้งหมด" : "ยกเลิกเลือกทั้งหมด"}
                 </button>
                 {selectedPromoIds.length > 0 && (
                   <button

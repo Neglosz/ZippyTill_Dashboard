@@ -240,6 +240,257 @@ const CreatePromotionModal = ({
     fetchProducts();
   }, [isOpen, initialData, activeBranchId]);
 
+  const handleNext = () => {
+    if (step === 1 && selectedProducts.length === 0) {
+      alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
+      return;
+    }
+    setStep((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    setStep((prev) => prev - 1);
+  };
+
+  const handleToggleProduct = (product) => {
+    if (product.expiryDate && new Date(product.expiryDate) < new Date()) {
+      setShowExpiredAlert(true);
+      return;
+    }
+    const isSelected = selectedProducts.some((p) => p.id === product.id);
+    if (isSelected) {
+      setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
+    } else {
+      setSelectedProducts([...selectedProducts, product]);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    let list = products;
+    if (activeTab === 1) list = expiringProducts;
+    if (activeTab === 2) list = overstockedProducts;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [products, expiringProducts, overstockedProducts, activeTab, searchQuery]);
+
+  const renderStep1 = () => (
+    <div className="flex flex-col h-full gap-6">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-2xl w-full md:w-auto">
+          {[
+            { id: 0, label: "สินค้าทั้งหมด", icon: Package },
+            { id: 1, label: "ใกล้หมดอายุ", icon: AlertCircle },
+            { id: 2, label: "สต็อกเยอะ", icon: TrendingUp },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === tab.id
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <tab.icon size={14} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full md:w-80">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อสินค้า หรือ SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-2xl text-sm font-semibold transition-all outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 bg-white rounded-[32px] border border-gray-100 shadow-premium overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+              <p className="text-sm font-bold text-gray-400">
+                กำลังโหลดสินค้า...
+              </p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                <Search size={40} />
+              </div>
+              <div>
+                <p className="text-lg font-black text-gray-900">ไม่พบสินค้า</p>
+                <p className="text-sm text-gray-500 font-medium">
+                  ลองค้นหาด้วยคำอื่น หรือเลือกหมวดหมู่อื่น
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredProducts.map((product) => {
+                const isSelected = selectedProducts.some(
+                  (p) => p.id === product.id,
+                );
+                const isExpired =
+                  product.expiryDate && new Date(product.expiryDate) < new Date();
+
+                return (
+                  <div
+                    key={product.id}
+                    onClick={() => handleToggleProduct(product)}
+                    className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer group ${
+                      isSelected
+                        ? "border-primary bg-primary/5 ring-4 ring-primary/10"
+                        : "border-gray-100 hover:border-gray-200 bg-white"
+                    } ${isExpired ? "opacity-60 grayscale-[0.5]" : ""}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="text-gray-300 w-1/2 h-1/2" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-gray-900 truncate mb-1">
+                          {product.name}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black text-primary">
+                            ฿{(product.price || 0).toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-bold">
+                            / {product.unitType}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-primary border-primary shadow-lg shadow-primary/30"
+                            : "border-gray-200 group-hover:border-primary/30"
+                        }`}
+                      >
+                        {isSelected && (
+                          <Check size={14} className="text-white" strokeWidth={4} />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            (product.stock || 0) <= (product.lowStockThreshold || 0)
+                              ? "bg-red-500 animate-pulse"
+                              : "bg-emerald-500"
+                          }`}
+                        />
+                        <span className="text-[10px] font-bold text-gray-500">
+                          คงเหลือ {(product.stock || 0).toLocaleString()}{" "}
+                          {product.unitType}
+                        </span>
+                      </div>
+                      {product.expiryDate && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-orange-500">
+                          <Calendar size={10} />
+                          {new Date(product.expiryDate).toLocaleDateString(
+                            "th-TH",
+                            { month: "short", year: "2-digit" },
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {isExpired && (
+                      <div className="absolute inset-0 bg-white/40 flex flex-col items-center justify-center rounded-2xl backdrop-blur-[1px]">
+                        <div className="bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg">
+                          สินค้าหมดอายุ
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-3 overflow-hidden">
+              {selectedProducts.slice(0, 5).map((p, i) => (
+                <div
+                  key={p.id}
+                  className="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center overflow-hidden shadow-sm"
+                  style={{ zIndex: 5 - i }}
+                >
+                  {p.image ? (
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package size={14} className="text-gray-400" />
+                  )}
+                </div>
+              ))}
+              {selectedProducts.length > 5 && (
+                <div className="w-10 h-10 rounded-full border-2 border-white bg-primary text-white flex items-center justify-center text-[10px] font-black shadow-sm z-0">
+                  +{selectedProducts.length - 5}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-black text-gray-900 leading-none">
+                เลือกแล้ว {selectedProducts.length} รายการ
+              </span>
+              <span className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-wider">
+                รวมมูลค่า ฿
+                {selectedProducts
+                  .reduce((sum, p) => sum + p.price, 0)
+                  .toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleNext}
+            disabled={selectedProducts.length === 0}
+            className="px-10 py-3.5 bg-gradient-to-r from-primary to-orange-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/30 hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100 flex items-center gap-2 group"
+          >
+            ไปขั้นตอนถัดไป
+            <ChevronRight
+              size={18}
+              className="group-hover:translate-x-1 transition-transform"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const commonUnit = useMemo(() => {
     if (selectedProducts.length === 0) return "หน่วย";
     const units = [...new Set(selectedProducts.map((p) => p.unitType))];
