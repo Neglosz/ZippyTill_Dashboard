@@ -76,6 +76,7 @@ router.get("/credit/recovery-rate", creditController.getRecoveryRate);
 router.get("/promotions", promotionController.getPromotions);
 router.get("/promotions/:id", promotionController.getPromotionDetails);
 router.post("/promotions", promotionController.createPromotion);
+router.put("/promotions/:id", promotionController.updatePromotion);
 router.delete("/promotions/:id", promotionController.deletePromotion);
 router.delete("/promotions/:id/items/:productId", promotionController.deletePromotionItem);
 

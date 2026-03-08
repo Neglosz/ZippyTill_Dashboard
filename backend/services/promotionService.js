@@ -89,25 +89,75 @@ const promotionService = {
     }
   },
 
-  deletePromotion: async (promotionId) => {
+  updatePromotion: async (promotionId, promoData) => {
     if (!promotionId) throw new Error("Promotion ID is required");
     try {
-      // First delete all promotion items to avoid foreign key constraints
+      const { data, error } = await supabase
+        .from("promotions")
+        .update(promoData)
+        .eq("id", promotionId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deletePromotion: async (promotionId, authHeader) => {
+    console.log(`[promotionService] Attempting to delete promotion: ${promotionId}`);
+    if (!promotionId) throw new Error("Promotion ID is required");
+
+    // If authHeader is provided, use it to set the session for this request
+    // This helps bypass RLS issues if the anon key is restricted
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      await supabase.auth.setSession({ access_token: token, refresh_token: "" });
+    }
+
+    try {
+      // 1. Set promotion_id to null in order_items to avoid foreign key constraint violation
+      console.log(`[promotionService] Step 1: Clearing promotion_id in order_items for promo ${promotionId}`);
+      const { data: updateData, error: updateError } = await supabase
+        .from("order_items")
+        .update({ promotion_id: null })
+        .eq("promotion_id", promotionId)
+        .select();
+      
+      if (updateError) {
+        console.error("[promotionService] Error clearing promotion_id in order_items:", updateError);
+      } else {
+        console.log(`[promotionService] Successfully cleared promotion_id in ${updateData?.length || 0} order_items`);
+      }
+
+      // 2. Delete all promotion items to avoid foreign key constraints
+      console.log(`[promotionService] Step 2: Deleting promotion_items for promo ${promotionId}`);
       const { error: itemsError } = await supabase
         .from("promotion_items")
         .delete()
         .eq("promotion_id", promotionId);
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error("[promotionService] Error deleting promotion_items:", itemsError);
+        throw itemsError;
+      }
 
-      // Then delete the promotion itself
+      // 3. Then delete the promotion itself
+      console.log(`[promotionService] Step 3: Deleting promotion ${promotionId}`);
       const { error: promoError } = await supabase
         .from("promotions")
         .delete()
         .eq("id", promotionId);
-      if (promoError) throw promoError;
+      
+      if (promoError) {
+        console.error("[promotionService] Error deleting promotion:", promoError);
+        throw promoError;
+      }
 
+      console.log(`[promotionService] Successfully deleted promotion ${promotionId}`);
       return true;
     } catch (error) {
+      console.error("Error in deletePromotion:", error);
       throw error;
     }
   },
