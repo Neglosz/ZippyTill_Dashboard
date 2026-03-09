@@ -27,6 +27,7 @@ import { creditService } from "../services/creditService";
 import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
+import { sanitizeHTML, stripThaiToneMarks } from "../utils/sanitizer";
 
 const OverduePage = () => {
   const { activeBranchId, activeBranchName } = useBranch();
@@ -36,6 +37,7 @@ const OverduePage = () => {
 
   // New State for Drill-down
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Modal States
   const [showEditSuccess, setShowEditSuccess] = useState(false);
@@ -92,7 +94,7 @@ const OverduePage = () => {
     fetchTotalSales();
 
     // Setup Realtime Subscription - Isolated by branch_id
-    const channel = supabase
+    const channelAccounts = supabase
       .channel(`credit_accounts_realtime_${activeBranchId}`)
       .on(
         "postgres_changes",
@@ -103,14 +105,33 @@ const OverduePage = () => {
           filter: `store_id=eq.${activeBranchId}`,
         },
         (payload) => {
-          console.log("Database change detected:", payload);
-          fetchItems(true); // Background refresh
+          console.log("Database change detected (credit_accounts):", payload);
+          fetchItems(true); // Background refresh items and recovery rate
+          fetchTotalSales(); // Recalculate overdue rate
+        },
+      )
+      .subscribe();
+
+    const channelOrders = supabase
+      .channel(`orders_realtime_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        (payload) => {
+          console.log("Database change detected (orders):", payload);
+          fetchTotalSales(); // Recalculate overdue rate when new sales happen
         },
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channelAccounts);
+      supabase.removeChannel(channelOrders);
     };
   }, [activeBranchId, fetchItems, fetchTotalSales]);
 
@@ -130,13 +151,43 @@ const OverduePage = () => {
 
   const groupedCustomers = useMemo(() => {
     const groups = {};
+    const query = searchQuery.toLowerCase().trim();
+
     overdueItems.forEach((item) => {
+      // TC015-TC019: Robust Filtering logic
+      const name = (item.name || "").toLowerCase();
+      const phone = (item.phone || "").replace(/\D/g, "");
+      const email = (item.email || "").toLowerCase();
+
+      const normalizedName = stripThaiToneMarks(name);
+      const sanitizedName = sanitizeHTML(name);
+      
+      const queryLower = query.toLowerCase();
+      const normalizedQuery = stripThaiToneMarks(queryLower);
+      const sanitizedQuery = sanitizeHTML(queryLower);
+      const queryDigits = queryLower.replace(/\D/g, "");
+
+      const matches =
+        !query ||
+        name.includes(queryLower) ||
+        normalizedName.includes(normalizedQuery) ||
+        sanitizedName.includes(sanitizedQuery) ||
+        (queryDigits && phone.includes(queryDigits)) ||
+        email.includes(queryLower);
+
+      if (query && matches) {
+        console.log(`Overdue Search: Match found for "${query}" -> "${item.name}"`);
+      }
+
+      if (!matches) return;
+
       const cid = item.customerId || item.name;
       if (!groups[cid]) {
         groups[cid] = {
           customerId: item.customerId,
           name: item.name,
           phone: item.phone,
+          email: item.email,
           imageUrl: item.imageUrl,
           customerDueDate: item.customerDueDate,
           totalAmount: 0,
@@ -154,7 +205,7 @@ const OverduePage = () => {
       );
     });
     return Object.values(groups).sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [overdueItems]);
+  }, [overdueItems, searchQuery]);
 
   const totalOverdueAmount = overdueItems.reduce(
     (sum, item) => sum + Number(item.amount),
@@ -428,6 +479,8 @@ const OverduePage = () => {
               </div>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ค้นหาลูกค้า (ชื่อ, เบอร์โทร, อีเมล)..."
                 className="w-full bg-gray-50/50 border border-gray-100 rounded-[22px] pl-14 pr-6 py-4 text-sm font-black text-gray-900 placeholder-inactive/60 focus:bg-white focus:ring-8 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all duration-300 shadow-inner-light"
               />
@@ -461,11 +514,16 @@ const OverduePage = () => {
           ) : groupedCustomers.length === 0 ? (
             <div className="text-center py-32 opacity-60">
               <div className="w-24 h-24 bg-gray-50 rounded-[32px] flex items-center justify-center mx-auto mb-6 border border-gray-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
-                <User size={48} className="text-inactive opacity-20" />
+                <Search size={48} className="text-inactive opacity-20" />
               </div>
               <h3 className="text-lg font-black text-gray-900 tracking-tight mb-1">
-                ไม่พบลูกหนี้ค้างชำระ
+                {searchQuery ? "ไม่พบข้อมูลที่ค้นหา" : "ไม่พบลูกหนี้ค้างชำระ"}
               </h3>
+              {searchQuery && (
+                <p className="text-sm font-medium text-inactive mt-2">
+                  ลองค้นหาด้วยคำอื่น หรือล้างตัวกรอง
+                </p>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-hide">
