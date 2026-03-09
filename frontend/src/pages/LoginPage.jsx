@@ -110,7 +110,7 @@ const LoginPage = () => {
         // Supabase typically returns an error object with a message property
         setError(
           err.message ||
-            `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
+          `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
         );
       }
     } finally {
