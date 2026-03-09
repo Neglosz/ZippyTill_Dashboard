@@ -106,6 +106,7 @@ const FinancePage = () => {
   const [fullOrderData, setFullOrderData] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Cache State
   const dataCache = React.useRef({});
@@ -161,7 +162,7 @@ const FinancePage = () => {
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
       );
 
-      setTransactions(combined.slice(0, 50));
+      setTransactions(combined);
     } catch (error) {
       console.error("Failed to fetch finance data:", error);
     } finally {
@@ -651,6 +652,16 @@ const FinancePage = () => {
     });
   }, [metrics, processedChannels]);
 
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery.trim()) return transactions;
+    const query = searchQuery.toLowerCase().trim();
+    return transactions.filter(tx => 
+      (tx.displayName && tx.displayName.toLowerCase().includes(query)) ||
+      (tx.displaySubtitle && tx.displaySubtitle.toLowerCase().includes(query)) ||
+      (tx.displayType && tx.displayType.toLowerCase().includes(query))
+    );
+  }, [transactions, searchQuery]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] w-full">
@@ -965,17 +976,33 @@ const FinancePage = () => {
 
           {/* Recent Transactions Section */}
           <div className="lg:col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
-            <div className="flex justify-between items-center mb-8 relative z-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative z-10">
               <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 รายการล่าสุด
               </h2>
-              <button
-                onClick={() => setIsExportModalOpen(true)}
-                className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20"
-              >
-                <LogOut size={16} strokeWidth={2.5} />
-                Export
-              </button>
+              
+              <div className="flex flex-1 w-full sm:w-auto gap-3 items-center justify-end">
+                <div className="relative w-full max-w-[300px] group/search">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-inactive group-focus-within/search:text-primary transition-colors">
+                    <Search size={18} strokeWidth={2.5} />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ค้นหาเลขที่, ลูกค้า, ประเภท..."
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-11 pr-4 py-2 text-xs font-bold focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all"
+                  />
+                </div>
+
+                <button
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20 shrink-0"
+                >
+                  <LogOut size={16} strokeWidth={2.5} />
+                  Export
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-hide">
               <table className="w-full relative">
@@ -999,17 +1026,17 @@ const FinancePage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {!(transactions && transactions.length > 0) ? (
+                  {!(filteredTransactions && filteredTransactions.length > 0) ? (
                     <tr>
                       <td
                         colSpan="5"
                         className="py-12 text-center text-inactive font-medium"
                       >
-                        ไม่พบรายการเคลื่อนไหว
+                        {searchQuery ? "ไม่พบข้อมูลที่ค้นหา" : "ไม่พบรายการเคลื่อนไหว"}
                       </td>
                     </tr>
                   ) : (
-                    transactions.map((tx, index) => (
+                    filteredTransactions.map((tx, index) => (
                       <tr
                         key={index}
                         className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}

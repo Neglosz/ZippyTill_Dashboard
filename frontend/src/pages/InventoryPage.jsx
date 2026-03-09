@@ -26,6 +26,7 @@ import StockReport from "../components/features/inventory/StockReport";
 import StatusModal from "../components/common/StatusModal";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
+import { sanitizeHTML, stripThaiToneMarks } from "../utils/sanitizer";
 
 
 const InventoryPage = () => {
@@ -86,11 +87,29 @@ const InventoryPage = () => {
     const thirtyDays = new Date(today);
     thirtyDays.setDate(today.getDate() + 30);
 
+    const query = searchQuery.toLowerCase().trim();
+    const sanitizedQuery = sanitizeHTML(query);
+    const normalizedQuery = stripThaiToneMarks(query);
+
     return products
       .filter((p) => {
+        const productName = (p.name || "").toLowerCase();
+        const barcode = (p.barcode || "").toLowerCase();
+        
+        const normalizedProductName = stripThaiToneMarks(productName);
+        const sanitizedProductName = sanitizeHTML(productName);
+
         const matchesSearch =
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (p.barcode && p.barcode.includes(searchQuery));
+          !query ||
+          productName.includes(query) ||
+          normalizedProductName.includes(normalizedQuery) ||
+          sanitizedProductName.includes(sanitizedQuery) ||
+          barcode.includes(query);
+
+        if (query && matchesSearch) {
+          console.log(`Inventory Search: Match found for "${query}" -> "${p.name}"`);
+        }
+
         const matchesCategory =
           !selectedCategory ||
           (selectedCategory === "no-category"

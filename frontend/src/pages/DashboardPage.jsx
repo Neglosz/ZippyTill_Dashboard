@@ -589,14 +589,14 @@ const DashboardPage = () => {
                             <td className="py-1 pl-4 text-right">
                               <div className="flex items-center justify-end">
                                 <div
-                                  className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all ${sale.payment_status === "completed"
+                                  className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all ${sale.payment_status === "paid"
                                     ? "bg-emerald-50 text-emerald-500"
                                     : sale.payment_status === "pending"
                                       ? "bg-amber-50 text-amber-500"
                                       : "bg-rose-50 text-rose-500"
                                     }`}
                                 >
-                                  {sale.payment_status === "completed" ? (
+                                  {sale.payment_status === "paid" ? (
                                     <CheckCircle size={14} strokeWidth={2.5} />
                                   ) : (
                                     <Clock size={14} strokeWidth={2.5} />
