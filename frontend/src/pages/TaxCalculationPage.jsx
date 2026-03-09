@@ -30,12 +30,12 @@ const TaxCalculationPage = () => {
   // Fetch Tax Data when ภ.ง.ด. 90 is selected
   useEffect(() => {
     const fetchTaxData = async () => {
-      if (taxType === "ภ.ง.ด. 90" && activeBranchId) {
+      if (activeBranchId) {
         setIsLoading(true);
         try {
           const year = new Date().getFullYear();
-          // Period "1-6" for Jan-Jun (ภ.ง.ด. 90)
-          const data = await taxService.getTaxSummary(activeBranchId, year, "1-6");
+          const period = taxType === "ภ.ง.ด. 90" ? "1-12" : "1-6";
+          const data = await taxService.getTaxSummary(activeBranchId, year, period);
 
           setIncome(data.totalIncome.toString());
           setExpenses(data.totalExpenses.toString());
@@ -188,8 +188,8 @@ const TaxCalculationPage = () => {
                   placeholder="0.00"
                   onChange={(e) => handleFormattedInput(e, setIncome)}
                   onWheel={handleWheel}
-                  readOnly={taxType === "ภ.ง.ด. 90" || isLoading}
-                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" ? "opacity-70 cursor-not-allowed" : ""
+                  readOnly={taxType === "ภ.ง.ด. 90" || taxType === "ภ.ง.ด. 94" || isLoading}
+                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" || taxType === "ภ.ง.ด. 94" ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                 />
               </div>
@@ -209,8 +209,8 @@ const TaxCalculationPage = () => {
                     handleFormattedInput(e, setExpenses)
                   }
                   onWheel={handleWheel}
-                  readOnly={taxType === "ภ.ง.ด. 90" || isLoading}
-                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" ? "opacity-70 cursor-not-allowed" : ""
+                  readOnly={taxType === "ภ.ง.ด. 90" || taxType === "ภ.ง.ด. 94" || isLoading}
+                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" || taxType === "ภ.ง.ด. 94" ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                 />
               </div>
