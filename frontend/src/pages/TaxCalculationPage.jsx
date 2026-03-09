@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Calculator,
   TrendingUp,
@@ -9,8 +9,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
+import { useBranch } from "../contexts/BranchContext";
+import { taxService } from "../services/taxService";
 
 const TaxCalculationPage = () => {
+  const { activeBranchId } = useBranch();
   // --- PIT State ---
 
   const [income, setIncome] = useState("");
@@ -20,6 +23,32 @@ const TaxCalculationPage = () => {
   // --- VAT State ---
   const [buyVatAmount, setBuyVatAmount] = useState("");
   const [sellVatAmount, setSellVatAmount] = useState("");
+
+  const [taxType, setTaxType] = useState("ภ.ง.ด. 90");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch Tax Data when ภ.ง.ด. 90 is selected
+  useEffect(() => {
+    const fetchTaxData = async () => {
+      if (taxType === "ภ.ง.ด. 90" && activeBranchId) {
+        setIsLoading(true);
+        try {
+          const year = new Date().getFullYear();
+          // Period "1-6" for Jan-Jun (ภ.ง.ด. 90)
+          const data = await taxService.getTaxSummary(activeBranchId, year, "1-6");
+
+          setIncome(data.totalIncome.toString());
+          setExpenses(data.totalExpenses.toString());
+        } catch (error) {
+          console.error("Failed to fetch tax data:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchTaxData();
+  }, [taxType, activeBranchId]);
 
   // --- PIT Calculation Logic ---
   const taxableIncome = Math.max(
@@ -134,10 +163,15 @@ const TaxCalculationPage = () => {
                   เลือกประเภทภาษี
                 </label>
                 <div className="relative">
-                  <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 appearance-none focus:ring-2 focus:ring-primary/20 transition-all outline-none text-gray-900 font-bold text-xs">
-                    <option>ภ.ด.94 (ภาษีเงินได้บุคคลธรรมดา)</option>
+                  <select
+                    value={taxType}
+                    onChange={(e) => setTaxType(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 appearance-none focus:ring-2 focus:ring-primary/20 transition-all outline-none text-gray-900 font-bold text-xs cursor-pointer"
+                  >
+                    <option value="ภ.ง.ด. 90">ภ.ง.ด. 90 (ภาษีเงินได้บุคคลธรรมดา)</option>
+                    <option value="ภ.ง.ด. 94">ภ.ง.ด. 94 (ภาษีเงินได้บุคคลธรรมดา)</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-inactive" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-inactive pointer-events-none" />
                 </div>
               </div>
 
@@ -150,11 +184,13 @@ const TaxCalculationPage = () => {
                 </div>
                 <input
                   type="text"
-                  value={formatWithCommas(income)}
+                  value={isLoading ? "กำลังโหลด..." : formatWithCommas(income)}
                   placeholder="0.00"
                   onChange={(e) => handleFormattedInput(e, setIncome)}
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right"
+                  readOnly={taxType === "ภ.ง.ด. 90" || isLoading}
+                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
                 />
               </div>
 
@@ -167,13 +203,15 @@ const TaxCalculationPage = () => {
                 </div>
                 <input
                   type="text"
-                  value={formatWithCommas(expenses)}
+                  value={isLoading ? "กำลังโหลด..." : formatWithCommas(expenses)}
                   placeholder="0.00"
                   onChange={(e) =>
                     handleFormattedInput(e, setExpenses)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right"
+                  readOnly={taxType === "ภ.ง.ด. 90" || isLoading}
+                  className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-primary/30 transition-all outline-none text-gray-900 font-black text-xl tracking-tighter text-right ${taxType === "ภ.ง.ด. 90" ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
                 />
               </div>
 

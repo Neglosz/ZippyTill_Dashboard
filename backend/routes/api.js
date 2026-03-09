@@ -11,6 +11,7 @@ const saleController = require("../controllers/saleController");
 const storeController = require("../controllers/storeController");
 const transactionController = require("../controllers/transactionController");
 const aiController = require("../controllers/aiController");
+const taxController = require("../controllers/taxController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const validate = require("../middleware/validateMiddleware");
@@ -114,5 +115,8 @@ router.get("/ai/templates", aiController.getChatTemplates);
 router.get("/ai/promotions", aiController.getPromotionRecommendations);
 router.post("/ai/chat", aiController.chatWithAI);
 router.post("/ai/generate-promo-name", aiController.generatePromoName);
+
+// Tax Routes
+router.get("/tax/summary", taxController.getTaxSummary);
 
 module.exports = router;
