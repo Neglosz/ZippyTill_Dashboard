@@ -40,7 +40,7 @@ const EditDebtorModal = ({ item, isOpen, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
         <h3 className="text-xl font-bold text-[#1B2559] mb-4">แก้ไขข้อมูล</h3>
         <form onSubmit={handleSubmit} className="space-y-4">

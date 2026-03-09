@@ -25,6 +25,8 @@ const StatusModal = ({
         className="bg-white rounded-[24px] p-6 w-full max-w-[300px] text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-300 border border-white/20"
         onClick={(e) => e.stopPropagation()}
       >
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[3000] animate-in fade-in duration-200">
+      <div className="bg-white rounded-[24px] p-6 w-full max-w-[300px] text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-300 border border-white/20">
         {/* Icon */}
         <div className="flex justify-center mb-5">
           {isDelete && (
@@ -41,9 +43,8 @@ const StatusModal = ({
 
         {/* Text */}
         <h3
-          className={`text-lg font-bold mb-1.5 ${
-            isDelete ? "text-[#D91B1B]" : "text-[#00A753]"
-          }`}
+          className={`text-lg font-bold mb-1.5 ${isDelete ? "text-[#D91B1B]" : "text-[#00A753]"
+            }`}
         >
           {title}
         </h3>
@@ -63,11 +64,10 @@ const StatusModal = ({
           )}
           <button
             onClick={onConfirm}
-            className={`flex-1 py-2 px-3 rounded-xl text-white font-semibold transition-all shadow-md active:scale-95 text-sm ${
-              isDelete
+            className={`flex-1 py-2 px-3 rounded-xl text-white font-semibold transition-all shadow-md active:scale-95 text-sm ${isDelete
                 ? "bg-[#D91B1B] hover:bg-red-700 shadow-red-200"
                 : "bg-[#00A753] hover:bg-green-700 shadow-green-200"
-            }`}
+              }`}
           >
             {confirmText}
           </button>

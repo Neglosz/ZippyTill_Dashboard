@@ -160,7 +160,7 @@ const DebtorDetailModal = ({
   const bills = item.items || [];
 
   return createPortal(
-    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-500 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-[1000] p-4 animate-in fade-in duration-500 overflow-y-auto">
       <div className="bg-gradient-to-br from-white via-white to-gray-50/80 rounded-[48px] w-full max-w-4xl max-h-[80vh] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/80 relative backdrop-blur-xl">
         {/* Enhanced Background Decor */}
         <div
