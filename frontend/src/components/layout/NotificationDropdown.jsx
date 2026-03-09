@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Clock,
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   Banknote,
   CalendarClock,
 } from "lucide-react";
+import ConfirmModal from "../modals/ConfirmModal";
 
 const NotificationDropdown = ({
   isOpen,
@@ -21,6 +22,29 @@ const NotificationDropdown = ({
   onClearAll,
   onDelete,
 }) => {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        // Check if the click is on the notification button (parent)
+        // to avoid double toggling
+        const notifButton = event.target.closest('.group\\/notif');
+        if (!notifButton) {
+          onClose();
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
   const getNotificationStyle = (type) => {
     switch (type) {
       case "alert":
@@ -121,8 +145,10 @@ const NotificationDropdown = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
-      <div className="absolute right-0 top-12 w-[420px] bg-white rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div 
+        ref={dropdownRef}
+        className="absolute right-0 top-12 w-[420px] bg-white rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300"
+      >
         <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-black text-[#1B2559] tracking-tight">
@@ -136,7 +162,7 @@ const NotificationDropdown = ({
           </div>
           {notifications.length > 0 && (
             <button
-              onClick={onClearAll}
+              onClick={() => setIsConfirmOpen(true)}
               className="text-[10px] font-black text-inactive hover:text-red-500 transition-colors uppercase tracking-widest"
             >
               ล้างทั้งหมด
@@ -210,6 +236,20 @@ const NotificationDropdown = ({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={() => {
+          onClearAll();
+          setIsConfirmOpen(false);
+        }}
+        title="ล้างแจ้งเตือนทั้งหมด?"
+        message="คุณแน่ใจหรือไม่ว่าต้องการล้างการแจ้งเตือนทั้งหมด? การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmText="ล้างทั้งหมด"
+        cancelText="ยกเลิก"
+        isDestructive={true}
+      />
     </>
   );
 };

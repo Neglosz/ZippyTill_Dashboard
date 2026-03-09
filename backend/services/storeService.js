@@ -78,6 +78,41 @@ const storeService = {
     if (!storeId) return;
     try { await supabase.from("stores").update({ last_accessed_at: new Date().toISOString() }).eq("id", storeId); } catch (err) { }
   },
+
+  async updateStore(storeId, updateData, userId) {
+    // Permission check: only owner or members with 'manager'/'owner' role can update
+    const { data: store, error: fetchError } = await supabase
+      .from("stores")
+      .select("owner_id")
+      .eq("id", storeId)
+      .single();
+
+    if (fetchError || !store) throw new Error("Store not found");
+
+    if (store.owner_id !== userId) {
+      // Check if user is a manager in store_members
+      const { data: member, error: memberError } = await supabase
+        .from("store_members")
+        .select("role")
+        .eq("store_id", storeId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (memberError || !member || (member.role !== "owner" && member.role !== "manager")) {
+        throw new Error("You do not have permission to update this store");
+      }
+    }
+
+    const { data, error } = await supabase
+      .from("stores")
+      .update(updateData)
+      .eq("id", storeId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 module.exports = storeService;

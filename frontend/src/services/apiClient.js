@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-const API_URL = "http://127.0.0.1:5001/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const getHeaders = async () => {
   try {
@@ -10,6 +10,9 @@ const getHeaders = async () => {
     };
     if (session?.access_token) {
       headers["Authorization"] = `Bearer ${session.access_token}`;
+      console.log(`apiClient: Token found, adding to headers: ${session.access_token.substring(0, 10)}...`);
+    } else {
+      console.warn("apiClient: No active session found during getHeaders");
     }
     return headers;
   } catch (error) {
@@ -71,6 +74,11 @@ const fetchWithRetry = async (url, options, retries = 2) => {
       const freshHeaders = await getHeaders();
       return fetchWithRetry(url, { ...options, headers: freshHeaders }, retries - 1);
     }
+
+    if (isNetworkError) {
+      throw new Error("ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ กรุณาตรวจสอบการเชื่อมต่อของคุณแล้วลองใหม่อีกครั้ง");
+    }
+    
     throw error;
   }
 };

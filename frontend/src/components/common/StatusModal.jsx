@@ -17,6 +17,14 @@ const StatusModal = ({
   const isSuccess = type === "success";
 
   return (
+    <div 
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[150] animate-in fade-in duration-200"
+      onClick={onCancel || onConfirm}
+    >
+      <div 
+        className="bg-white rounded-[24px] p-6 w-full max-w-[300px] text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-300 border border-white/20"
+        onClick={(e) => e.stopPropagation()}
+      >
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[3000] animate-in fade-in duration-200">
       <div className="bg-white rounded-[24px] p-6 w-full max-w-[300px] text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-300 border border-white/20">
         {/* Icon */}

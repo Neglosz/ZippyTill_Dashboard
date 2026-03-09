@@ -16,4 +16,8 @@ export const storeService = {
   async updateLastAccessed(storeId) {
     return apiClient.post(`/stores/${storeId}/access`);
   },
+
+  async updateStore(storeId, updateData) {
+    return apiClient.put(`/stores/${storeId}`, updateData);
+  },
 };

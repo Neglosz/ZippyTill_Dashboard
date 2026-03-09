@@ -14,6 +14,7 @@ import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
 import { Modal } from "../components/common/ProfileComponents";
 import TextInput from "../components/common/TextInput";
+import { settingService } from "../services/settingService";
 
 const Toggle = ({ enabled, onToggle }) => (
   <button
@@ -32,50 +33,60 @@ const Toggle = ({ enabled, onToggle }) => (
 
 const SettingPage = () => {
   const { activeBranchId } = useBranch();
+  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState(true);
+  const [stockAlert, setStockAlert] = useState(true);
 
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem(
-      `setting_notifications_${activeBranchId}`,
-    );
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const [stockAlert, setStockAlert] = useState(() => {
-    const saved = localStorage.getItem(`setting_stockAlert_${activeBranchId}`);
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  // Re-read settings when branch changes
+  // Fetch settings when branch changes
   useEffect(() => {
     if (!activeBranchId) return;
-    const savedNotif = localStorage.getItem(
-      `setting_notifications_${activeBranchId}`,
-    );
-    setNotifications(savedNotif !== null ? JSON.parse(savedNotif) : true);
-    const savedStock = localStorage.getItem(
-      `setting_stockAlert_${activeBranchId}`,
-    );
-    setStockAlert(savedStock !== null ? JSON.parse(savedStock) : true);
+    
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const data = await settingService.getSettings(activeBranchId);
+        if (data) {
+          setNotifications(data.notifications !== undefined ? data.notifications : true);
+          setStockAlert(data.stockAlert !== undefined ? data.stockAlert : true);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
   }, [activeBranchId]);
 
-  // Persist settings to localStorage whenever they change
-  useEffect(() => {
-    if (!activeBranchId) return;
-    localStorage.setItem(
-      `setting_notifications_${activeBranchId}`,
-      JSON.stringify(notifications),
-    );
-    window.dispatchEvent(new Event("settingsChanged"));
-  }, [notifications, activeBranchId]);
+  // Handle toggles
+  const handleToggleNotifications = async () => {
+    const newVal = !notifications;
+    setNotifications(newVal);
+    try {
+      await settingService.updateSettings(activeBranchId, { 
+        notifications: newVal,
+        stockAlert 
+      });
+      window.dispatchEvent(new Event("settingsChanged"));
+    } catch (error) {
+      console.error("Failed to save notification setting:", error);
+    }
+  };
 
-  useEffect(() => {
-    if (!activeBranchId) return;
-    localStorage.setItem(
-      `setting_stockAlert_${activeBranchId}`,
-      JSON.stringify(stockAlert),
-    );
-    window.dispatchEvent(new Event("settingsChanged"));
-  }, [stockAlert, activeBranchId]);
+  const handleToggleStockAlert = async () => {
+    const newVal = !stockAlert;
+    setStockAlert(newVal);
+    try {
+      await settingService.updateSettings(activeBranchId, { 
+        notifications,
+        stockAlert: newVal 
+      });
+      window.dispatchEvent(new Event("settingsChanged"));
+    } catch (error) {
+      console.error("Failed to save stock alert setting:", error);
+    }
+  };
 
   // Change password modal state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -107,8 +118,31 @@ const SettingPage = () => {
       setPasswordError("รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร");
       return;
     }
+    if (newPassword.length > 20) {
+      setPasswordError("รหัสผ่านใหม่ต้องไม่เกิน 20 ตัวอักษร");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPasswordError("รหัสผ่านใหม่ไม่ตรงกัน");
+      return;
+    }
+
+    // Complexity check
+    const isTooSimple = (pwd) => {
+      // All same characters (e.g., "111111")
+      if (/^(.)\1+$/.test(pwd)) return true;
+      
+      // Sequential numbers or letters
+      const sequences = ["1234567890", "0987654321", "abcdefghijklmnopqrstuvwxyz"];
+      for (let seq of sequences) {
+        if (seq.includes(pwd.toLowerCase())) return true;
+      }
+      
+      return false;
+    };
+
+    if (isTooSimple(newPassword)) {
+      setPasswordError("รหัสผ่านนี้ง่ายเกินไป กรุณาใช้รหัสผ่านที่คาดเดาได้ยากขึ้น");
       return;
     }
 
@@ -183,47 +217,55 @@ const SettingPage = () => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16" />
 
           <div className="relative z-10 space-y-5">
-            {/* Push Notifications */}
-            <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
-                  <Bell size={18} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    การแจ้งเตือนในระบบ
-                  </p>
-                  <p className="text-xs text-inactive">
-                    รับการแจ้งเตือนผ่านเบราว์เซอร์
-                  </p>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
               </div>
-              <Toggle
-                enabled={notifications}
-                onToggle={() => setNotifications(!notifications)}
-              />
-            </div>
+            ) : (
+              <>
+                {/* Push Notifications */}
+                <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
+                      <Bell size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">
+                        การแจ้งเตือนในระบบ
+                      </p>
+                      <p className="text-xs text-inactive">
+                        รับการแจ้งเตือนผ่านเบราว์เซอร์
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={notifications}
+                    onToggle={handleToggleNotifications}
+                  />
+                </div>
 
-            {/* Stock Alert */}
-            <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
-                  <Bell size={18} strokeWidth={2.5} />
+                {/* Stock Alert */}
+                <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
+                      <Bell size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">
+                        แจ้งเตือนสินค้าใกล้หมด
+                      </p>
+                      <p className="text-xs text-inactive">
+                        เมื่อสินค้าต่ำกว่าจุดสั่งซื้อ
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={stockAlert}
+                    onToggle={handleToggleStockAlert}
+                  />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    แจ้งเตือนสินค้าใกล้หมด
-                  </p>
-                  <p className="text-xs text-inactive">
-                    เมื่อสินค้าต่ำกว่าจุดสั่งซื้อ
-                  </p>
-                </div>
-              </div>
-              <Toggle
-                enabled={stockAlert}
-                onToggle={() => setStockAlert(!stockAlert)}
-              />
-            </div>
+              </>
+            )}
 
             {/* Divider */}
             <div className="border-t border-gray-100" />

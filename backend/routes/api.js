@@ -11,14 +11,17 @@ const saleController = require("../controllers/saleController");
 const storeController = require("../controllers/storeController");
 const transactionController = require("../controllers/transactionController");
 const aiController = require("../controllers/aiController");
+const settingController = require("../controllers/settingController");
+const notificationController = require("../controllers/notificationController");
 const taxController = require("../controllers/taxController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const validate = require("../middleware/validateMiddleware");
 const productValidation = require("../validations/productValidation");
+const authValidation = require("../validations/authValidation");
 
 // Auth Routes (Public)
-router.post("/auth/login", authController.login);
+router.post("/auth/login", validate(authValidation.login), authController.login);
 
 // Protected Routes (Apply middleware to everything below)
 router.use(authMiddleware);
@@ -97,7 +100,17 @@ router.get("/sales/history", saleController.getSalesHistory);
 router.get("/stores", storeController.getUserStores);
 router.post("/stores/summary", storeController.getStoresSummary);
 router.get("/stores/:id/stats", storeController.getStoreStats);
+router.put("/stores/:id", storeController.updateStore);
 router.post("/stores/:id/access", storeController.updateLastAccessed);
+
+// Settings Routes
+router.get("/stores/:storeId/settings", settingController.getSettings);
+router.post("/stores/:storeId/settings", settingController.updateSettings);
+
+// Persistent Notification Routes
+router.get("/stores/:storeId/notifications", notificationController.getNotifications);
+router.put("/notifications/:id/read", notificationController.markAsRead);
+router.put("/stores/:storeId/notifications/read-all", notificationController.markAllAsRead);
 
 // Transaction Routes
 router.get(

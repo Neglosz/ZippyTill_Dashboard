@@ -21,10 +21,30 @@ const AIChatBot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatWindowRef = useRef(null);
   const { activeBranchId, activeBranchName } = useBranch();
   const [storeContext, setStoreContext] = useState(null);
   const historyLoadedFor = useRef(null);
   const [templates, setTemplates] = useState({});
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && chatWindowRef.current && !chatWindowRef.current.contains(event.target)) {
+        // Only close if not clicking on the floating button that toggles it
+        const toggleButton = event.target.closest('button');
+        if (!toggleButton || !toggleButton.innerHTML.includes('MessageSquare')) {
+          setIsOpen(false);
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -221,7 +241,10 @@ ${text}`;
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-0 right-0 w-[550px] md:w-[750px] lg:w-[900px] max-h-[700px] h-[75vh] bg-white/95 backdrop-blur-xl rounded-[48px] shadow-2xl border border-orange-100/50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-12 duration-500">
+        <div 
+          ref={chatWindowRef}
+          className="absolute bottom-0 right-0 w-[550px] md:w-[750px] lg:w-[900px] max-h-[700px] h-[75vh] bg-white/95 backdrop-blur-xl rounded-[48px] shadow-2xl border border-orange-100/50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-12 duration-500"
+        >
           {/* Header */}
           <div className="bg-gradient-to-r from-primary via-orange-500 to-orange-600 p-8 flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-5">

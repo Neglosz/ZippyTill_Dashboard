@@ -23,6 +23,7 @@ import ExportModal from "../components/features/outstanding/ExportModal";
 import EditProductModal from "../components/features/inventory/EditProductModal";
 import AddProductModal from "../components/features/inventory/AddProductModal";
 import StockReport from "../components/features/inventory/StockReport";
+import StatusModal from "../components/common/StatusModal";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
 
@@ -43,6 +44,12 @@ const InventoryPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [statusModal, setStatusModal] = useState({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const totalCount = products.length;
 
@@ -190,7 +197,12 @@ const InventoryPage = () => {
           payload,
           activeBranchId,
         );
-        alert("แก้ไขสำเร็จ");
+        setStatusModal({
+          isOpen: true,
+          type: "success",
+          title: "แก้ไขสำเร็จ",
+          message: "ข้อมูลสินค้าถูกอัปเดตเรียบร้อยแล้ว",
+        });
       } else {
         // Create new product
         const payload = {
@@ -211,7 +223,12 @@ const InventoryPage = () => {
           payload,
           activeBranchId,
         );
-        alert("บันทึกสำเร็จ");
+        setStatusModal({
+          isOpen: true,
+          type: "success",
+          title: "บันทึกสำเร็จ",
+          message: "เพิ่มสินค้าใหม่เข้าสู่ระบบเรียบร้อยแล้ว",
+        });
       }
 
       fetchProducts(); // Refresh list after save
@@ -220,7 +237,12 @@ const InventoryPage = () => {
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Error saving product:", err);
-      alert("ไม่สามารถบันทึกข้อมูลได้: " + err.message);
+      setStatusModal({
+        isOpen: true,
+        type: "delete", // Use error/delete style for errors
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถบันทึกข้อมูลได้: " + err.message,
+      });
     }
   };
 
@@ -246,9 +268,20 @@ const InventoryPage = () => {
       // Refresh product list
       await fetchProducts();
       setDeleteConfirm(null);
+      setStatusModal({
+        isOpen: true,
+        type: "success",
+        title: "ลบสำเร็จ",
+        message: "ลบสินค้าออกจากระบบเรียบร้อยแล้ว",
+      });
     } catch (err) {
       console.error("Error deleting product:", err);
-      alert("ไม่สามารถลบสินค้าได้: " + err.message);
+      setStatusModal({
+        isOpen: true,
+        type: "delete",
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถลบสินค้าได้: " + err.message,
+      });
     }
   };
 
@@ -799,6 +832,16 @@ const InventoryPage = () => {
           </div>
         </div>
       )}
+
+      {/* Status Modal for success/error feedback */}
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onConfirm={() => setStatusModal({ ...statusModal, isOpen: false })}
+        confirmText="ตกลง"
+      />
     </>
   );
 };
