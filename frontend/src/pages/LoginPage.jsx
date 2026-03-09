@@ -153,9 +153,6 @@ const LoginPage = () => {
                 ที่มาพร้อมกับดีไซน์ที่ล้ำสมัยและการใช้งานที่ทรงประสิทธิภาพ
               </p>
             </div>
-
-
-
             <div className="grid grid-cols-1 gap-5 pb-8 lg:pb-0">
               {/* Feature Items */}
               <FeatureItem

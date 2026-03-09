@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -672,12 +672,12 @@ const AIPromotionPage = () => {
                       >
                         <Trash2 size={14} />
                       </button>
-                      <div className="flex justify-between items-start mb-4">
-                        <h4 className="font-black text-gray-900 text-sm group-hover:text-primary truncate pr-10">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-black text-gray-900 text-sm group-hover:text-primary truncate pr-2">
                           {promo.name}
                         </h4>
                         <span
-                          className={`text-[9px] font-black px-2 py-0.5 rounded text-white ${status.color}`}
+                          className={`text-[9px] font-black px-2 py-0.5 rounded text-white shrink-0 ${status.color}`}
                         >
                           {status.label}
                         </span>
@@ -853,12 +853,12 @@ const AIPromotionPage = () => {
                       {isSelected && <Plus size={14} className="text-white rotate-0" strokeWidth={4} />}
                     </div>
 
-                    <div className="flex justify-between mb-4 pl-8">
+                    <div className="flex justify-between items-center mb-4 pl-8">
                       <h4 className="font-black text-gray-900 text-sm truncate pr-2">
                         {promo.name}
                       </h4>
                       <span
-                        className={`text-[9px] font-black px-2 py-0.5 rounded text-white ${status.color}`}
+                        className={`text-[9px] font-black px-2 py-0.5 rounded text-white shrink-0 ${status.color}`}
                       >
                         {status.label}
                       </span>
