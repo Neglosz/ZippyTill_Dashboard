@@ -6,7 +6,7 @@ const ExportModal = ({ isOpen, onClose, onExportPDF, onExportExcel }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200">
       <div className="bg-white rounded-[24px] p-8 w-full max-w-[380px] relative shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] flex flex-col items-center animate-in zoom-in-95 duration-300">
         {/* Close Button */}
         <button
