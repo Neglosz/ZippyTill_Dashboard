@@ -110,7 +110,7 @@ const LoginPage = () => {
         // Supabase typically returns an error object with a message property
         setError(
           err.message ||
-            `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
+          `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
         );
       }
     } finally {
@@ -154,38 +154,21 @@ const LoginPage = () => {
               </p>
             </div>
 
-            <div className="flex gap-16 lg:gap-24 mb-16">
-              <div className="group/stat">
-                <p className="text-5xl lg:text-7xl font-bold tracking-tight text-primary">
-                  670+
-                </p>
-                <p className="text-xs font-bold text-inactive uppercase tracking-wider mt-2">
-                  ธุรกิจที่ไว้วางใจ
-                </p>
-              </div>
-              <div className="group/stat">
-                <p className="text-5xl lg:text-7xl font-bold tracking-tight text-gray-900">
-                  24/7
-                </p>
-                <p className="text-xs font-bold text-inactive uppercase tracking-wider mt-2">
-                  ซัพพอร์ตจากผู้เชี่ยวชาญ
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-5 pb-8 lg:pb-0">
-            {/* Feature Items */}
-            <FeatureItem
-              icon={Box}
-              title="ควบคุมสต๊อกอัจฉริยะ"
-              desc="ติดตามสินค้าคงคลังแบบเรียลไทม์"
-            />
-            <FeatureItem
-              icon={BarChart3}
-              title="การวิเคราะห์ขั้นสูง"
-              desc="วิเคราะห์ข้อมูลการขายอย่างลึกซึ้ง"
-            />
+
+            <div className="grid grid-cols-1 gap-5 pb-8 lg:pb-0">
+              {/* Feature Items */}
+              <FeatureItem
+                icon={Box}
+                title="ควบคุมสต๊อกอัจฉริยะ"
+                desc="ติดตามสินค้าคงคลังแบบเรียลไทม์"
+              />
+              <FeatureItem
+                icon={BarChart3}
+                title="การวิเคราะห์ขั้นสูง"
+                desc="วิเคราะห์ข้อมูลการขายอย่างลึกซึ้ง"
+              />
+            </div>
           </div>
         </div>
       </div>
