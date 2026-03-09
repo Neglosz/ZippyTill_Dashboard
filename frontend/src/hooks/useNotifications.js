@@ -2,39 +2,43 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { productService } from "../services/productService";
 import { creditService } from "../services/creditService";
+import { settingService } from "../services/settingService";
+import { notificationService } from "../services/notificationService";
 
 /**
  * Custom hook to manage notifications logic for a specific branch.
- * Handles fetching, realtime subscriptions, and deletion.
- * @param {string} activeBranchId
- * @returns {Object} Notification states and actions
+ * Handles fetching from persistent backend and realtime updates.
  */
 export const useNotifications = (activeBranchId) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState(new Set());
+  const [settings, setSettings] = useState({
+    notifications: true,
+    stockAlert: true,
+  });
 
-  // Read notification settings from localStorage (per branch)
-  const getNotificationSettings = useCallback(() => {
-    const notifEnabled = localStorage.getItem(
-      `setting_notifications_${activeBranchId}`,
-    );
-    const stockEnabled = localStorage.getItem(
-      `setting_stockAlert_${activeBranchId}`,
-    );
-    return {
-      notifications: notifEnabled !== null ? JSON.parse(notifEnabled) : true,
-      stockAlert: stockEnabled !== null ? JSON.parse(stockEnabled) : true,
-    };
+  // Fetch settings from persistent storage
+  const fetchSettings = useCallback(async () => {
+    if (!activeBranchId) return;
+    try {
+      const data = await settingService.getSettings(activeBranchId);
+      setSettings((prev) => ({
+        ...prev,
+        notifications: data.notifications !== undefined ? data.notifications : true,
+        stockAlert: data.stockAlert !== undefined ? data.stockAlert : true,
+      }));
+    } catch (error) {
+      console.warn("Error fetching notification settings from backend:", error);
+    }
   }, [activeBranchId]);
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     if (!activeBranchId) return;
 
-    const settings = getNotificationSettings();
-
-    // If all notifications are disabled, show nothing
-    if (!settings.notifications) {
+    // Check transient settings (loading might not be finished yet)
+    if (settings.notifications === false) {
       setNotifications([]);
       return;
     }
@@ -42,10 +46,11 @@ export const useNotifications = (activeBranchId) => {
     try {
       setLoading(true);
 
-      // 1. Fetch system notifications (Overdue & Expiring)
-      const [overdueItems, dashboardNotifs] = await Promise.all([
+      // 1. Fetch system calculations (Overdue & Dashboard Alerts)
+      const [overdueItems, dashboardNotifs, persistentNotifs] = await Promise.all([
         creditService.getOverdueItems(activeBranchId),
         productService.getDashboardNotifications(activeBranchId),
+        notificationService.getNotifications(activeBranchId)
       ]);
 
       // Transform Overdue Items
@@ -73,56 +78,64 @@ export const useNotifications = (activeBranchId) => {
               : "ครบกำหนดวันนี้",
           created_at: rawDate || new Date().toISOString(),
           link: "/finance/overdue",
+          isRead: false
         };
       });
 
-      // Transform Expiring Items (only if stockAlert is enabled)
+      // Transform Expiring Items (computed from stock)
       const expiringNotifications = settings.stockAlert
         ? [
             ...dashboardNotifs.expired.map((item) => ({
-              id: `expired-${item.name}-${Math.random()}`,
+              id: `expired-${item.batchId || item.productId || item.name}`,
               type: "alert",
+              isRead: false,
               title: `สินค้าหมดอายุ: ${item.name}`,
               message: `หมดอายุเมื่อวันที่ ${item.expiryDate}`,
               time: "หมดอายุแล้ว",
               created_at: new Date().toISOString(),
             })),
             ...dashboardNotifs.expiringSoon.map((item) => ({
-              id: `expiring-${item.name}-${Math.random()}`,
+              id: `expiring-${item.batchId || item.productId || item.name}`,
               type: "expiring",
+              isRead: false,
               title: `สินค้าใกล้หมดอายุ: ${item.name}`,
               message: `จะหมดอายุในอีก ${item.days} วัน\n(วันที่ ${item.expiryDate})`,
               time: `เหลืออีก ${item.days} วัน`,
               created_at: new Date().toISOString(),
             })),
-            ...(settings.stockAlert
-              ? dashboardNotifs.lowStock.map((item) => ({
-                  id: `lowstock-${item.name}-${Math.random()}`,
-                  type: "stock",
-                  title: `สินค้าใกล้หมด: ${item.name}`,
-                  message: `เหลือเพียง ${item.qty} ${item.unit || "ชิ้น"} ในคลัง`,
-                  time: "สต็อกน้อย",
-                  created_at: new Date().toISOString(),
-                }))
-              : []),
+            ...dashboardNotifs.lowStock.map((item) => ({
+              id: `lowstock-${item.id || item.productId || item.name}`,
+              type: "stock",
+              isRead: false,
+              title: `สินค้าใกล้หมด: ${item.name}`,
+              message: `เหลือเพียง ${item.qty} ${item.unit || "ชิ้น"} ในคลัง`,
+              time: "สต็อกน้อย",
+              created_at: new Date().toISOString(),
+            })),
           ]
         : [];
 
-      // 2. Fetch manual notifications from Supabase
-      const { data: manualNotifications, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("store_id", activeBranchId)
-        .order("created_at", { ascending: false });
+      // Transform Persistent Notifications
+      const formattedPersistent = (persistentNotifs || []).map(n => ({
+        id: n.id,
+        type: n.category || n.type || 'info',
+        title: n.title || (n.type === 'low_stock' ? 'แจ้งเตือนสต็อก' : 'แจ้งเตือนระบบ'),
+        message: n.message,
+        isRead: n.is_read,
+        created_at: n.created_at,
+        time: new Date(n.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        actionUrl: n.action_url
+      }));
 
-      if (error) throw error;
-
-      // 3. Merge and Sort
+      // 3. Merge, Filter and Sort
+      // Only show UNREAD notifications that haven't been hidden locally in this session
       const allNotifications = [
         ...overdueNotifications,
         ...expiringNotifications,
-        ...(manualNotifications || []),
-      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        ...formattedPersistent,
+      ]
+      .filter(n => !n.isRead && !hiddenIds.has(n.id))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       setNotifications(allNotifications);
     } catch (error) {
@@ -130,14 +143,18 @@ export const useNotifications = (activeBranchId) => {
     } finally {
       setLoading(false);
     }
-  }, [activeBranchId, getNotificationSettings]);
+  }, [activeBranchId, settings.notifications, settings.stockAlert, Array.from(hiddenIds).join(',')]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   useEffect(() => {
     fetchNotifications();
 
     if (!activeBranchId) return;
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes in persistent table
     const channel = supabase
       .channel(`notifications_${activeBranchId}`)
       .on(
@@ -154,37 +171,32 @@ export const useNotifications = (activeBranchId) => {
       )
       .subscribe();
 
-    // Listen for settings changes from SettingPage
-    const handleStorageChange = (e) => {
-      if (
-        e.key?.startsWith("setting_notifications_") ||
-        e.key?.startsWith("setting_stockAlert_")
-      ) {
-        fetchNotifications();
-      }
-    };
+    // Listen for settings changes from SettingPage (Custom Event)
     const handleSettingsChanged = () => {
-      fetchNotifications();
+      fetchSettings().then(() => fetchNotifications());
     };
-    window.addEventListener("storage", handleStorageChange);
     window.addEventListener("settingsChanged", handleSettingsChanged);
 
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("settingsChanged", handleSettingsChanged);
     };
-  }, [activeBranchId, fetchNotifications]);
+  }, [activeBranchId, fetchNotifications, fetchSettings]);
 
   const clearAllNotifications = async () => {
     if (!activeBranchId) return;
     try {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("store_id", activeBranchId);
-
-      if (error) throw error;
+      // Mark all in DB as read
+      await notificationService.markAllAsRead(activeBranchId);
+      
+      // Also hide all current ones locally (including computed ones)
+      const currentIds = notifications.map(n => n.id);
+      setHiddenIds(prev => {
+        const next = new Set(prev);
+        currentIds.forEach(id => next.add(id));
+        return next;
+      });
+      
       setNotifications([]);
     } catch (error) {
       console.error("Error clearing notifications:", error.message);
@@ -192,17 +204,26 @@ export const useNotifications = (activeBranchId) => {
   };
 
   const deleteNotification = async (id) => {
-    try {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", id);
+    // Hide locally immediately
+    setHiddenIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setNotifications(prev => prev.filter(n => n.id !== id));
 
-      if (error) throw error;
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    } catch (error) {
-      console.error("Error deleting notification:", error.message);
+    // If it's a UUID (persistent), mark in DB as read
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      try {
+        await notificationService.markAsRead(id);
+      } catch (error) {
+        console.error("Error deleting notification:", error.message);
+      }
     }
+  };
+
+  const markAsRead = async (id) => {
+    await deleteNotification(id);
   };
 
   return {
@@ -210,5 +231,6 @@ export const useNotifications = (activeBranchId) => {
     loading,
     clearAllNotifications,
     deleteNotification,
+    markAsRead,
   };
 };

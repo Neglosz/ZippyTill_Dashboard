@@ -126,13 +126,17 @@ const FinancePage = () => {
       setMetrics(stats);
 
       // Merge and normalize
+      const formatPaymentMethod = (sale) => {
+        if (sale.payment_type === "credit_sale") return "ค้างชำระ";
+        const method = sale.payments?.[0]?.method;
+        if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
+        return "เงินสด";
+      };
+
       const normalizedOrders = (recentOrders || []).map((o) => ({
         ...o,
         source: "order",
-        displayType:
-          o.payment_type === "credit_sale" || o.payment_method === "credit_sale"
-            ? "ค้างชำระ"
-            : "เงินสด",
+        displayType: formatPaymentMethod(o),
         displayAmount: Number(o.total_amount),
         displayName: o.order_no,
         displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
@@ -1079,11 +1083,12 @@ const FinancePage = () => {
                 month: "long",
                 day: "numeric",
               }),
-              paymentMethod:
-                selectedTransaction.payment_type === "credit_sale" ||
-                  selectedTransaction.payment_method === "credit_sale"
-                  ? "เครดิต"
-                  : "เงินสด",
+              paymentMethod: (() => {
+                if (selectedTransaction.payment_type === "credit_sale") return "ค้างชำระ";
+                const method = selectedTransaction.payments?.[0]?.method || (fullOrderData?.payments?.[0]?.method);
+                if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
+                return "เงินสด";
+              })(),
               items: isLoadingDetails
                 ? [
                   {

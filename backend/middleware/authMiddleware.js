@@ -10,6 +10,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+    console.log(`[Auth] Verifying token: ${token.substring(0, 10)}...`);
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
 

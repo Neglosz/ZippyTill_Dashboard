@@ -2,11 +2,33 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, User, Settings, Shield, LayoutGrid } from "lucide-react";
 import { authService } from "../../services/authService";
 import ConfirmModal from "../modals/ConfirmModal";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const ProfileDropdown = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        // Check if the click is on the profile toggle button
+        const profileButton = event.target.closest('button');
+        // If it's the profile button, we let its own onClick handle it
+        // to avoid double-toggling
+        if (!profileButton || !profileButton.innerHTML.includes(user?.email?.split("@")[0] || "")) {
+           onClose();
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose, user]);
 
   if (!isOpen) return null;
 
@@ -32,8 +54,10 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
-      <div className="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1),0_6px_10px_-7px_rgba(0,0,0,0.05)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div 
+        ref={dropdownRef}
+        className="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1),0_6px_10px_-7px_rgba(0,0,0,0.05)] border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+      >
         <div className="p-4 border-b border-gray-50 bg-gray-50/30">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
             Account
@@ -42,7 +66,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
             {displayName}
           </p>
           <p className="text-[10px] text-gray-500 truncate">
-            {user?.email || "No email available"}
+            {user?.email || "-"}
           </p>
         </div>
 

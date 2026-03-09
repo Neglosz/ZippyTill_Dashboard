@@ -17,8 +17,13 @@ import {
 import { useBranch } from "../contexts/BranchContext";
 import { supabase } from "../lib/supabase";
 import { Modal, InfoItem } from "../components/common/ProfileComponents";
+import StatusModal from "../components/common/StatusModal";
+import { storeService } from "../services/storeService";
+import { useParams, useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
+  const { userId: urlUserId } = useParams();
+  const navigate = useNavigate();
   const { 
     activeBranchId, 
     activeBranchName, 
@@ -49,6 +54,12 @@ const ProfilePage = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [statusModal, setStatusModal] = useState({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   // Load profile and store data
   useEffect(() => {
@@ -60,10 +71,17 @@ const ProfilePage = () => {
         } = await supabase.auth.getUser();
 
         if (user) {
+          // TC055: Check if URL userId matches current user
+          if (urlUserId && urlUserId !== user.id) {
+            console.warn("Access denied: Attempted to access another user's profile");
+            navigate("/dashboard/profile", { replace: true });
+            return;
+          }
+
           // Load profile from profiles table
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("email, full_name, phone, role, store_name, created_at")
+            .select("email, full_name, role, created_at")
             .eq("id", user.id)
             .single();
 
@@ -71,9 +89,7 @@ const ProfilePage = () => {
             setUserProfile({
               email: profileData.email || user.email || "",
               fullName: profileData.full_name || "",
-              phone: profileData.phone || "",
               role: profileData.role === "owner" ? "เจ้าของร้าน" : "ผู้จัดการ",
-              storeName: profileData.store_name || "",
               createdAt: profileData.created_at
                 ? new Date(profileData.created_at).toLocaleDateString("th-TH", {
                     year: "numeric",
@@ -83,13 +99,15 @@ const ProfilePage = () => {
                 : "",
             });
           }
+        } else {
+          navigate("/", { replace: true });
         }
 
         // Load store data
         if (activeBranchId) {
           const { data: store } = await supabase
             .from("stores")
-            .select("name, address, phone, image_url")
+            .select("name, address, phone, image_url, created_at")
             .eq("id", activeBranchId)
             .single();
 
@@ -102,6 +120,16 @@ const ProfilePage = () => {
             if (store.image_url) {
               setProfileImage(store.image_url);
             }
+            if (store.created_at) {
+              setUserProfile((prev) => ({
+                ...prev,
+                createdAt: new Date(store.created_at).toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                }),
+              }));
+            }
           }
         }
       } catch (err) {
@@ -109,7 +137,7 @@ const ProfilePage = () => {
       }
     };
     loadData();
-  }, [activeBranchId]);
+  }, [activeBranchId, urlUserId, navigate]);
 
   const displayName = branchName || userProfile.storeName || "สาขาหลัก";
 
@@ -135,7 +163,7 @@ const ProfilePage = () => {
     {
       icon: Shield,
       label: "เข้าร่วมเมื่อ",
-      value: userProfile.createdAt || "-",
+      value: storeData.createdAt || userProfile.createdAt || "-",
     },
   ];
 
@@ -182,36 +210,48 @@ const ProfilePage = () => {
 
   // Save changes
   const handleSave = async () => {
+    // Basic client-side sanitization: strip HTML tags
+    const sanitizedName = editBranchName.trim().replace(/<[^>]*>?/gm, '');
+    
     setSaving(true);
     try {
       // Update store in database
       if (activeBranchId) {
         const updateData = { 
-          name: editBranchName.trim(),
+          name: sanitizedName,
           image_url: previewImage // This will be the compressed base64 or null
         };
 
-        await supabase
-          .from("stores")
-          .update(updateData)
-          .eq("id", activeBranchId);
+        await storeService.updateStore(activeBranchId, updateData);
 
         // Update BranchContext
         selectBranch({
           id: activeBranchId,
-          name: editBranchName.trim(),
+          name: sanitizedName,
           role: userRole,
           image_url: previewImage
         });
       }
 
       // Update local state
-      setBranchName(editBranchName.trim());
+      setBranchName(sanitizedName);
       setProfileImage(previewImage);
 
       setIsEditModalOpen(false);
+      setStatusModal({
+        isOpen: true,
+        type: "success",
+        title: "บันทึกสำเร็จ",
+        message: "ข้อมูลโปรไฟล์ของคุณถูกอัปเดตเรียบร้อยแล้ว",
+      });
     } catch (err) {
       console.error("Error saving profile:", err);
+      setStatusModal({
+        isOpen: true,
+        type: "delete",
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถบันทึกข้อมูลได้: " + err.message,
+      });
     } finally {
       setSaving(false);
     }
@@ -288,7 +328,7 @@ const ProfilePage = () => {
               {displayName}
             </h2>
             <p className="text-sm font-medium text-inactive mb-2">
-              {userProfile.email}
+              {userProfile.email || "-"}
             </p>
             <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-xl text-xs font-black uppercase tracking-widest border border-primary/20">
               <Shield size={14} strokeWidth={2.5} />
@@ -394,6 +434,15 @@ const ProfilePage = () => {
           />
         </div>
       </Modal>
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onConfirm={() => setStatusModal({ ...statusModal, isOpen: false })}
+        confirmText="ตกลง"
+      />
     </>
   );
 };

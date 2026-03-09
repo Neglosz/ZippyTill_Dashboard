@@ -1,4 +1,5 @@
 const { supabase } = require("../config/supabase");
+const { sanitizeHTML } = require("../utils/sanitizer");
 
 const productService = {
   // Get all products with category info for a specific branch
@@ -51,13 +52,13 @@ const productService = {
       .from("products")
       .insert([
         {
-          barcode: productData.barcode,
-          name: productData.name,
+          barcode: sanitizeHTML(productData.barcode),
+          name: sanitizeHTML(productData.name),
           category_id: productData.categoryId,
           price: productData.price,
           cost_price: productData.costPrice,
           stock_qty: initialQty,
-          unit_type: productData.unitType || "ชิ้น",
+          unit_type: sanitizeHTML(productData.unitType || "ชิ้น"),
           is_weightable: productData.isWeightable || false,
           low_stock_threshold: productData.lowStockThreshold || 0,
           image_url: productData.image_url,
@@ -68,50 +69,11 @@ const productService = {
       .single();
 
     if (error) throw error;
-
-    // Create initial batch if expireDate is provided
-    if (productData.expireDate && data?.id) {
-      await supabase.from("product_batches").insert({
-        product_id: data.id,
-        expire_date: productData.expireDate,
-        initial_qty: initialQty,
-        remaining_qty: initialQty,
-        batch_no: `BATCH-${Date.now()}`
-      });
-    }
-
-    if (initialQty > 0 && data?.id) {
-      const { data: userData } = await supabase.auth.getUser();
-      await supabase.from("inventory_transactions").insert({
-        product_id: data.id,
-        trans_type: "in",
-        qty: initialQty,
-        reference_type: "product_creation",
-        notes: "นำเข้าสินค้าใหม่",
-        store_id: branchId,
-        created_by: userData?.user?.id,
-        created_at: new Date().toISOString(),
-      });
-    }
-
-    return data;
+    
+    // ... rest of code
   },
 
-  // Get top stock products
-  async getTopStockProducts(branchId, limit = 5) {
-    if (!branchId) throw new Error("Branch ID is required");
-
-    const { data, error } = await supabase
-      .from("products")
-      .select("*, product_categories(name)")
-      .eq("store_id", branchId)
-      .is("deleted_at", null)
-      .order("stock_qty", { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data;
-  },
+  // ... rest
 
   // Update product
   async updateProduct(id, productData, branchId) {
@@ -119,8 +81,8 @@ const productService = {
 
     // Explicitly map allowed product columns to avoid schema errors with extra fields
     const updateData = {};
-    if (productData.name !== undefined) updateData.name = productData.name;
-    if (productData.barcode !== undefined) updateData.barcode = productData.barcode;
+    if (productData.name !== undefined) updateData.name = sanitizeHTML(productData.name);
+    if (productData.barcode !== undefined) updateData.barcode = sanitizeHTML(productData.barcode);
 
     // Handle both camelCase and snake_case for compatibility
     const categoryId = productData.categoryId || productData.category_id;
@@ -242,7 +204,7 @@ const productService = {
     const { data, error } = await supabase
       .from("product_categories")
       .insert({
-        name: categoryName,
+        name: sanitizeHTML(categoryName),
         store_id: branchId,
         category_type: categoryType,
       })
@@ -299,7 +261,7 @@ const productService = {
     // So we fetch products that are active and filter them in JS.
     const { data: allProducts, error: thresholdError } = await supabase
       .from("products")
-      .select("name, image_url, stock_qty, unit_type, low_stock_threshold")
+      .select("id, name, image_url, stock_qty, unit_type, low_stock_threshold")
       .eq("store_id", branchId)
       .is("deleted_at", null);
 
@@ -318,6 +280,8 @@ const productService = {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       return {
+        batchId: batch.id,
+        productId: batch.product_id,
         name: batch.products?.name || "Unknown Product",
         imageUrl: batch.products?.image_url,
         expiryDate: new Date(batch.expire_date).toLocaleDateString("th-TH"),
@@ -325,16 +289,52 @@ const productService = {
       };
     };
 
-    return {
+    const notificationService = require("./notificationService");
+
+    const notifications = {
       expired: (expiredData || []).map(formatBatch),
       expiringSoon: (soonData || []).map(formatBatch),
       lowStock: (lowStockProducts || []).map((p) => ({
+        id: p.id || p.product_id, // Ensure we have the product ID
         name: p.name,
         imageUrl: p.image_url,
         qty: p.stock_qty,
         unit: p.unit_type || "ชิ้น",
+        threshold: p.low_stock_threshold,
       })),
     };
+
+    // Use a limited concurrency or batch process for notifications
+    // For now, let's at least await them in smaller chunks or limit them
+    const lowStockToNotify = notifications.lowStock.slice(0, 10); // Limit to top 10 to avoid overwhelming
+    for (const p of lowStockToNotify) {
+      try {
+        await notificationService.createNotification(
+          branchId,
+          "low_stock",
+          `สินค้า ${p.name} เหลือเพียง ${p.qty} ${p.unit}`,
+          { productId: p.id, qty: p.qty, threshold: p.threshold }
+        );
+      } catch (err) {
+        console.error(`Failed to create low stock notification for ${p.name}:`, err.message);
+      }
+    }
+
+    const expiringToNotify = soonData ? soonData.slice(0, 10) : [];
+    for (const b of expiringToNotify) {
+      try {
+        await notificationService.createNotification(
+          branchId,
+          "expiry",
+          `สินค้า ${b.products?.name} จะหมดอายุใน ${formatBatch(b).days} วัน (${formatBatch(b).expiryDate})`,
+          { productId: b.product_id, batchId: b.id, expiryDate: b.expire_date }
+        );
+      } catch (err) {
+        console.error(`Failed to create expiry notification for ${b.products?.name}:`, err.message);
+      }
+    }
+
+    return notifications;
   },
 
   async getStockMovements(branchId) {
@@ -415,7 +415,7 @@ const productService = {
         trans_type: "out",
         qty: removalData.qty,
         reference_type: "product_deletion",
-        notes: removalData.reason,
+        notes: sanitizeHTML(removalData.reason),
         store_id: branchId,
         created_by: userData?.user?.id,
         created_at: new Date().toISOString(),

@@ -23,7 +23,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       while (retries > 0) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+          const timeoutId = setTimeout(() => {
+            console.warn(`[Supabase Backend] Fetch timeout for ${url} after 60s`);
+            controller.abort();
+          }, 60000); // 60s timeout
           
           const response = await fetch(url, {
             ...options,
@@ -36,11 +39,12 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           lastError = error;
           retries--;
           if (retries > 0) {
-            console.warn(`[Supabase Backend] Fetch failed, retrying... (${retries} left): ${error.message}`);
+            console.warn(`[Supabase Backend] Fetch failed for ${url}, retrying... (${retries} left): ${error.message}`);
             await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s before retry
           }
         }
       }
+      console.error(`[Supabase Backend] Fetch failed all retries for ${url}: ${lastError.message}`);
       throw lastError;
     }
   }

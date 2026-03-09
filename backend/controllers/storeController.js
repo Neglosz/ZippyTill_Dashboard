@@ -31,6 +31,18 @@ const storeController = {
     }
   },
 
+  async updateStore(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const userId = req.user.id;
+      const data = await storeService.updateStore(id, updateData, userId);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async updateLastAccessed(req, res) {
     try {
       const { id } = req.params;

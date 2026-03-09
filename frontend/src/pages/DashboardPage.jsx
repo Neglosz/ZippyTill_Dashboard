@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   ShoppingCart,
@@ -24,9 +25,11 @@ import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
 import { creditService } from "../services/creditService";
 import { useBranch } from "../contexts/BranchContext";
+import { supabase } from "../lib/supabase";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
   const {
     activeBranchId,
     activeBranchName,
@@ -155,6 +158,30 @@ const DashboardPage = () => {
     };
 
     fetchDashboardData();
+
+    // TC029: Real-time update for new orders
+    if (!activeBranchId) return;
+
+    const channel = supabase
+      .channel(`dashboard_orders_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        (payload) => {
+          console.log("Dashboard: New order detected real-time!", payload);
+          fetchDashboardData(); // Refresh metrics and lists
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [activeBranchId]);
 
   const scroll = React.useCallback((direction) => {
@@ -183,6 +210,17 @@ const DashboardPage = () => {
     return `${supabaseUrl}/storage/v1/object/public/${fullPath}`;
   }, []);
 
+  const formatPaymentMethod = React.useCallback((sale) => {
+    if (sale.payment_type === "credit_sale") return "ค้างชำระ";
+    
+    // Check method in payments array
+    const method = sale.payments?.[0]?.method;
+    if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
+    if (method === "cash") return "เงินสด";
+    
+    return "เงินสด"; // default
+  }, []);
+
   const handleOrderClick = React.useCallback(
     (sale) => {
       // Transform order data to match ReceiptModal's expected format
@@ -193,10 +231,7 @@ const DashboardPage = () => {
           month: "long",
           day: "numeric",
         }),
-        paymentMethod:
-          sale.payment_type === "credit_sale"
-            ? "เครดิต"
-            : "เงินสด",
+        paymentMethod: formatPaymentMethod(sale),
         items:
           sale.order_items?.map((item) => ({
             name: item.products?.name || "ไม่ทราบชื่อสินค้า",
@@ -227,7 +262,7 @@ const DashboardPage = () => {
       setSelectedTransaction(transaction);
       setIsReceiptModalOpen(true);
     },
-    [activeBranchName],
+    [activeBranchName, formatPaymentMethod],
   );
 
   if (isLoading) {
@@ -539,9 +574,7 @@ const DashboardPage = () => {
                                   {sale.customers_info?.name || "ลูกค้าทั่วไป"}
                                 </span>
                                 <span className="text-[10px] font-medium text-inactive">
-                                  {sale.payment_type === "credit_sale"
-                                    ? "ค้างชำระ"
-                                    : "เงินสด"}
+                                  {formatPaymentMethod(sale)}
                                 </span>
                               </div>
                             </td>
@@ -752,7 +785,10 @@ const DashboardPage = () => {
                   )}
                 </div>
               </div>
-              <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-[#ED7117] shadow-xl hover:shadow-2xl active:scale-90 transition-all cursor-pointer">
+              <div 
+                className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-[#ED7117] shadow-xl hover:shadow-2xl active:scale-90 transition-all cursor-pointer"
+                onClick={() => navigate("/dashboard/overdue")}
+              >
                 <TrendingUp size={22} strokeWidth={2.5} />
               </div>
             </div>
@@ -826,7 +862,10 @@ const DashboardPage = () => {
                     {weeklyAnalytics.growth}%
                   </p>
                 </div>
-                <div className="h-10 w-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:rotate-12 transition-transform duration-500">
+                <div 
+                  className="h-10 w-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:rotate-12 transition-transform duration-500 cursor-pointer"
+                  onClick={() => navigate("/dashboard/sales")}
+                >
                   <TrendingUp size={18} strokeWidth={3} />
                 </div>
               </div>
