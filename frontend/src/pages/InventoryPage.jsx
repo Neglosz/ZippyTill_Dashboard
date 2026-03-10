@@ -27,6 +27,7 @@ import StatusModal from "../components/common/StatusModal";
 import { productService } from "../services/productService";
 import { useBranch } from "../contexts/BranchContext";
 import { sanitizeHTML, stripThaiToneMarks } from "../utils/sanitizer";
+import { supabase } from "../lib/supabase";
 
 
 const InventoryPage = () => {
@@ -138,7 +139,16 @@ const InventoryPage = () => {
           if (isExpiringSoon) return 3;
           return 4;
         };
-        return getScore(a) - getScore(b);
+        
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+        
+        if (scoreA !== scoreB) {
+          return scoreA - scoreB;
+        }
+        
+        // If same urgency score, show newest first
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
       });
   }, [products, searchQuery, selectedCategory]);
 
@@ -170,6 +180,63 @@ const InventoryPage = () => {
       setActiveTab("products"); // reset tab เมื่อเปลี่ยนร้าน
       fetchProducts();
       fetchCategories();
+
+      // Implement real-time listeners to avoid manual refresh
+      const productsChannel = supabase
+        .channel(`inventory_products_${activeBranchId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "products",
+            filter: `store_id=eq.${activeBranchId}`,
+          },
+          () => {
+            console.log("Inventory: Product change detected, refreshing...");
+            fetchProducts();
+          },
+        )
+        .subscribe();
+
+      const categoriesChannel = supabase
+        .channel(`inventory_categories_${activeBranchId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "product_categories",
+            filter: `store_id=eq.${activeBranchId}`,
+          },
+          () => {
+            console.log("Inventory: Category change detected, refreshing...");
+            fetchCategories();
+          },
+        )
+        .subscribe();
+
+      const batchesChannel = supabase
+        .channel(`inventory_batches_${activeBranchId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "product_batches",
+          },
+          () => {
+            console.log("Inventory: Batch change detected, refreshing...");
+            fetchProducts();
+          },
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(productsChannel);
+        supabase.removeChannel(categoriesChannel);
+        supabase.removeChannel(batchesChannel);
+      };
     }
   }, [activeBranchId, fetchProducts, fetchCategories]);
 
