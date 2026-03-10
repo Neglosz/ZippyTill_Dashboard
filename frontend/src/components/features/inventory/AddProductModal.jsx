@@ -742,12 +742,13 @@ const AddProductModal = ({
                 </div>
 
                 {/* แถวสุดท้าย: วันหมดอายุ (ตำแหน่งคงที่) */}
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <Calendar size={12} className="text-primary" />{" "}
+                <div className="pt-3 border-t border-gray-100 flex items-center">
+                  <label className="w-40 text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar size={12} className="text-primary" />
                     วันหมดอายุสินค้า
                   </label>
-                  <div className="w-[180px] scale-90 origin-right">
+
+                  <div className="flex-1 max-w-[180px]">
                     <BEDatePicker
                       value={formData.exp}
                       onChange={handleChange}
@@ -802,7 +803,11 @@ const AddProductModal = ({
                     newErrors.lowStockThreshold = true;
 
                   // TC: Warning if selling price < cost price
-                  if (formData.price !== "" && formData.cost !== "" && Number(formData.price) < Number(formData.cost)) {
+                  if (
+                    formData.price !== "" &&
+                    formData.cost !== "" &&
+                    Number(formData.price) < Number(formData.cost)
+                  ) {
                     newErrors.priceLowerThanCost = true;
                   }
 
