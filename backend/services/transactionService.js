@@ -111,38 +111,47 @@ const transactionService = {
     });
 
     // 2. Get order revenue and payment channels
-    const { data: orders } = await supabase.from("orders").select("total_amount, payment_type, payment_method, payment_status").eq("store_id", storeId);
+    const { data: orders } = await supabase.from("orders").select("total_amount, payment_type, payment_status, payments(method)").eq("store_id", storeId);
 
     const paymentStats = {
       "cash": 0,
       "transfer": 0,
       "credit": 0,
-      "credit_sale": 0,
-      "other": 0
+      "credit_sale": 0
     };
 
     (orders || []).forEach(o => {
       const amount = Number(o.total_amount || 0);
       totalRevenue += amount;
 
-      const method = o.payment_type || o.payment_method || "cash";
-      if (method === "credit_sale") {
-        paymentStats["credit_sale"] += amount;
-      } else if (paymentStats[method] !== undefined) {
-        paymentStats[method] += amount;
+      let method = "cash";
+      if (o.payment_type === "credit_sale") {
+        method = "credit_sale";
+      } else if (o.payments && o.payments.length > 0 && o.payments[0].method) {
+        method = o.payments[0].method;
       } else {
-        paymentStats["other"] += amount;
+        method = o.payment_type || "cash";
+      }
+
+      // Normalize promptpay
+      if (method === "qr_promptpay") {
+        method = "transfer";
+      }
+
+      if (paymentStats[method] !== undefined) {
+        paymentStats[method] += amount;
       }
     });
 
     const totalOrdersRevenue = (orders || []).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
-    const paymentChannels = Object.keys(paymentStats)
-      .filter(key => paymentStats[key] > 0)
-      .map((method) => ({
-        method: method === "cash" ? "เงินสด" : method === "transfer" ? "โอนเงิน" : method === "credit" ? "เครดิต" : method === "credit_sale" ? "ค้างชำระ" : "อื่นๆ",
-        amount: paymentStats[method],
-        percent: totalOrdersRevenue > 0 ? Math.round((paymentStats[method] / totalOrdersRevenue) * 100) : 0
-      }));
+    const paymentChannels = ["cash", "transfer", "credit_sale"].map((methodKey) => {
+      const translateMap = { "cash": "เงินสด", "transfer": "โอนเงิน", "credit_sale": "ค้างชำระ" };
+      return {
+        method: translateMap[methodKey],
+        amount: paymentStats[methodKey],
+        percent: totalOrdersRevenue > 0 ? Math.round((paymentStats[methodKey] / totalOrdersRevenue) * 100) : 0
+      };
+    });
 
     return {
       totalRevenue,
