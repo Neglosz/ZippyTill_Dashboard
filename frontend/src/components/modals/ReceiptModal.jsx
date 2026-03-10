@@ -21,43 +21,39 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backdropFilter: "blur(2px)",
     transition: "opacity 0.3s ease",
   },
   modalContent: {
     position: "relative",
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: "32px 24px",
     width: "90%",
-    maxWidth: 400,
+    maxWidth: 420,
     maxHeight: "90vh",
     overflowY: "auto",
-    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
-    transition:
-      "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease",
+    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
+    transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease",
   },
   modalHeader: {
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
     position: "relative",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "black",
+    fontSize: 18,
+    fontWeight: "bold",
     margin: 0,
     color: "#000",
-    letterSpacing: "-0.5px",
   },
   closeButton: {
-    position: "absolute",
-    right: -5,
-    top: -5,
     background: "none",
     border: "none",
-    padding: 8,
+    padding: 4,
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
@@ -65,90 +61,65 @@ const styles = {
     borderRadius: "50%",
     transition: "background-color 0.2s ease",
   },
-  successContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  successIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: "50%",
-    border: "2px solid #35E0AD",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  successTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#35E0AD",
-    margin: "0 0 2px 0",
-  },
-  successSubtitle: {
-    fontSize: 14,
-    color: "#888",
-    margin: 0,
-  },
   storeInfo: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    marginBottom: 15,
-    paddingBottom: 15,
+    marginBottom: 24,
+    gap: 4,
   },
   storeName: {
     fontSize: 18,
-    fontWeight: "bold",
-    margin: "0 0 3px 0",
-    color: "#333",
+    fontWeight: "800",
+    margin: 0,
+    color: "#000",
+    textAlign: "center",
   },
   storeAddress: {
-    fontSize: 14,
+    fontSize: 13,
+    color: "#666",
+    textAlign: "center",
+    margin: 0,
+    lineHeight: "1.4",
+  },
+  storePhone: {
+    fontSize: 13,
     color: "#666",
     textAlign: "center",
     margin: 0,
   },
-  storePhone: {
-    fontSize: 14,
-    color: "#666",
-    margin: 0,
-  },
   receiptDetails: {
-    marginBottom: 15,
+    marginBottom: 24,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
   },
   detailRow: {
     display: "flex",
-    marginBottom: 5,
+    alignItems: "flex-start",
   },
   detailLabel: {
     fontSize: 14,
-    color: "#333",
+    color: "#666",
     width: 100,
     flexShrink: 0,
   },
   detailValue: {
     fontSize: 14,
-    color: "#333",
+    color: "#000",
+    fontWeight: "500",
     flex: 1,
   },
   itemsContainer: {
-    maxHeight: 250,
-    marginBottom: 15,
-    overflowY: "auto",
-  },
-  itemsList: {
-    display: "flex",
-    flexDirection: "column",
+    marginBottom: 24,
   },
   itemHeader: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#333",
-    paddingBottom: 8,
-    marginBottom: 10,
+    color: "#000",
+    paddingBottom: 12,
+    borderBottom: "1px solid #f0f0f0",
+    marginBottom: 12,
     display: "flex",
     justifyContent: "space-between",
   },
@@ -156,101 +127,96 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
-    gap: 10,
+    marginBottom: 12,
+    gap: 12,
   },
-  itemNameCol: {
-    flex: "1 1 0%",
+  itemName: {
+    flex: 1,
     fontSize: 14,
-    color: "#333",
-    lineHeight: "1.2",
+    color: "#000",
+    lineHeight: "1.4",
   },
-  itemPriceCol: {
+  itemPrice: {
     width: 60,
     textAlign: "right",
     fontSize: 14,
     color: "#666",
   },
-  itemTotalCol: {
+  itemTotal: {
     width: 80,
     textAlign: "right",
     fontSize: 14,
     fontWeight: "bold",
-    color: "#333",
+    color: "#000",
   },
   totalsContainer: {
-    borderTop: "1px solid #E0E0E0",
-    paddingTop: 15,
-    marginBottom: 10,
+    borderTop: "1px solid #f0f0f0",
+    paddingTop: 16,
+    marginBottom: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
   },
   totalRow: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: 5,
     alignItems: "center",
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#000",
   },
   totalValue: {
     fontSize: 18,
-    fontWeight: "black",
-    color: "#333",
+    fontWeight: "bold",
+    color: "#000",
   },
-  totalLabelSmall: {
+  receiveLabel: {
     fontSize: 14,
-    color: "#666",
+    color: "#999",
   },
-  totalValueSmall: {
+  receiveValue: {
     fontSize: 14,
-    color: "#666",
+    color: "#999",
   },
-  changeColor: {
+  changeLabel: {
+    fontSize: 14,
     color: "#35E0AD",
+    fontWeight: "500",
+  },
+  changeValue: {
+    fontSize: 14,
+    color: "#35E0AD",
+    fontWeight: "bold",
   },
   noteText: {
-    fontSize: 11,
-    color: "#888",
+    fontSize: 12,
+    color: "#999",
     textAlign: "center",
-    margin: "0 0 15px 0",
+    margin: "0 0 24px 0",
+    fontWeight: "500",
   },
   actionButtons: {
     display: "flex",
-    gap: 10,
+    justifyContent: "center",
   },
   printButton: {
-    flex: 1,
-    backgroundColor: "#4A90D9",
+    width: "100%",
+    maxWidth: 240,
+    backgroundColor: "#6399DD",
     border: "none",
-    borderRadius: 25,
-    padding: "12px 16px",
+    borderRadius: 30,
+    padding: "14px",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
     cursor: "pointer",
-    transition: "background-color 0.2s ease, transform 0.1s ease",
     color: "#fff",
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  newTransactionButton: {
-    flex: 1,
-    backgroundColor: "#35E0AD",
-    border: "none",
-    borderRadius: 25,
-    padding: "12px 16px",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    cursor: "pointer",
-    transition: "background-color 0.2s ease, transform 0.1s ease",
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: 600,
+    fontSize: 15,
+    fontWeight: "bold",
+    transition: "all 0.2s ease",
   },
 };
 
@@ -272,18 +238,44 @@ export default function ReceiptModal({
     activeBranchPhone,
   } = useBranch();
 
+  // Format date to Thai
+  const formatDateThai = (inputDate) => {
+    const d = new Date(inputDate);
+    if (isNaN(d.getTime())) return inputDate;
+    const months = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const day = d.getDate();
+    const month = months[d.getMonth()];
+    const year = d.getFullYear() + 543;
+    const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    return `${day} ${month} ${year} เวลา ${time}`;
+  };
+
+  // Map payment method to requested format
+  const mapPaymentMethod = (method) => {
+    switch (method?.toLowerCase()) {
+      case "credit_sale":
+      case "เครดิต":
+        return "เครดิต (ค้างจ่าย)";
+      case "cash":
+      case "เงินสด":
+        return "เงินสด";
+      case "transfer":
+      case "โอนเงิน":
+        return "โอนเงิน";
+      default:
+        return method || "เงินสด";
+    }
+  };
+
   // Default transaction data with null safety
   const safeTransaction = transaction || {};
   const {
-    receiptNo = "TXHM123456",
-    date = new Date().toLocaleDateString("th-TH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    paymentMethod = "เงินสด",
+    receiptNo = "ORD-XXXXXXXX",
+    date: rawDate = new Date(),
+    paymentMethod: rawPaymentMethod = "เงินสด",
     items = [],
     total = 0,
     received = 0,
@@ -291,15 +283,18 @@ export default function ReceiptModal({
     store: providedStore,
   } = safeTransaction;
 
+  const displayDate = formatDateThai(rawDate);
+  const displayPaymentMethod = mapPaymentMethod(rawPaymentMethod);
+
   // Store display logic:
   // If not credit sale and name is "ลูกค้าทั่วไป", use branch name.
   const isCreditSale =
-    paymentMethod === "เครดิต" || paymentMethod === "credit_sale";
+    rawPaymentMethod?.toLowerCase() === "เครดิต" || rawPaymentMethod?.toLowerCase() === "credit_sale";
   const rawStoreName = providedStore?.name || "ลูกค้าทั่วไป";
 
   const displayStoreName =
     !isCreditSale && (rawStoreName === "ลูกค้าทั่วไป" || !providedStore?.name)
-      ? activeBranchName || "Goody"
+      ? activeBranchName || "ม่าม่านาญ"
       : rawStoreName;
 
   const displayAddress =
@@ -307,7 +302,7 @@ export default function ReceiptModal({
       ? providedStore.address
       : activeBranchAddress && activeBranchAddress !== "-"
         ? activeBranchAddress
-        : "Kasetsart";
+        : "199, Thung Sukhla, Si Racha District, Chon Buri 20230";
 
   const displayPhone =
     providedStore?.phone && providedStore?.phone !== "-"
@@ -358,41 +353,12 @@ export default function ReceiptModal({
 
   const modalContent = (
     <div style={styles.modalWrapper}>
-      {/* Embedded CSS for pseudo-classes & scrollbar */}
       <style>{`
-        .receipt-close-button:hover {
-          background-color: rgba(0, 0, 0, 0.1);
-        }
-        .receipt-print-button:active,
-        .receipt-new-transaction-button:active {
-          transform: scale(0.98);
+        .receipt-action-button:active {
+          transform: scale(0.96);
         }
         .receipt-items-container::-webkit-scrollbar {
-          width: 4px;
-        }
-        .receipt-items-container::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 2px;
-        }
-        .receipt-items-container::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 2px;
-        }
-        .receipt-items-container::-webkit-scrollbar-thumb:hover {
-          background: #a1a1a1;
-        }
-        .receipt-modal-content::-webkit-scrollbar {
-          width: 6px;
-        }
-        .receipt-modal-content::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .receipt-modal-content::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 3px;
-        }
-        .receipt-modal-content::-webkit-scrollbar-thumb:hover {
-          background: #a1a1a1;
+          width: 0px;
         }
       `}</style>
 
@@ -420,22 +386,12 @@ export default function ReceiptModal({
         <div style={styles.modalHeader}>
           <h2 style={styles.modalTitle}>{title}</h2>
           <button
-            className="receipt-close-button"
             onClick={handleClose}
             style={styles.closeButton}
             aria-label="Close"
           >
-            <X size={20} color="#000" />
+            <X size={24} color="#000" />
           </button>
-        </div>
-
-        {/* Success Icon */}
-        <div style={styles.successContainer}>
-          <div style={styles.successIcon}>
-            <Check size={32} color="#35E0AD" strokeWidth={3} />
-          </div>
-          <h3 style={styles.successTitle}>ชำระเงินสำเร็จ</h3>
-          <p style={styles.successSubtitle}>ขอบคุณที่ใช้บริการ</p>
         </div>
 
         {/* Store Info */}
@@ -453,47 +409,37 @@ export default function ReceiptModal({
           </div>
           <div style={styles.detailRow}>
             <span style={styles.detailLabel}>วันที่ :</span>
-            <span style={styles.detailValue}>{date}</span>
+            <span style={styles.detailValue}>{displayDate}</span>
           </div>
           <div style={styles.detailRow}>
             <span style={styles.detailLabel}>วิธีชำระเงิน :</span>
-            <span style={styles.detailValue}>{paymentMethod}</span>
+            <span style={styles.detailValue}>{displayPaymentMethod}</span>
           </div>
         </div>
 
         {/* Items */}
         <div className="receipt-items-container" style={styles.itemsContainer}>
           <div style={styles.itemHeader}>
-            <span style={{ flex: "1" }}>ชื่อสินค้า</span>
-            <span style={{ width: "60px", textAlign: "right" }}>ราคา</span>
-            <span style={{ width: "80px", textAlign: "right" }}>รวม</span>
+            <span>ชื่อสินค้า</span>
+            <div style={{ display: "flex" }}>
+              <span style={{ width: "60px", textAlign: "right" }}>ราคา</span>
+              <span style={{ width: "80px", textAlign: "right" }}>รวม</span>
+            </div>
           </div>
-          <div style={styles.itemsList}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {items.map((item, index) => (
               <div key={index} style={styles.itemRow}>
                 <span style={styles.itemName}>
                   {item.name}{" "}
                   {item.unit && item.unit !== "ชิ้น"
-                    ? `${item.quantity}${item.unit}`
-                    : item.quantity !== 0 && `x${item.quantity}`}
-                  {item.price && item.quantity > 0 && (
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        color: "#888",
-                        marginLeft: "4px",
-                      }}
-                    >
-                      ({item.unit || "ชิ้น"}ละ {item.price.toLocaleString()})
-                    </span>
-                  )}
+                    ? `x${item.quantity}${item.unit}`
+                    : item.quantity !== 0 && `x${item.quantity} ชิ้น`}
                 </span>
                 <span style={styles.itemPrice}>
-                  ฿
-                  {(item.subtotal || item.price * item.quantity).toLocaleString(
-                    undefined,
-                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                  )}
+                  {(item.price || 0).toFixed(1)}
+                </span>
+                <span style={styles.itemTotal}>
+                  {(item.subtotal || (item.price || 0) * (item.quantity || 0)).toFixed(1)}
                 </span>
               </div>
             ))}
@@ -507,16 +453,12 @@ export default function ReceiptModal({
             <span style={styles.totalValue}>฿{total.toLocaleString()}</span>
           </div>
           <div style={styles.totalRow}>
-            <span style={styles.totalLabelSmall}>รับเงิน</span>
-            <span style={styles.totalValueSmall}>฿{received.toLocaleString()}</span>
+            <span style={styles.receiveLabel}>รับเงิน</span>
+            <span style={styles.receiveValue}>฿{received.toLocaleString()}</span>
           </div>
           <div style={styles.totalRow}>
-            <span style={{ ...styles.totalLabelSmall, ...styles.changeColor }}>
-              เงินทอน
-            </span>
-            <span style={{ ...styles.totalValueSmall, ...styles.changeColor }}>
-              ฿{change.toLocaleString()}
-            </span>
+            <span style={styles.changeLabel}>เงินทอน</span>
+            <span style={styles.changeValue}>฿{change.toLocaleString()}</span>
           </div>
         </div>
 
@@ -526,32 +468,12 @@ export default function ReceiptModal({
         {/* Action Buttons */}
         <div style={styles.actionButtons}>
           <button
-            className="receipt-print-button"
+            className="receipt-action-button"
             style={styles.printButton}
             onClick={onPrint}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.backgroundColor = "#3a7bc0")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.backgroundColor = "#4A90D9")
-            }
           >
-            <Printer size={18} color="#fff" />
+            <Printer size={20} color="#fff" />
             <span>พิมพ์</span>
-          </button>
-          <button
-            className="receipt-new-transaction-button"
-            style={styles.newTransactionButton}
-            onClick={onNewTransaction}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2bc99a")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.backgroundColor = "#35E0AD")
-            }
-          >
-            <span>รายการใหม่</span>
-            <ArrowRight size={16} color="#fff" />
           </button>
         </div>
       </div>
