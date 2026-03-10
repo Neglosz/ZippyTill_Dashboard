@@ -413,7 +413,7 @@ const BranchSelectionPage = () => {
                 className={`flex overflow-x-auto gap-10 w-full pb-14 pt-4 px-4 scroll-smooth custom-scrollbar no-scrollbar ${isDragging
                   ? "cursor-grabbing select-none"
                   : "cursor-grab snap-x snap-mandatory"
-                  }`}
+                  } ${stores.length <= 2 ? "justify-center" : ""}`}
                 style={{
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
@@ -422,7 +422,7 @@ const BranchSelectionPage = () => {
                 {stores.map((branch) => (
                   <div
                     key={branch.id}
-                    className="flex-shrink-0 w-full md:w-[calc((100%-5rem)/3)] snap-center"
+                    className={`flex-shrink-0 w-full md:w-[calc((100%-5rem)/3)] snap-center ${stores.length === 1 ? "max-w-md" : ""}`}
                   >
                     <BranchCard
                       branchName={branch.name}

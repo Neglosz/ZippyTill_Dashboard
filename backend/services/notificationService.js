@@ -41,11 +41,22 @@ const notificationService = {
 
   async createNotification(storeId, type, message, meta = {}) {
     try {
-      // Robust deduplication check for unread notifications
-      // We check if an unread notification with the same type and productId/batchId exists
+      const titleMap = {
+        'low_stock': 'สินค้าใกล้หมด',
+        'out_of_stock': 'สินค้าหมดสต็อก',
+        'expired': 'สินค้าหมดอายุ',
+        'expiring_soon': 'สินค้าใกล้หมดอายุ',
+        'overdue': 'ยอดค้างชำระ',
+        'order': 'ออเดอร์ใหม่',
+        'system': 'ระบบ'
+      };
+
+      const title = meta.title || titleMap[type] || 'แจ้งเตือนระบบ';
+
+      // 1. Check for unread duplicate
       let query = supabase
         .from('notifications')
-        .select('id')
+        .select('id, created_at')
         .eq('store_id', storeId)
         .eq('type', type)
         .eq('is_read', false);
@@ -54,26 +65,29 @@ const notificationService = {
         query = query.contains('payload', { productId: meta.productId });
       }
       
-      if (meta.batchId) {
-        query = query.contains('payload', { batchId: meta.batchId });
-      }
-
-      const { data: existing, error: checkError } = await query.limit(1).maybeSingle();
+      const { data: existing } = await query.limit(1).maybeSingle();
       
-      if (checkError) {
-        console.error("[Notification] Check duplicate error:", checkError.message);
-      }
-
       if (existing) {
-        // Already exists, don't create a new one
-        return existing;
+        // If duplicate unread exists, update its timestamp to bring it to top
+        const { data: updated } = await supabase
+          .from('notifications')
+          .update({ 
+            created_at: new Date().toISOString(),
+            message: message // Update message in case details changed (e.g. qty)
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        return updated;
       }
 
+      // 2. Insert new notification if no duplicate
       const { data, error } = await supabase
         .from("notifications")
         .insert({
           store_id: storeId,
           type,
+          title, // Added title field
           message,
           payload: meta
         })

@@ -38,7 +38,7 @@ const aggregateByDay = (transactions, date) => {
 };
 
 const aggregateByMonth = (transactions) => {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   const monthlyData = months.map((m) => ({ name: m, income: 0, expense: 0 }));
   transactions.forEach((tx) => {
     const dStr = tx.trans_date || tx.created_at;
@@ -59,23 +59,35 @@ const aggregateByMonth = (transactions) => {
 const transactionService = {
   getAggregatedTransactions: async (storeId, periodType, date) => {
     if (!storeId) throw new Error("Store ID is required");
-    const selectedDate = new Date(date);
-    const year = selectedDate.getFullYear(); const month = selectedDate.getMonth(); const day = selectedDate.getDate();
+    
+    // Parse input date (Expects YYYY-MM-DD)
+    const dateParts = date.split('-');
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1;
+    const day = parseInt(dateParts[2]);
+    const selectedDate = new Date(year, month, day);
+    
     let startDate, endDate;
     
     // Define Thai Day Range in UTC for query
-    // Thai 00:00 is UTC 17:00 (Previous Day)
     if (periodType === "day") {
-      const d = new Date(year, month, day);
-      const start = new Date(d.getTime() - (7 * 60 * 60 * 1000));
-      const end = new Date(d.getTime() + (17 * 60 * 60 * 1000) + (59 * 60 * 1000) + 59000);
+      // Thai 00:00:00 is UTC 17:00:00 of previous day
+      const start = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      start.setUTCHours(start.getUTCHours() - 7);
+      
+      const end = new Date(start.getTime() + (24 * 60 * 60 * 1000) - 1000);
+      
       startDate = start.toISOString();
       endDate = end.toISOString();
     } else if (periodType === "month") {
-      const first = new Date(year, month, 1);
-      const last = new Date(year, month + 1, 0, 23, 59, 59);
-      startDate = new Date(first.getTime() - (7 * 60 * 60 * 1000)).toISOString();
-      endDate = new Date(last.getTime() - (7 * 60 * 60 * 1000)).toISOString();
+      const first = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+      first.setUTCHours(first.getUTCHours() - 7);
+      
+      const last = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
+      last.setUTCHours(last.getUTCHours() - 7);
+      
+      startDate = first.toISOString();
+      endDate = last.toISOString();
     } else {
       startDate = `${year}-01-01T00:00:00Z`;
       endDate = `${year}-12-31T23:59:59Z`;
@@ -211,25 +223,26 @@ const transactionService = {
       }
     });
 
-    const totalRevenue = totalOrderRevenue + totalOtherIncome;
-    const grossProfit = totalOrderRevenue - totalCOGS;
-    const netProfit = totalRevenue - totalCOGS - totalOtherExpense;
+    const totalRevenue = Math.round((totalOrderRevenue + totalOtherIncome) * 100) / 100;
+    const grossProfit = Math.round((totalOrderRevenue - totalCOGS) * 100) / 100;
+    const netProfit = Math.round((totalRevenue - totalCOGS - totalOtherExpense) * 100) / 100;
 
     const totalOrdersRevenue = (orders || []).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const paymentChannels = ["cash", "transfer", "credit_sale"].map((methodKey) => {
       const translateMap = { "cash": "เงินสด", "transfer": "โอนเงิน", "credit_sale": "ค้างชำระ" };
+      const channelAmount = Math.round((paymentStats[methodKey] || 0) * 100) / 100;
       return {
         method: translateMap[methodKey],
-        amount: paymentStats[methodKey],
-        percent: totalOrdersRevenue > 0 ? Math.round((paymentStats[methodKey] / totalOrdersRevenue) * 100) : 0
+        amount: channelAmount,
+        percent: totalOrdersRevenue > 0 ? Math.round((channelAmount / totalOrdersRevenue) * 100) : 0
       };
     });
 
     return {
       totalRevenue,
-      totalCOGS,
+      totalCOGS: Math.round(totalCOGS * 100) / 100,
       grossProfit,
-      totalExpense: totalCOGS + totalOtherExpense,
+      totalExpense: Math.round((totalCOGS + totalOtherExpense) * 100) / 100,
       netProfit,
       paymentChannels: paymentChannels.sort((a, b) => b.amount - a.amount)
     };

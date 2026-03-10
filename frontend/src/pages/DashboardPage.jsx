@@ -143,7 +143,24 @@ const DashboardPage = () => {
         const hasShownNotification = sessionStorage.getItem(
           `hasShownDashboardNotification_${activeBranchId}`,
         );
-        if (!hasShownNotification) {
+        
+        // Fetch current notification status to decide if modal should show
+        const currentNotifs = await productService.getDashboardNotifications(activeBranchId);
+        
+        // TC089 Fix: Check if there are actually new/unread items before showing modal
+        const hiddenNotifs = JSON.parse(sessionStorage.getItem(`hiddenNotifs_${activeBranchId}`) || "[]");
+        const hasUnreadItems = [
+          ...(currentNotifs?.expired || []),
+          ...(currentNotifs?.expiringSoon || []),
+          ...(currentNotifs?.lowStock || [])
+        ].some(item => {
+          const id = item.batchId || item.id || item.productId || item.name;
+          return !hiddenNotifs.includes(`expired-${id}`) && 
+                 !hiddenNotifs.includes(`expiring-${id}`) && 
+                 !hiddenNotifs.includes(`lowstock-${id}`);
+        });
+
+        if (!hasShownNotification && hasUnreadItems) {
           setIsNotificationOpen(true);
           sessionStorage.setItem(
             `hasShownDashboardNotification_${activeBranchId}`,
@@ -555,26 +572,26 @@ const DashboardPage = () => {
                                 )}
                               </div>
                             </td>
-                            <td className="py-1">
+                            <td className="py-1 pr-8">
                               <div className="flex flex-col">
                                 <span className="text-sm font-black text-gray-900 group-hover/row:text-primary transition-colors">
-                                  #{sale.order_no}
+                                  #{sale.order_no?.replace("ORD-", "")}
                                 </span>
-                                <span className="text-[10px] font-bold text-inactive uppercase tracking-widest opacity-60">
-                                  {new Date(sale.created_at).toLocaleTimeString(
-                                    "th-TH",
-                                    { hour: "2-digit", minute: "2-digit" },
-                                  )}
+                                <span className="text-[9px] font-black text-primary/40 uppercase tracking-widest">
+                                  เลขที่รายการ
                                 </span>
                               </div>
                             </td>
                             <td className="py-1">
                               <div className="flex flex-col">
-                                <span className="text-xs font-bold text-gray-700 truncate max-w-[100px]">
+                                <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">
                                   {sale.customers_info?.name || "ลูกค้าทั่วไป"}
                                 </span>
                                 <span className="text-[10px] font-medium text-inactive">
-                                  {formatPaymentMethod(sale)}
+                                  {new Date(sale.created_at).toLocaleTimeString(
+                                    "th-TH",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )} • {formatPaymentMethod(sale)}
                                 </span>
                               </div>
                             </td>
@@ -747,12 +764,12 @@ const DashboardPage = () => {
           <div className="relative z-20">
             <div className="flex justify-between items-start mb-8">
               <div className="flex flex-col gap-1.5">
-                <p className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] pl-0.5">
+                <p className="text-[14px] font-black text-white uppercase tracking-[0.2em] pl-0.5">
                   ยอดค้างชำระ
                 </p>
                 <div className="flex items-baseline gap-2">
                   <p className="text-4xl font-black text-white tracking-tighter">
-                    <span className="text-xl opacity-40 mr-1 font-bold">฿</span>
+                    <span className="text-xl opacity-70 mr-1 font-bold">฿</span>
                     {outstanding.amount.toLocaleString()}
                   </p>
                   <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,1)] animate-pulse" />
@@ -762,7 +779,7 @@ const DashboardPage = () => {
 
             <div className="flex items-center justify-between pt-6 border-t border-white/10">
               <div className="flex flex-col gap-2.5">
-                <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.1em]">
+                <p className="text-[14px] font-black text-white uppercase tracking-[0.1em]">
                   ลูกค้าค้างชำระ {outstanding.customerCount} ราย
                 </p>
                 <div className="flex -space-x-2.5">
@@ -810,45 +827,37 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex items-end justify-between gap-3 h-28 px-1 mb-6">
-              {weeklyAnalytics.chartData.length > 0
-                ? weeklyAnalytics.chartData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col items-center flex-1 group/bar relative h-full justify-end"
-                  >
-                    <div className="w-full flex justify-center relative items-end h-[80px] mb-2">
-                      <div className="w-2.5 bg-gray-50 rounded-full h-full absolute bottom-0 shadow-inner"></div>
-                      <div
-                        className="w-2.5 bg-primary rounded-full absolute bottom-0 transition-all duration-1000 ease-out shadow-md group-hover/bar:bg-primary/80"
-                        style={{
-                          height: `${Math.min(100, (item.value / (Math.max(...(weeklyAnalytics.chartData || []).map((d) => d.value)) || 1)) * 100)}%`,
-                        }}
-                      />
+              {(weeklyAnalytics.chartData && weeklyAnalytics.chartData.length > 0
+                ? weeklyAnalytics.chartData
+                : ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."].map(d => ({ day: d, value: 0 }))
+              ).map((item, idx) => {
+                  const dayLabels = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."];
+                  const displayDay = dayLabels.includes(item.day) ? item.day : dayLabels[idx] || item.day;
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center flex-1 group/bar relative h-full justify-end"
+                    >
+                      <div className="w-full flex justify-center relative items-end h-[80px] mb-2">
+                        <div className="w-2.5 bg-gray-50 rounded-full h-full absolute bottom-0 shadow-inner"></div>
+                        <div
+                          className={`w-2.5 rounded-full absolute bottom-0 transition-all duration-1000 ease-out shadow-md ${
+                            item.value > 0 ? "bg-primary group-hover/bar:bg-primary/80" : "bg-gray-200"
+                          } ${!weeklyAnalytics.chartData?.length ? "animate-pulse" : ""}`}
+                          style={{
+                            height: item.value > 0 
+                              ? `${Math.min(100, (item.value / (Math.max(...(weeklyAnalytics.chartData || [{value: 1}]).map((d) => d.value || 0)) || 1)) * 100)}%`
+                              : "15%", // Small visible stub for empty days
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-black text-inactive group-hover/bar:text-primary tracking-tight transition-colors duration-300">
+                        {displayDay}
+                      </span>
                     </div>
-                    <span className="text-[9px] font-black text-inactive group-hover/bar:text-primary tracking-[0.1em] transition-colors duration-300">
-                      {item.day === "M"
-                        ? "จ."
-                        : item.day === "T"
-                          ? "อ./พฤ"
-                          : item.day === "W"
-                            ? "พ."
-                            : item.day === "F"
-                              ? "ศ."
-                              : item.day === "S"
-                                ? "ส./อา"
-                                : item.day}
-                    </span>
-                  </div>
-                ))
-                : [1, 2, 3, 4, 5, 6, 7].map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 flex flex-col items-center justify-end h-full"
-                  >
-                    <div className="w-2.5 bg-gray-50 rounded-full h-12 mb-2 animate-pulse" />
-                    <div className="h-2 w-4 bg-gray-50 rounded animate-pulse" />
-                  </div>
-                ))}
+                  );
+                })}
             </div>
 
             <div className="p-5 bg-gray-50/80 rounded-[28px] border border-gray-100 shadow-inner">
