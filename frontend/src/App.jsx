@@ -11,6 +11,7 @@ import FinancePage from "./pages/FinancePage";
 import AIPromotionPage from "./pages/AIPromotionPage";
 import SalesPage from "./pages/salesPage";
 import ProfilePage from "./pages/ProfilePage";
+import SettingPage from "./pages/SettingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -50,6 +51,7 @@ function App() {
             <Route path="ai-promo" element={<AIPromotionPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/:userId" element={<ProfilePage />} />
+            <Route path="settings" element={<SettingPage />} />
           </Route>
         </Routes>
       </BranchProvider>
