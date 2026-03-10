@@ -4,13 +4,16 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const getHeaders = async () => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) throw error;
+
     const headers = {
       "Content-Type": "application/json",
     };
+    
     if (session?.access_token) {
       headers["Authorization"] = `Bearer ${session.access_token}`;
-      console.log(`apiClient: Token found, adding to headers: ${session.access_token.substring(0, 10)}...`);
     } else {
       console.warn("apiClient: No active session found during getHeaders");
     }
@@ -38,8 +41,15 @@ const fetchWithRetry = async (url, options, retries = 2) => {
     // Handle transient 401 (e.g., during token refresh)
     if (response.status === 401 && retries > 0) {
       console.warn("apiClient: 401 Unauthorized, attempting to refresh session and retry...");
-      // Force Supabase to refresh session
-      const { data: { session } } = await supabase.auth.getSession();
+      // Force Supabase to refresh session explicitly
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error("apiClient: Failed to refresh session", refreshError);
+        // If refresh fails, we might need to log the user out or just throw
+        throw new Error("Session expired. Please log in again.");
+      }
+
       if (session) {
         const newHeaders = {
           ...options.headers,
