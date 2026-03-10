@@ -13,8 +13,8 @@ const orderController = {
 
   async getRecentOrders(req, res) {
     try {
-      const { storeId } = req.query;
-      const data = await orderService.getRecentOrders(storeId);
+      const { storeId, date } = req.query;
+      const data = await orderService.getRecentOrders(storeId, date);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });

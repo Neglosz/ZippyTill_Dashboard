@@ -32,6 +32,13 @@ import { aiService } from "../../../services/aiService";
 import { supabase } from "../../../lib/supabase";
 import { useBranch } from "../../../contexts/BranchContext";
 
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const CreatePromotionModal = ({
   isOpen,
   onClose,
@@ -77,13 +84,13 @@ const CreatePromotionModal = ({
               ? "discount_amount"
               : promoData.type === "buy_get"
                 ? "buy_x_get_y"
-                : "custom",
+                : "discount_amount", // Map "custom" to "discount_amount" to avoid DB constraint violation
         discount_value: parseFloat(promoData.value) || 0,
         min_spend: 0,
         min_qty_required: parseFloat(promoData.minSpend) || 0,
         free_qty: promoData.type === "buy_get" ? 1 : 0,
         start_date:
-          promoData.startDate || new Date().toISOString().split("T")[0],
+          promoData.startDate || getLocalDateString(),
         end_date: promoData.endDate || null,
         is_active: true,
       };
@@ -125,12 +132,8 @@ const CreatePromotionModal = ({
         value: initialData.discount_value || "",
         minSpend: initialData.min_spend || "",
         prompt: initialData.desc || "",
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: new Date(
-          Date.now() + (initialData.duration_days || 30) * 24 * 60 * 60 * 1000,
-        )
-          .toISOString()
-          .split("T")[0],
+        startDate: getLocalDateString(),
+        endDate: getLocalDateString(new Date(Date.now() + (initialData.duration_days || 30) * 24 * 60 * 60 * 1000)),
       });
       setStep(1);
     } else if (!isOpen) {

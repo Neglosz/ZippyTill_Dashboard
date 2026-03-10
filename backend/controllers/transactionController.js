@@ -13,8 +13,8 @@ const transactionController = {
 
   async getRecentTransactions(req, res) {
     try {
-      const { storeId, limit } = req.query;
-      const data = await transactionService.getRecentTransactions(storeId, limit);
+      const { storeId, limit, date } = req.query;
+      const data = await transactionService.getRecentTransactions(storeId, limit, date);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });

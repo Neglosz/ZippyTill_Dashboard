@@ -443,6 +443,21 @@ const productService = {
     );
   },
 
+  async getTopStockProducts(branchId, limit = 10) {
+    if (!branchId) throw new Error("Branch ID is required");
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, stock_qty, unit_type")
+      .eq("store_id", branchId)
+      .is("deleted_at", null)
+      .order("stock_qty", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  },
+
   async recordStockRemoval(removalData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 

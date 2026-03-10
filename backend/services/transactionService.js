@@ -122,14 +122,23 @@ const transactionService = {
     else return aggregateByMonth(combinedData);
   },
 
-  getRecentTransactions: async (storeId, limit = 10) => {
+  getRecentTransactions: async (storeId, limit = 10, date) => {
     if (!storeId) throw new Error("Store ID is required");
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from("account_transactions")
       .select("*, orders(customers_info(name))")
-      .eq("store_id", storeId)
+      .eq("store_id", storeId);
+
+    if (date) {
+      // Assuming trans_date is stored as YYYY-MM-DD or similar
+      query = query.eq("trans_date", date);
+    }
+
+    const { data, error } = await query
       .order("created_at", { ascending: false })
       .limit(limit);
+      
     if (error) throw error;
     return data;
   },

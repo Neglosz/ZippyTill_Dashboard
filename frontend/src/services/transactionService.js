@@ -6,8 +6,9 @@ export const transactionService = {
     return apiClient.get(`/transactions/aggregated?storeId=${storeId}&periodType=${periodType}&date=${dateStr}`);
   },
 
-  getRecentTransactions: async (storeId, limit = 10) => {
-    return apiClient.get(`/transactions/recent?storeId=${storeId}&limit=${limit}`);
+  getRecentTransactions: async (storeId, limit = 10, date) => {
+    const dateQuery = date ? `&date=${date}` : "";
+    return apiClient.get(`/transactions/recent?storeId=${storeId}&limit=${limit}${dateQuery}`);
   },
 
   getFinanceStats: async (storeId, viewMode, date) => {
