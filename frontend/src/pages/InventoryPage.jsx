@@ -295,11 +295,12 @@ const InventoryPage = () => {
       });
     } catch (err) {
       console.error("Error deleting product:", err);
+      setDeleteConfirm(null);
       setStatusModal({
         isOpen: true,
         type: "delete",
         title: "เกิดข้อผิดพลาด",
-        message: "ไม่สามารถลบสินค้าได้: " + err.message,
+        message: err.message || "ไม่สามารถลบสินค้าได้",
       });
     }
   };

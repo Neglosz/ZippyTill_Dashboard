@@ -99,19 +99,53 @@ const transactionService = {
     return data;
   },
 
-  getFinanceStats: async (storeId) => {
+  getFinanceStats: async (storeId, periodType, date) => {
     if (!storeId) throw new Error("Store ID is required");
 
+    let startDate, endDate;
+    const selectedDate = date ? new Date(date) : new Date();
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const day = selectedDate.getDate();
+
+    if (periodType === "day") {
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      endDate = startDate;
+    } else if (periodType === "month") {
+      startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+    } else if (periodType === "year") {
+      startDate = `${year}-01-01`;
+      endDate = `${year}-12-31`;
+    }
+
     // 1. Get manual transactions
-    const { data: transactions } = await supabase.from("account_transactions").select("amount, trans_type").eq("store_id", storeId);
-    let totalRevenue = 0, totalExpense = 0;
+    let txnQuery = supabase.from("account_transactions").select("amount, trans_type").eq("store_id", storeId);
+    if (periodType && periodType !== "all") {
+      txnQuery = txnQuery.gte("trans_date", startDate).lte("trans_date", endDate);
+    }
+    const { data: transactions } = await txnQuery;
+
+    let totalOtherIncome = 0, totalOtherExpense = 0;
     (transactions || []).forEach((tx) => {
-      if (tx.trans_type === "income") totalRevenue += Number(tx.amount || 0);
-      else totalExpense += Number(tx.amount || 0);
+      if (tx.trans_type === "income") totalOtherIncome += Number(tx.amount || 0);
+      else totalOtherExpense += Number(tx.amount || 0);
     });
 
     // 2. Get order revenue and payment channels
-    const { data: orders } = await supabase.from("orders").select("total_amount, payment_type, payment_status, payments(method)").eq("store_id", storeId);
+    let orderQuery = supabase
+      .from("orders")
+      .select("id, total_amount, payment_type, payment_status, created_at, payments(method), order_items(qty, cost_price_at_sale, products(cost_price))")
+      .eq("store_id", storeId)
+      .neq("payment_status", "cancelled");
+
+    if (periodType && periodType !== "all") {
+      orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${endDate}T23:59:59`);
+    }
+    const { data: orders } = await orderQuery;
+
+    let totalOrderRevenue = 0;
+    let totalCOGS = 0;
 
     const paymentStats = {
       "cash": 0,
@@ -122,7 +156,15 @@ const transactionService = {
 
     (orders || []).forEach(o => {
       const amount = Number(o.total_amount || 0);
-      totalRevenue += amount;
+      totalOrderRevenue += amount;
+
+      // Calculate COGS from order items
+      if (o.order_items) {
+        o.order_items.forEach(item => {
+          const cost = Number(item.cost_price_at_sale ?? item.products?.cost_price ?? 0);
+          totalCOGS += (Number(item.qty || 0) * cost);
+        });
+      }
 
       let method = "cash";
       if (o.payment_type === "credit_sale") {
@@ -133,8 +175,7 @@ const transactionService = {
         method = o.payment_type || "cash";
       }
 
-      // Normalize promptpay
-      if (method === "qr_promptpay") {
+      if (method === "qr_promptpay" || method === "transfer") {
         method = "transfer";
       }
 
@@ -142,6 +183,10 @@ const transactionService = {
         paymentStats[method] += amount;
       }
     });
+
+    const totalRevenue = totalOrderRevenue + totalOtherIncome;
+    const grossProfit = totalOrderRevenue - totalCOGS;
+    const netProfit = totalRevenue - totalCOGS - totalOtherExpense;
 
     const totalOrdersRevenue = (orders || []).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const paymentChannels = ["cash", "transfer", "credit_sale"].map((methodKey) => {
@@ -155,8 +200,10 @@ const transactionService = {
 
     return {
       totalRevenue,
-      totalExpense,
-      netProfit: totalRevenue - totalExpense,
+      totalCOGS,
+      grossProfit,
+      totalExpense: totalCOGS + totalOtherExpense,
+      netProfit,
       paymentChannels: paymentChannels.sort((a, b) => b.amount - a.amount)
     };
   },

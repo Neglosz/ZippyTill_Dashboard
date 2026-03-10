@@ -172,6 +172,20 @@ const productService = {
   async deleteProduct(id, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
+    // TC101: Check if product is in any pending orders
+    const { data: pendingOrders, error: checkError } = await supabase
+      .from("order_items")
+      .select("id, orders!inner(id, payment_status, store_id)")
+      .eq("product_id", id)
+      .eq("orders.store_id", branchId)
+      .eq("orders.payment_status", "pending");
+
+    if (checkError) throw checkError;
+
+    if (pendingOrders && pendingOrders.length > 0) {
+      throw new Error("ไม่สามารถลบได้เนื่องจากสินค้าอยู่ในออเดอร์ที่ยังไม่ชำระเงิน");
+    }
+
     const { error } = await supabase
       .from("products")
       .update({ deleted_at: new Date().toISOString() })
@@ -235,21 +249,23 @@ const productService = {
     const thirtyDaysStr = thirtyDaysFromNow.toISOString().split("T")[0];
 
     // Filter by branchId directly in the query using !inner
+    // TC015: Include today in expired (<= today)
     const { data: expiredData, error: expiredError } = await supabase
       .from("product_batches")
       .select("*, products!inner(name, store_id, image_url, deleted_at)")
       .eq("products.store_id", branchId)
-      .lt("expire_date", today)
+      .lte("expire_date", today)
       .gt("remaining_qty", 0)
       .is("products.deleted_at", null);
 
     if (expiredError) throw expiredError;
 
+    // TC015: Soon data starts from tomorrow (> today)
     const { data: soonData, error: soonError } = await supabase
       .from("product_batches")
       .select("*, products!inner(name, store_id, image_url, deleted_at)")
       .eq("products.store_id", branchId)
-      .gte("expire_date", today)
+      .gt("expire_date", today)
       .lte("expire_date", thirtyDaysStr)
       .is("products.deleted_at", null)
       .gt("remaining_qty", 0);
@@ -274,10 +290,17 @@ const productService = {
     );
 
     const formatBatch = (batch) => {
-      const expDate = new Date(batch.expire_date);
+      // TC021: Improved day calculation
+      // Parse the date components manually to avoid UTC/Local timezone shifts
+      const expParts = batch.expire_date.split('-');
+      const expDate = new Date(expParts[0], expParts[1] - 1, expParts[2]);
+      expDate.setHours(0, 0, 0, 0);
+      
       const now = new Date();
-      const diffTime = Math.abs(expDate - now);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      now.setHours(0, 0, 0, 0);
+      
+      const diffTime = expDate.getTime() - now.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       return {
         batchId: batch.id,
@@ -285,15 +308,21 @@ const productService = {
         name: batch.products?.name || "Unknown Product",
         imageUrl: batch.products?.image_url,
         expiryDate: new Date(batch.expire_date).toLocaleDateString("th-TH"),
-        days: diffDays,
+        days: Math.abs(diffDays),
+        rawExpiry: batch.expire_date
       };
     };
 
     const notificationService = require("./notificationService");
 
+    // TC017: Sort by urgency (ascending expiry date)
     const notifications = {
-      expired: (expiredData || []).map(formatBatch),
-      expiringSoon: (soonData || []).map(formatBatch),
+      expired: (expiredData || [])
+        .map(formatBatch)
+        .sort((a, b) => new Date(a.rawExpiry) - new Date(b.rawExpiry)),
+      expiringSoon: (soonData || [])
+        .map(formatBatch)
+        .sort((a, b) => new Date(a.rawExpiry) - new Date(b.rawExpiry)),
       lowStock: (lowStockProducts || []).map((p) => ({
         id: p.id || p.product_id, // Ensure we have the product ID
         name: p.name,
