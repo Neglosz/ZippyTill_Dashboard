@@ -145,7 +145,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
                   {item.name}
                 </p>
                 <span
-                  className={`${theme.tag} text-[8px] font-black text-white px-2 py-0.5 rounded-lg whitespace-nowrap uppercase tracking-wider flex-shrink-0`}
+                  className={`${color === "blue" && item.qty <= 0 ? "bg-rose-600" : theme.tag} text-[8px] font-black text-white px-2 py-0.5 rounded-lg whitespace-nowrap uppercase tracking-wider flex-shrink-0`}
                 >
                   {theme.tagLabel}{" "}
                   {color === "blue"

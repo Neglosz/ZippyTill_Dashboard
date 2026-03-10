@@ -18,7 +18,7 @@ const StatusModal = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[150] animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[10001] animate-in fade-in duration-200"
       onClick={onCancel || onConfirm}
     >
       <div 

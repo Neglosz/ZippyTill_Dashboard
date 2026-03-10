@@ -104,7 +104,7 @@ const SummaryStats = ({
               อัตราชำระคืน
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              {paymentRate}
+              {typeof paymentRate === 'number' ? paymentRate.toFixed(1) : paymentRate}
               <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
             </h3>
           </div>

@@ -27,6 +27,7 @@ import {
   Legend,
 } from "recharts";
 import { useBranch } from "../contexts/BranchContext";
+import { supabase } from "../lib/supabase.js";
 
 import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
@@ -117,10 +118,11 @@ const FinancePage = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const fetchFinanceData = useCallback(async () => {
+    if (!activeBranchId) return;
     setLoading(true);
     try {
       const [stats, recentOrders, recentManual] = await Promise.all([
-        transactionService.getFinanceStats(activeBranchId),
+        transactionService.getFinanceStats(activeBranchId, viewMode, selectedDate),
         orderService.getRecentOrders(activeBranchId),
         transactionService.getRecentTransactions(activeBranchId, 50),
       ]);
@@ -169,7 +171,7 @@ const FinancePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeBranchId]);
+  }, [activeBranchId, viewMode, selectedDate]);
 
   const getCacheKey = useCallback(
     (mode, date) => {
@@ -257,12 +259,55 @@ const FinancePage = () => {
     getCacheKey,
   ]);
 
-  // Effects: placed after all useCallback definitions they depend on
   useEffect(() => {
     if (activeBranchId) {
       fetchFinanceData();
     }
-  }, [activeBranchId, fetchFinanceData]);
+
+    // TC007: Real-time update for finance KPIs
+    if (!activeBranchId) return;
+
+    const channelOrders = supabase
+      .channel(`finance_orders_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        () => {
+          console.log("Finance: Order change detected, refreshing...");
+          fetchFinanceData();
+          fetchChartData();
+        },
+      )
+      .subscribe();
+
+    const channelTxns = supabase
+      .channel(`finance_txns_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "account_transactions",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        () => {
+          console.log("Finance: Transaction change detected, refreshing...");
+          fetchFinanceData();
+          fetchChartData();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelOrders);
+      supabase.removeChannel(channelTxns);
+    };
+  }, [activeBranchId, fetchFinanceData, fetchChartData]);
 
   useEffect(() => {
     if (activeBranchId) {
@@ -551,41 +596,45 @@ const FinancePage = () => {
         id: 1,
         title: "รายรับทั้งหมด",
         amount: (metrics?.totalRevenue || 0).toLocaleString(),
-        subtext: "ยอดขายรวมทั้งหมด",
-        subtextColor: "text-primary",
-        color: "bg-orange-50",
-        iconBg: "bg-primary",
+        subtext: "ยอดขาย + รายรับอื่น",
+        subtextColor: "text-emerald-500",
+        color: "bg-emerald-50",
+        iconBg: "bg-emerald-500",
         icon: TrendingUp,
+        isActive: true
       },
       {
         id: 2,
         title: "ต้นทุนขาย (COGS)",
-        amount: (metrics?.totalExpense || 0).toLocaleString(),
-        subtext: "คิดจากต้นทุนสินค้า",
+        amount: (metrics?.totalCOGS || 0).toLocaleString(),
+        subtext: "รวมต้นทุนสินค้าที่ขายได้",
         subtextColor: "text-inactive",
-        color: "bg-gray-50",
-        iconBg: "bg-slate-400",
+        color: "bg-emerald-50",
+        iconBg: "bg-emerald-500",
         icon: TrendingDown,
+        isActive: true
       },
       {
         id: 3,
         title: "กำไรขั้นต้น",
-        amount: (metrics?.netProfit || 0).toLocaleString(),
-        subtext: "รายรับ - ต้นทุนขาย",
-        subtextColor: "text-primary",
-        color: "bg-primary/10",
-        iconBg: "bg-primary-dark",
+        amount: (metrics?.grossProfit || 0).toLocaleString(),
+        subtext: "ยอดขาย - ต้นทุนขาย",
+        subtextColor: (metrics?.grossProfit >= 0) ? "text-emerald-500" : "text-rose-500",
+        color: (metrics?.grossProfit >= 0) ? "bg-emerald-50" : "bg-rose-50",
+        iconBg: (metrics?.grossProfit >= 0) ? "bg-emerald-500" : "bg-rose-500",
         icon: Coins,
+        isActive: true
       },
       {
         id: 4,
-        title: "ยอดเงินสุทธิ",
-        amount: (metrics?.netProfit || 0).toLocaleString(), // Using Net Profit as substitute for now
-        subtext: "Balance",
-        subtextColor: "text-primary",
-        color: "bg-orange-50",
-        iconBg: "bg-primary",
+        title: "กำไรสุทธิ",
+        amount: (metrics?.netProfit || 0).toLocaleString(),
+        subtext: "รายรับทั้งหมด - รายจ่ายทั้งหมด",
+        subtextColor: (metrics?.netProfit >= 0) ? "text-emerald-500" : "text-rose-500",
+        color: (metrics?.netProfit >= 0) ? "bg-emerald-50" : "bg-rose-50",
+        iconBg: (metrics?.netProfit >= 0) ? "bg-emerald-500" : "bg-rose-500",
         icon: Wallet,
+        isActive: true
       },
     ],
     [metrics],
@@ -897,6 +946,11 @@ const FinancePage = () => {
                   dx={-10}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Legend 
+                  verticalAlign="top" 
+                  align="right" 
+                  wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }}
+                />
                 <Bar
                   dataKey="income"
                   fill="url(#incomeGradient)"

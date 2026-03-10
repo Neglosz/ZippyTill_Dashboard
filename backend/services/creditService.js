@@ -127,7 +127,8 @@ const creditService = {
     const totalDebt = data.reduce((sum, item) => sum + Number(item.total_debt || 0), 0);
     const totalRemaining = data.reduce((sum, item) => sum + Number(item.remaining_amount || 0), 0);
     if (totalDebt === 0) return 100;
-    const rate = Math.round(((totalDebt - totalRemaining) / totalDebt) * 100);
+    // Calculate with 1 decimal place
+    const rate = Math.round(((totalDebt - totalRemaining) / totalDebt) * 1000) / 10;
     return Math.max(0, Math.min(100, rate));
   },
 };

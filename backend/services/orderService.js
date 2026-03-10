@@ -4,6 +4,32 @@ const orderService = {
   async createOrder(orderData, items, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
+    // TC018: Block selling expired products
+    const today = new Date().toISOString().split("T")[0];
+    
+    for (const item of items) {
+      // Check if product has any non-expired batches with stock
+      const { data: validBatches, error: batchError } = await supabase
+        .from("product_batches")
+        .select("id, remaining_qty, expire_date")
+        .eq("product_id", item.productId)
+        .gt("expire_date", today)
+        .gt("remaining_qty", 0);
+
+      if (batchError) throw batchError;
+
+      // If no valid batches found but product is being sold, check if it's completely expired
+      if (!validBatches || validBatches.length === 0) {
+        const { data: product } = await supabase
+          .from("products")
+          .select("name")
+          .eq("id", item.productId)
+          .single();
+          
+        throw new Error(`ไม่สามารถขายสินค้า "${product?.name || item.productId}" ได้เนื่องจากสินค้าหมดอายุแล้ว`);
+      }
+    }
+
     // 1. Fetch active promotions for this branch to auto-link items
     const now = new Date().toISOString().split("T")[0]; // date-only for correct comparison with start_date/end_date
     const { data: activePromos } = await supabase

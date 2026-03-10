@@ -42,6 +42,12 @@ const OverduePage = () => {
   // Modal States
   const [showEditSuccess, setShowEditSuccess] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [statusModal, setStatusModal] = useState({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const [overdueItems, setOverdueItems] = useState([]);
   const [recoveryRate, setRecoveryRate] = useState(null);
@@ -93,7 +99,10 @@ const OverduePage = () => {
     fetchItems();
     fetchTotalSales();
 
-    // Setup Realtime Subscription - Isolated by branch_id
+    // Setup Realtime Subscription
+    // Note: We remove the store_id filter if it doesn't exist on the table
+    // and instead verify the store/customer in the callback if needed,
+    // or we fetch all and let the background refresh handle the filtering.
     const channelAccounts = supabase
       .channel(`credit_accounts_realtime_${activeBranchId}`)
       .on(
@@ -102,12 +111,28 @@ const OverduePage = () => {
           event: "*",
           schema: "public",
           table: "credit_accounts",
-          filter: `store_id=eq.${activeBranchId}`,
         },
         (payload) => {
-          console.log("Database change detected (credit_accounts):", payload);
-          fetchItems(true); // Background refresh items and recovery rate
-          fetchTotalSales(); // Recalculate overdue rate
+          // Refresh everything when any credit account changes
+          console.log("Debt change detected, refreshing KPIs...");
+          fetchItems(true);
+          fetchTotalSales();
+        },
+      )
+      .subscribe();
+
+    const channelPayments = supabase
+      .channel(`payments_realtime_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "payments",
+        },
+        () => {
+          console.log("Payment detected, updating recovery rate...");
+          fetchItems(true);
         },
       )
       .subscribe();
@@ -123,14 +148,15 @@ const OverduePage = () => {
           filter: `store_id=eq.${activeBranchId}`,
         },
         (payload) => {
-          console.log("Database change detected (orders):", payload);
-          fetchTotalSales(); // Recalculate overdue rate when new sales happen
+          console.log("New order detected, updating stats...");
+          fetchTotalSales();
         },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channelAccounts);
+      supabase.removeChannel(channelPayments);
       supabase.removeChannel(channelOrders);
     };
   }, [activeBranchId, fetchItems, fetchTotalSales]);
@@ -138,7 +164,7 @@ const OverduePage = () => {
   const getImageUrl = (path) => {
     if (!path) return null;
     const cleanPath = path.trim();
-    if (cleanPath.startsWith("http")) return cleanPath;
+    if (cleanPath.startsWith("http") || cleanPath.startsWith("data:")) return cleanPath;
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
     let fullPath = cleanPath;
@@ -227,6 +253,17 @@ const OverduePage = () => {
     return phone;
   };
 
+  const calculateOverdueDays = (dateString) => {
+    if (!dateString) return 0;
+    const due = new Date(dateString);
+    const today = new Date();
+    due.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const timeDiff = today.getTime() - due.getTime();
+    const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   const handleSaveEdit = async (updatedItem) => {
     try {
       const result = await creditService.updateDebtor(
@@ -289,11 +326,13 @@ const OverduePage = () => {
             name: result.name,
             phone: result.phone,
             customerDueDate: result.customerDueDate,
+            maxOverdueDays: calculateOverdueDays(result.customerDueDate),
             items: prev.items.map((i) => ({
               ...i,
               name: result.name,
               phone: result.phone,
               customerDueDate: result.customerDueDate,
+              overdueDays: calculateOverdueDays(result.customerDueDate),
             })),
           }
         : prev,
@@ -304,7 +343,10 @@ const OverduePage = () => {
 
   const handleExportExcel = async () => {
     try {
-      if (groupedCustomers.length === 0) return;
+      if (groupedCustomers.length === 0) {
+        alert("ไม่พบข้อมูลลูกหนี้สำหรับส่งออก");
+        return;
+      }
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Overdue Debtors");
@@ -379,6 +421,12 @@ const OverduePage = () => {
       saveAs(blob, filename);
 
       setShowExportModal(false);
+      setStatusModal({
+        isOpen: true,
+        type: "success",
+        title: "กำลังเริ่มดาวน์โหลด",
+        message: "ระบบกำลังเตรียมไฟล์ Excel หากการดาวน์โหลดไม่เริ่มอัตโนมัติ กรุณาตรวจสอบการตั้งค่า Browser ของคุณ",
+      });
     } catch (err) {
       console.error("Export Excel error:", err);
       alert(
@@ -389,7 +437,10 @@ const OverduePage = () => {
 
   const handleExportPDF = async () => {
     try {
-      if (groupedCustomers.length === 0) return;
+      if (groupedCustomers.length === 0) {
+        alert("ไม่พบข้อมูลลูกหนี้สำหรับส่งออก");
+        return;
+      }
 
       // Ensure jsPDF is global for the font script
       window.jsPDF = { API: jsPDF.API };
@@ -595,7 +646,7 @@ const OverduePage = () => {
                       </td>
                       <td className="py-5 text-center">
                         <span
-                          className={`inline-flex items-center justify-center min-w-[32px] h-[32px] rounded-xl text-xs font-black border ${customer.maxOverdueDays > 15 ? "bg-rose-50 text-rose-500 border-rose-100" : "bg-blue-50 text-blue-500 border-blue-100"}`}
+                          className={`inline-flex items-center justify-center min-w-[32px] h-[32px] rounded-xl text-xs font-black border ${customer.maxOverdueDays > 0 ? "bg-rose-50 text-rose-500 border-rose-100" : "bg-blue-50 text-blue-500 border-blue-100"}`}
                         >
                           {customer.totalCount}
                         </span>
@@ -607,7 +658,7 @@ const OverduePage = () => {
                           </span>
                           {customer.totalAmount.toLocaleString()}
                         </div>
-                        {customer.maxOverdueDays > 15 && (
+                        {customer.maxOverdueDays > 0 && (
                           <div className="text-[10px] text-rose-500 font-black uppercase tracking-wider mt-1">
                             เกินกำหนด {customer.maxOverdueDays} วัน
                           </div>
@@ -656,6 +707,15 @@ const OverduePage = () => {
           message="แก้ไขข้อมูลเรียบร้อย"
           confirmText="ตกลง"
           onConfirm={() => setShowEditSuccess(false)}
+        />
+
+        <StatusModal
+          isOpen={statusModal.isOpen}
+          type={statusModal.type}
+          title={statusModal.title}
+          message={statusModal.message}
+          onConfirm={() => setStatusModal({ ...statusModal, isOpen: false })}
+          confirmText="ตกลง"
         />
       </div>
     </>
