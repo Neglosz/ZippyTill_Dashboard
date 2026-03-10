@@ -610,18 +610,12 @@ const FinancePage = () => {
       },
       {
         id: "credit",
-        name: "บัตรเครดิต",
+        name: "เครดิต",
         icon: CreditCard,
         color: "bg-purple-500",
         iconBg: "bg-purple-50 text-purple-600",
       },
-      {
-        id: "other",
-        name: "อื่นๆ",
-        icon: HandCoins,
-        color: "bg-gray-500",
-        iconBg: "bg-gray-100 text-gray-600",
-      },
+
       {
         id: "credit_sale",
         name: "ค้างชำระ",
@@ -639,7 +633,7 @@ const FinancePage = () => {
       let template =
         processedChannels.find(
           (c) => c.name === pc.method || c.id === pc.method,
-        ) || processedChannels[3];
+        ) || processedChannels[0];
 
       return {
         id: index,
@@ -656,7 +650,7 @@ const FinancePage = () => {
   const filteredTransactions = useMemo(() => {
     if (!searchQuery.trim()) return transactions;
     const query = searchQuery.toLowerCase().trim();
-    return transactions.filter(tx => 
+    return transactions.filter(tx =>
       (tx.displayName && tx.displayName.toLowerCase().includes(query)) ||
       (tx.displaySubtitle && tx.displaySubtitle.toLowerCase().includes(query)) ||
       (tx.displayType && tx.displayType.toLowerCase().includes(query))
@@ -981,7 +975,7 @@ const FinancePage = () => {
               <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 รายการล่าสุด
               </h2>
-              
+
               <div className="flex flex-1 w-full sm:w-auto gap-3 items-center justify-end">
                 <div className="relative w-full max-w-[300px] group/search">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-inactive group-focus-within/search:text-primary transition-colors">
