@@ -117,19 +117,43 @@ const creditService = {
   },
 
   async getRecoveryRate(storeId) {
-    if (!storeId) return 0;
-    const { data, error } = await supabase
+    if (!storeId) return { rate: 0, totalPaid: 0, totalDebt: 0 };
+
+    // 1. Get current debt stats from credit_accounts
+    const { data: accounts, error: accError } = await supabase
       .from("credit_accounts")
       .select("total_debt, remaining_amount, customers_info!inner(store_id)")
       .eq("customers_info.store_id", storeId);
-    if (error) throw error;
-    if (!data || data.length === 0) return 100;
-    const totalDebt = data.reduce((sum, item) => sum + Number(item.total_debt || 0), 0);
-    const totalRemaining = data.reduce((sum, item) => sum + Number(item.remaining_amount || 0), 0);
-    if (totalDebt === 0) return 100;
+    if (accError) throw accError;
+
+    const currentTotalDebt = (accounts || []).reduce((sum, item) => sum + Number(item.total_debt || 0), 0);
+    const currentTotalRemaining = (accounts || []).reduce((sum, item) => sum + Number(item.remaining_amount || 0), 0);
+
+    // 2. Sum ALL debt payments from account_transactions for this store
+    // This includes historical payments even if the account was closed/deleted
+    const { data: txns, error: txnError } = await supabase
+      .from("account_transactions")
+      .select("amount")
+      .eq("store_id", storeId)
+      .eq("category", "debt_payment")
+      .eq("trans_type", "income");
+    if (txnError) throw txnError;
+
+    const totalPaid = (txns || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    // Total Debt is what remains plus what was paid
+    const totalDebt = currentTotalRemaining + totalPaid;
+
+    if (totalDebt === 0) return { rate: 100, totalPaid: 0, totalDebt: 0 };
+
     // Calculate with 1 decimal place
-    const rate = Math.round(((totalDebt - totalRemaining) / totalDebt) * 1000) / 10;
-    return Math.max(0, Math.min(100, rate));
+    const rate = Math.round((totalPaid / totalDebt) * 1000) / 10;
+
+    return {
+      rate: Math.max(0, Math.min(100, rate)),
+      totalPaid,
+      totalDebt
+    };
   },
 };
 

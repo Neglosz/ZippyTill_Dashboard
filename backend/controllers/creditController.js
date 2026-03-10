@@ -37,7 +37,7 @@ const creditController = {
     try {
       const { storeId } = req.query;
       const data = await creditService.getRecoveryRate(storeId);
-      res.json({ rate: data });
+      res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
