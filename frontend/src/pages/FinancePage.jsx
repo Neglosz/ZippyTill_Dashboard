@@ -150,16 +150,25 @@ const FinancePage = () => {
 
       const normalizedManual = (recentManual || [])
         .filter((m) => !(m.category === "sales" && m.reference_order_id)) // Filter out duplicates from store sales
-        .map((m) => ({
-          ...m,
-          source: "manual",
-          displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
-          displayAmount: Number(m.amount),
-          displayName: m.description || m.category || "ไม่ระบุรายการ",
-          displaySubtitle: m.category,
-          isIncome: m.trans_type === "income",
-          clickable: false, // Manual transactions do not show receipt
-        }));
+        .map((m) => {
+          let displayName = m.description || m.category || "ไม่ระบุรายการ";
+          const customerName = m.orders?.customers_info?.name;
+          
+          if (m.category === "debt_payment" && customerName) {
+            displayName = `รับชำระหนี้ : ${customerName}`;
+          }
+
+          return {
+            ...m,
+            source: "manual",
+            displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+            displayAmount: Number(m.amount),
+            displayName,
+            displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
+            isIncome: m.trans_type === "income",
+            clickable: false, // Manual transactions do not show receipt
+          };
+        });
 
       const combined = [...normalizedOrders, ...normalizedManual].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at),
@@ -745,22 +754,6 @@ const FinancePage = () => {
       (tx.displayType && tx.displayType.toLowerCase().includes(query))
     );
   }, [transactions, searchQuery]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] w-full">
-        <div className="flex flex-col items-center gap-5">
-          <div className="relative">
-            <div className="w-14 h-14 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
-            <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl animate-pulse" />
-          </div>
-          <p className="text-base font-bold text-primary uppercase tracking-[0.2em] animate-pulse">
-            กำลังโหลดข้อมูล
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
