@@ -14,8 +14,6 @@ const getHeaders = async () => {
     
     if (session?.access_token) {
       headers["Authorization"] = `Bearer ${session.access_token}`;
-    } else {
-      console.warn("apiClient: No active session found during getHeaders");
     }
     return headers;
   } catch (error) {
@@ -46,7 +44,14 @@ const fetchWithRetry = async (url, options, retries = 2) => {
       
       if (refreshError) {
         console.error("apiClient: Failed to refresh session", refreshError);
-        // If refresh fails, we might need to log the user out or just throw
+        
+        // If session is truly missing, redirect to login instead of throwing alert-triggering error
+        if (refreshError.message.includes("missing") || refreshError.status === 400) {
+          console.warn("apiClient: Session missing, redirecting to login");
+          window.location.href = "/";
+          return new Promise(() => {}); // Stop further execution
+        }
+        
         throw new Error("Session expired. Please log in again.");
       }
 
