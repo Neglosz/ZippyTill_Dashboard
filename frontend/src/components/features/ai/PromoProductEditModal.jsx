@@ -91,31 +91,82 @@ const PromoProductEditModal = ({
 
             {/* Right: Form Fields - 50% */}
             <div className="basis-[50%] space-y-4">
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="w-1 h-4 bg-primary rounded-full" />
+                <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">สต็อกสินค้า</h3>
+              </div>
+
               {/* Quantity */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  จำนวน
+                <label className="block text-xs font-bold text-gray-600 mb-2 px-1 flex items-center justify-between">
+                  <span>จำนวน ({product?.unitType})</span>
+                  {product?.unitType === "กิโลกรัม" && (
+                    <span className="text-[10px] text-primary font-black uppercase tracking-widest">โหมดชั่งขาย</span>
+                  )}
                 </label>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="any"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    onFormChange({ ...formData, quantity: e.target.value })
-                  }
-                  onKeyDown={(e) => {
-                    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                  }}
-                  className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${
-                    validation.errors.quantity
-                      ? "border-red-300 focus:border-red-500 focus:ring-red-100"
-                      : validation.warnings.quantity
-                      ? "border-orange-300 focus:border-orange-500 focus:ring-orange-100"
-                      : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
-                  }`}
-                  placeholder="จำนวน"
-                />
+                
+                {product?.unitType === "กิโลกรัม" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={Math.floor(Number(formData.quantity || 0))}
+                        onChange={(e) => {
+                          const kg = parseInt(e.target.value) || 0;
+                          const currentKhid = (Number(formData.quantity || 0) % 1) * 10;
+                          onFormChange({ ...formData, quantity: kg + (currentKhid / 10) });
+                        }}
+                        onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                        className={`w-full px-4 py-3 pr-14 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-black text-right transition-all ${
+                          validation.errors.quantity ? "border-red-300 ring-red-100" : "border-gray-200 focus:border-primary focus:ring-primary/10"
+                        }`}
+                        placeholder="0"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400 uppercase">กก.</div>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="9"
+                        value={Math.round((Number(formData.quantity || 0) % 1) * 10)}
+                        onChange={(e) => {
+                          const khid = Math.min(9, parseInt(e.target.value) || 0);
+                          const currentKg = Math.floor(Number(formData.quantity || 0));
+                          onFormChange({ ...formData, quantity: currentKg + (khid / 10) });
+                        }}
+                        onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                        className={`w-full px-4 py-3 pr-12 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-black text-right transition-all ${
+                          validation.errors.quantity ? "border-red-300 ring-red-100" : "border-gray-200 focus:border-primary focus:ring-primary/10"
+                        }`}
+                        placeholder="0"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400 uppercase">ขีด</div>
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    value={formData.quantity}
+                    onChange={(e) =>
+                      onFormChange({ ...formData, quantity: e.target.value })
+                    }
+                    onKeyDown={(e) => {
+                      if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                    }}
+                    className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${
+                      validation.errors.quantity
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+                        : validation.warnings.quantity
+                        ? "border-orange-300 focus:border-orange-500 focus:ring-orange-100"
+                        : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                    }`}
+                    placeholder="จำนวน"
+                  />
+                )}
                 {validation.errors.quantity && (
                   <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 flex items-center gap-1">
                     <AlertCircle size={10} /> {validation.errors.quantity}
