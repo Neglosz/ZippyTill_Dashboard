@@ -99,7 +99,12 @@ const transactionService = {
 
   getRecentTransactions: async (storeId, limit = 10) => {
     if (!storeId) throw new Error("Store ID is required");
-    const { data, error } = await supabase.from("account_transactions").select("*").eq("store_id", storeId).order("created_at", { ascending: false }).limit(limit);
+    const { data, error } = await supabase
+      .from("account_transactions")
+      .select("*, orders(customers_info(name))")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
     if (error) throw error;
     return data;
   },
