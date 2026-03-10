@@ -11,6 +11,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      if (showLogoutConfirm) return;
       if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         // Check if the click is on the profile toggle button
         const profileButton = event.target.closest('button');
@@ -28,7 +29,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, onClose, user]);
+  }, [isOpen, onClose, user, showLogoutConfirm]);
 
   if (!isOpen) return null;
 

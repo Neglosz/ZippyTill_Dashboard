@@ -11,9 +11,18 @@ export const authService = {
   },
 
   async logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    sessionStorage.clear();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.warn(
+        "Supabase signout failed, clearing local session anyway:",
+        error,
+      );
+    } finally {
+      // Always clear storage to ensure the user is logged out locally
+      localStorage.clear();
+      sessionStorage.clear();
+    }
   },
 
   async getCurrentUser() {

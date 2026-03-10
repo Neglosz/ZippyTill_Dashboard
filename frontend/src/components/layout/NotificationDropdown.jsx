@@ -27,6 +27,7 @@ const NotificationDropdown = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      if (isConfirmOpen) return;
       if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         // Check if the click is on the notification button (parent)
         // to avoid double toggling
@@ -43,7 +44,7 @@ const NotificationDropdown = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isConfirmOpen]);
 
   const getNotificationStyle = (type) => {
     switch (type) {
