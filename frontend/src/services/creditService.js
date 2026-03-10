@@ -15,7 +15,7 @@ export const creditService = {
 
   async getRecoveryRate(storeId) {
     const data = await apiClient.get(`/credit/recovery-rate?storeId=${storeId}`);
-    return data.rate;
+    return data;
   },
 
   // Helper can stay on frontend if strictly for display

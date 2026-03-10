@@ -27,11 +27,11 @@ const SummaryStats = ({
               ยอดคงค้างทั้งหมด
             </div>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 text-right">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
               ยอดค้างชำระทั้งหมด
             </p>
-            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none flex items-baseline">
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none flex items-baseline justify-end">
               <span className="text-lg mr-1.5 opacity-50 font-bold">฿</span>
               {Math.floor(totalAmount).toLocaleString()}
             </h3>
@@ -51,7 +51,7 @@ const SummaryStats = ({
               ใบแจ้งหนี้ที่ยังค้าง
             </div>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 text-right">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
               รายการค้าง
             </p>
@@ -75,7 +75,7 @@ const SummaryStats = ({
               ต้องติดตามด่วน
             </div>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 text-right">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
               เกินกำหนด
             </p>
@@ -86,7 +86,7 @@ const SummaryStats = ({
           </div>
         </div>
 
-        {/* Card 4: Payment Rate (Green/Success) */}
+        {/* Card 4: Paid Amount (Green/Success) */}
         <div className="bg-white rounded-[32px] p-7 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 group relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -96,16 +96,16 @@ const SummaryStats = ({
               <TrendingUp size={22} strokeWidth={2.5} />
             </div>
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/50 shadow-inner-light">
-              อัตราการชำระคืน
+              ยอดที่ชำระแล้ว
             </div>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 text-right">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
-              อัตราชำระคืน
+              ว่าชำระไปเท่าไรแล้ว
             </p>
-            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              {typeof paymentRate === 'number' ? paymentRate.toFixed(1) : paymentRate}
-              <span className="text-xl ml-0.5 opacity-60 font-black">%</span>
+            <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none flex items-baseline justify-end">
+              <span className="text-lg mr-1.5 opacity-50 font-bold">฿</span>
+              {Math.floor(recoveryRate || 0).toLocaleString()}
             </h3>
           </div>
         </div>

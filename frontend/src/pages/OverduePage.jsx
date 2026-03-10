@@ -50,7 +50,7 @@ const OverduePage = () => {
   });
 
   const [overdueItems, setOverdueItems] = useState([]);
-  const [recoveryRate, setRecoveryRate] = useState(null);
+  const [recoveryStats, setRecoveryStats] = useState({ rate: 0, totalPaid: 0, totalDebt: 0 });
   const [totalSalesAmount, setTotalSalesAmount] = useState(0);
 
   const fetchItems = useCallback(
@@ -58,12 +58,12 @@ const OverduePage = () => {
       if (!activeBranchId) return;
       try {
         if (!isBackground) setIsLoading(true);
-        const [data, rate] = await Promise.all([
+        const [data, stats] = await Promise.all([
           creditService.getOverdueItems(activeBranchId),
           creditService.getRecoveryRate(activeBranchId),
         ]);
         setOverdueItems(data);
-        setRecoveryRate(rate);
+        setRecoveryStats(stats);
       } catch (err) {
         console.error("Error fetching items:", err);
         if (!isBackground)
@@ -187,7 +187,7 @@ const OverduePage = () => {
 
       const normalizedName = stripThaiToneMarks(name);
       const sanitizedName = sanitizeHTML(name);
-      
+
       const queryLower = query.toLowerCase();
       const normalizedQuery = stripThaiToneMarks(queryLower);
       const sanitizedQuery = sanitizeHTML(queryLower);
@@ -309,11 +309,11 @@ const OverduePage = () => {
       prev.map((item) =>
         item.customerId === customerId
           ? {
-              ...item,
-              name: result.name,
-              phone: result.phone,
-              customerDueDate: result.customerDueDate,
-            }
+            ...item,
+            name: result.name,
+            phone: result.phone,
+            customerDueDate: result.customerDueDate,
+          }
           : item,
       ),
     );
@@ -322,19 +322,19 @@ const OverduePage = () => {
     setSelectedCustomer((prev) =>
       prev
         ? {
-            ...prev,
+          ...prev,
+          name: result.name,
+          phone: result.phone,
+          customerDueDate: result.customerDueDate,
+          maxOverdueDays: calculateOverdueDays(result.customerDueDate),
+          items: prev.items.map((i) => ({
+            ...i,
             name: result.name,
             phone: result.phone,
             customerDueDate: result.customerDueDate,
-            maxOverdueDays: calculateOverdueDays(result.customerDueDate),
-            items: prev.items.map((i) => ({
-              ...i,
-              name: result.name,
-              phone: result.phone,
-              customerDueDate: result.customerDueDate,
-              overdueDays: calculateOverdueDays(result.customerDueDate),
-            })),
-          }
+            overdueDays: calculateOverdueDays(result.customerDueDate),
+          })),
+        }
         : prev,
     );
 
@@ -515,7 +515,7 @@ const OverduePage = () => {
           totalCount={overdueItems.length}
           totalAmount={totalOverdueAmount}
           recentCount={totalOverdueCount}
-          recoveryRate={recoveryRate}
+          recoveryRate={recoveryStats?.totalPaid || 0}
           overdueRate={overdueRate}
         />
 

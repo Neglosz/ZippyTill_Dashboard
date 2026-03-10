@@ -94,14 +94,14 @@ const DebtorDetailModal = ({
 
   const handleSave = async () => {
     if (!onSave || !item) return;
-    
+
     const newErrors = {};
-    
+
     // TC045: Validate name is not empty
     if (!editForm.name || !editForm.name.trim()) {
       newErrors.name = "กรุณากรอกชื่อลูกค้า";
     }
-    
+
     // TC047: Validate phone length
     const phoneDigits = (editForm.phone || "").replace(/\D/g, "");
     if (phoneDigits.length > 0 && phoneDigits.length < 10) {
@@ -119,7 +119,7 @@ const DebtorDetailModal = ({
       selectedDate.setHours(0, 0, 0, 0);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate < today) {
         setShowDateWarning(true);
         return;
@@ -207,7 +207,7 @@ const DebtorDetailModal = ({
     // Use the date from the form if editing, otherwise from the item
     const dateToCheck = isEditing ? editForm.customerDueDate : item.customerDueDate;
     if (!dateToCheck) return false;
-    
+
     const due = new Date(dateToCheck);
     const today = new Date();
     due.setHours(0, 0, 0, 0);
@@ -221,7 +221,7 @@ const DebtorDetailModal = ({
     <div className="fixed inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-lg flex items-center justify-center z-[1000] p-4 animate-in fade-in duration-500 overflow-y-auto">
       <div className="bg-gradient-to-br from-white via-white to-gray-50/80 rounded-[48px] w-full max-w-4xl max-h-[80vh] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/80 relative backdrop-blur-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/10 via-orange-400/5 to-transparent rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse" />
-        
+
         <div className="relative overflow-hidden">
           <button
             onClick={onClose}
@@ -278,9 +278,8 @@ const DebtorDetailModal = ({
                               type="text"
                               value={editForm.name}
                               onChange={handleNameChange}
-                              className={`text-xl font-black text-gray-900 tracking-tight bg-gray-50 border rounded-xl px-4 py-2 w-full outline-none transition-all ${
-                                errors.name ? "border-rose-500 bg-rose-50 ring-1 ring-rose-500" : "border-gray-200 focus:border-primary/50"
-                              }`}
+                              className={`text-xl font-black text-gray-900 tracking-tight bg-gray-50 border rounded-xl px-4 py-2 w-full outline-none transition-all ${errors.name ? "border-rose-500 bg-rose-50 ring-1 ring-rose-500" : "border-gray-200 focus:border-primary/50"
+                                }`}
                             />
                           ) : (
                             <div className="text-2xl font-black text-gray-900 tracking-tight">
@@ -364,7 +363,7 @@ const DebtorDetailModal = ({
                           <div className="text-right">
                             <p className="text-lg font-black text-gray-900 mb-2">฿{Number(bill.amount).toLocaleString()}</p>
                             <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm ${bill.overdueDays > 0 ? "bg-red-50 text-red-600" : "bg-orange-50 text-orange-600"}`}>
-                              {bill.status === "overdue" ? "เกินกำหนด" : bill.status === "unpaid" ? "ค้างชำระ" : bill.status}
+                              {bill.status === "overdue" ? "เกินกำหนด" : (bill.status === "unpaid" || bill.status === "partial") ? "ค้างชำระ" : bill.status}
                             </span>
                           </div>
                         </div>
@@ -395,8 +394,8 @@ const DebtorDetailModal = ({
                     const thaiYear = d.getFullYear() + 543;
                     return d.toLocaleDateString('th-TH').replace(d.getFullYear().toString(), thaiYear.toString());
                   })()
-                })</span><br/>
-                ซึ่งจะทำให้สถานะบิลนี้เป็น <span className="text-rose-500 font-black underline decoration-2 underline-offset-4">"เกินกำหนด"</span> ทันที<br/>
+                })</span><br />
+                ซึ่งจะทำให้สถานะบิลนี้เป็น <span className="text-rose-500 font-black underline decoration-2 underline-offset-4">"เกินกำหนด"</span> ทันที<br />
                 ต้องการดำเนินการต่อหรือไม่?
               </p>
               <div className="flex flex-col gap-3">
@@ -418,8 +417,8 @@ const DebtorDetailModal = ({
             return d.toLocaleDateString("th-TH", { month: "long", day: "numeric" }) + ` ${thaiYear}`;
           })(),
           paymentMethod: "เครดิต",
-          items: isLoadingDetails ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }] : 
-                 fullOrderData?.order_items?.map(detail => ({ name: detail.products?.name || "สินค้า", quantity: detail.qty, unit: detail.products?.unit_type, price: detail.price_per_unit, subtotal: detail.subtotal })) || [],
+          items: isLoadingDetails ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }] :
+            fullOrderData?.order_items?.map(detail => ({ name: detail.products?.name || "สินค้า", quantity: detail.qty, unit: detail.products?.unit_type, price: detail.price_per_unit, subtotal: detail.subtotal })) || [],
           total: Number(selectedBill.amount),
           received: 0, change: 0,
           store: { name: item?.name || "ลูกค้า", address: "-", phone: item?.phone || "-" }
