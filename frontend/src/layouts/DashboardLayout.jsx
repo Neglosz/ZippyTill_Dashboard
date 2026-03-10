@@ -47,8 +47,10 @@ const DashboardLayout = () => {
         }
       } catch (error) {
         console.error("Error verifying branch access:", error);
-        // If it's a network error or something similar, we might still want to show the dashboard
-        // if we have local data, but for security we stay verifying until it works or fails hard.
+        // If session is missing, redirect to login
+        if (error.message?.includes("missing") || error.status === 401 || error.status === 403) {
+          navigate("/", { replace: true });
+        }
       } finally {
         setIsVerifying(false);
       }
