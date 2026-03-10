@@ -12,6 +12,7 @@ import {
   Sparkles,
   CreditCard,
   User,
+  Search,
 } from "lucide-react";
 import {
   LineChart,
