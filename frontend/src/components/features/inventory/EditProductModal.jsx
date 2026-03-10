@@ -576,14 +576,17 @@ const EditProductModal = ({
 
               {/* Expiry Date */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 block px-1 flex items-center gap-2">
-                  <Calendar size={12} className="text-primary" /> วันหมดอายุ
-                </label>
-                <div className="scale-95 origin-left">
-                  <BEDatePicker
-                    value={formData.exp}
-                    onChange={handleChange}
-                  />
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-400 px-1 flex items-center gap-2">
+                    <Calendar size={12} className="text-primary" /> วันหมดอายุ
+                  </label>
+                  <div className="w-[220px] scale-95 origin-right">
+                    <BEDatePicker
+                      value={formData.exp}
+                      onChange={handleChange}
+                      align="right"
+                    />
+                  </div>
                 </div>
                 {formData.exp && new Date(formData.exp).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
                   <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">

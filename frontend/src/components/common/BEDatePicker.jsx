@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
-const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือน/ปี (พ.ศ.)" }) => {
+const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือน/ปี (พ.ศ.)", align = "center" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState(value ? new Date(value) : new Date());
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0, elementTop: 0 });
     const [isReady, setIsReady] = useState(false);
     const containerRef = useRef(null);
     const triggerRef = useRef(null);
@@ -16,6 +16,35 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
         "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
     const daysTH = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
+    // Calculate dynamic styles based on align prop
+    const getDropdownStyles = () => {
+        const baseStyles = {
+            top: `${coords.top + 8}px`,
+            width: '280px'
+        };
+
+        if (align === "left") {
+            return {
+                ...baseStyles,
+                left: `${coords.left}px`,
+            };
+        } else if (align === "right") {
+            return {
+                ...baseStyles,
+                top: `${coords.elementTop ? coords.elementTop - 180 : coords.top}px`,
+                left: `${coords.left + coords.width + 50}px`,
+                transform: 'none',
+            };
+        } else {
+            // center (default)
+            return {
+                ...baseStyles,
+                left: `${coords.left + coords.width / 2}px`,
+                transform: 'translateX(-50%)',
+            };
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -35,7 +64,9 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
             setCoords({
                 top: rect.bottom + window.scrollY,
                 left: rect.left + window.scrollX,
-                width: rect.width
+                width: rect.width,
+                height: rect.height,
+                elementTop: rect.top + window.scrollY
             });
             setIsReady(true);
         }
@@ -105,12 +136,7 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
         <div
             id="be-datepicker-portal"
             className="fixed z-[10001] bg-white rounded-[24px] shadow-2xl border border-gray-100 p-4 animate-in fade-in zoom-in-95 duration-200"
-            style={{
-                top: `${coords.top + 8}px`,
-                left: `${coords.left + coords.width / 2}px`,
-                transform: 'translateX(-50%)',
-                width: '280px'
-            }}
+            style={getDropdownStyles()}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
         >
