@@ -46,7 +46,7 @@ const productService = {
   async createProduct(productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
-    const initialQty = productData.stockQty || 0;
+    const initialQty = Number(productData.stockQty || 0);
 
     const { data, error } = await supabase
       .from("products")
@@ -69,37 +69,59 @@ const productService = {
       .single();
 
     if (error) throw error;
-    
-    // ... rest of code
-  },
 
-  // ... rest
+    // Create initial batch if expireDate is provided
+    if (productData.expireDate && data?.id) {
+      await supabase.from("product_batches").insert({
+        product_id: data.id,
+        expire_date: productData.expireDate,
+        initial_qty: initialQty,
+        remaining_qty: initialQty,
+        batch_no: `BATCH-${Date.now()}`
+      });
+    }
+
+    if (initialQty > 0 && data?.id) {
+      const { data: userData } = await supabase.auth.getUser();
+      await supabase.from("inventory_transactions").insert({
+        product_id: data.id,
+        trans_type: "in",
+        qty: initialQty,
+        reference_type: "product_creation",
+        notes: "นำเข้าสินค้าใหม่",
+        store_id: branchId,
+        created_by: userData?.user?.id,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    return data;
+  },
 
   // Update product
   async updateProduct(id, productData, branchId) {
     if (!branchId) throw new Error("Branch ID is required");
 
-    // Explicitly map allowed product columns to avoid schema errors with extra fields
+    // Explicitly map allowed product columns
     const updateData = {};
     if (productData.name !== undefined) updateData.name = sanitizeHTML(productData.name);
     if (productData.barcode !== undefined) updateData.barcode = sanitizeHTML(productData.barcode);
 
-    // Handle both camelCase and snake_case for compatibility
     const categoryId = productData.categoryId || productData.category_id;
     if (categoryId !== undefined) updateData.category_id = categoryId;
 
-    if (productData.price !== undefined) updateData.price = productData.price;
+    if (productData.price !== undefined) updateData.price = Number(productData.price);
 
     const costPrice = productData.costPrice || productData.cost_price;
-    if (costPrice !== undefined) updateData.cost_price = costPrice;
+    if (costPrice !== undefined) updateData.cost_price = Number(costPrice);
 
     const stockQty = productData.stockQty || productData.stock_qty;
-    if (stockQty !== undefined) updateData.stock_qty = stockQty;
+    if (stockQty !== undefined) updateData.stock_qty = Number(stockQty);
 
     if (productData.image_url !== undefined) updateData.image_url = productData.image_url;
 
     const lowStockThreshold = productData.lowStockThreshold || productData.low_stock_threshold;
-    if (lowStockThreshold !== undefined) updateData.low_stock_threshold = lowStockThreshold;
+    if (lowStockThreshold !== undefined) updateData.low_stock_threshold = Number(lowStockThreshold);
 
     // Fetch old data for stock change tracking
     const { data: oldProduct } = await supabase
@@ -248,11 +270,10 @@ const productService = {
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     const thirtyDaysStr = thirtyDaysFromNow.toISOString().split("T")[0];
 
-    // Filter by branchId directly in the query using !inner
     // TC015: Include today in expired (<= today)
     const { data: expiredData, error: expiredError } = await supabase
       .from("product_batches")
-      .select("*, products!inner(name, store_id, image_url, deleted_at)")
+      .select("*, products!inner(id, name, store_id, image_url, deleted_at)")
       .eq("products.store_id", branchId)
       .lte("expire_date", today)
       .gt("remaining_qty", 0)
@@ -263,7 +284,7 @@ const productService = {
     // TC015: Soon data starts from tomorrow (> today)
     const { data: soonData, error: soonError } = await supabase
       .from("product_batches")
-      .select("*, products!inner(name, store_id, image_url, deleted_at)")
+      .select("*, products!inner(id, name, store_id, image_url, deleted_at)")
       .eq("products.store_id", branchId)
       .gt("expire_date", today)
       .lte("expire_date", thirtyDaysStr)
@@ -272,9 +293,6 @@ const productService = {
 
     if (soonError) throw soonError;
 
-    // For low stock, we need to compare two columns (stock_qty <= low_stock_threshold).
-    // PostgREST doesn't natively support column-to-column comparisons in string filters easily.
-    // So we fetch products that are active and filter them in JS.
     const { data: allProducts, error: thresholdError } = await supabase
       .from("products")
       .select("id, name, image_url, stock_qty, unit_type, low_stock_threshold")
@@ -291,7 +309,6 @@ const productService = {
 
     const formatBatch = (batch) => {
       // TC021: Improved day calculation
-      // Parse the date components manually to avoid UTC/Local timezone shifts
       const expParts = batch.expire_date.split('-');
       const expDate = new Date(expParts[0], expParts[1] - 1, expParts[2]);
       expDate.setHours(0, 0, 0, 0);
@@ -324,7 +341,7 @@ const productService = {
         .map(formatBatch)
         .sort((a, b) => new Date(a.rawExpiry) - new Date(b.rawExpiry)),
       lowStock: (lowStockProducts || []).map((p) => ({
-        id: p.id || p.product_id, // Ensure we have the product ID
+        id: p.id,
         name: p.name,
         imageUrl: p.image_url,
         qty: p.stock_qty,
@@ -333,9 +350,7 @@ const productService = {
       })),
     };
 
-    // Use a limited concurrency or batch process for notifications
-    // For now, let's at least await them in smaller chunks or limit them
-    const lowStockToNotify = notifications.lowStock.slice(0, 10); // Limit to top 10 to avoid overwhelming
+    const lowStockToNotify = notifications.lowStock.slice(0, 10);
     for (const p of lowStockToNotify) {
       try {
         await notificationService.createNotification(
@@ -371,14 +386,12 @@ const productService = {
 
     const { data: sales, error: salesError } = await supabase
       .from("order_items")
-      .select(
-        `
+      .select(`
         id,
         qty,
         products (name, image_url),
         orders!inner(created_at, store_id, order_no, payment_status)
-      `,
-      )
+      `)
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled")
       .order("orders(created_at)", { ascending: false });
@@ -397,8 +410,7 @@ const productService = {
 
     const { data: inventoryTxns, error: txnError } = await supabase
       .from("inventory_transactions")
-      .select(
-        `
+      .select(`
         id,
         qty,
         trans_type,
@@ -406,8 +418,7 @@ const productService = {
         notes,
         created_at,
         products!inner(name, image_url, store_id)
-      `,
-      )
+      `)
       .eq("store_id", branchId)
       .order("created_at", { ascending: false });
 
