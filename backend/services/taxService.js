@@ -29,10 +29,28 @@ const taxService = {
 
         if (incomeError) throw incomeError;
 
-        const totalIncome = (incomeData || []).reduce(
+        const totalOtherIncome = (incomeData || []).reduce(
             (sum, t) => sum + Number(t.amount || 0),
             0,
         );
+
+        // 1.5 Get Order Revenue
+        const { data: orderData, error: orderError } = await supabase
+            .from("orders")
+            .select("total_amount")
+            .eq("store_id", branchId)
+            .neq("payment_status", "cancelled")
+            .gte("created_at", `${startDate}T00:00:00Z`)
+            .lte("created_at", `${endDate}T23:59:59Z`);
+
+        if (orderError) throw orderError;
+
+        const totalOrderRevenue = (orderData || []).reduce(
+            (sum, o) => sum + Number(o.total_amount || 0),
+            0,
+        );
+
+        const totalIncome = totalOrderRevenue;
 
         // 2. Get Expenses from account_transactions (trans_type = 'expense')
         const { data: expenseData, error: expenseError } = await supabase
@@ -55,6 +73,7 @@ const taxService = {
             .from("order_items")
             .select(`
         qty,
+        cost_price_at_sale,
         products (cost_price),
         orders!inner (store_id, payment_status, created_at)
       `)
@@ -66,7 +85,10 @@ const taxService = {
         if (cogsError) throw cogsError;
 
         const totalCogs = (cogsData || []).reduce(
-            (sum, item) => sum + (Number(item.qty || 0) * Number(item.products?.cost_price || 0)),
+            (sum, item) => {
+                const cost = Number(item.cost_price_at_sale ?? item.products?.cost_price ?? 0);
+                return sum + (Number(item.qty || 0) * cost);
+            },
             0,
         );
 
@@ -74,7 +96,8 @@ const taxService = {
             totalIncome,
             totalExpenses: generalExpenses + totalCogs,
             details: {
-                income: totalIncome,
+                orderRevenue: totalOrderRevenue,
+                otherIncome: totalOtherIncome,
                 generalExpenses,
                 cogs: totalCogs,
                 period,
