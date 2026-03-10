@@ -25,7 +25,8 @@ export const useNotifications = (activeBranchId) => {
       const data = await settingService.getSettings(activeBranchId);
       setSettings((prev) => ({
         ...prev,
-        notifications: data.notifications !== undefined ? data.notifications : true,
+        notifications:
+          data.notifications !== undefined ? data.notifications : true,
         stockAlert: data.stockAlert !== undefined ? data.stockAlert : true,
       }));
     } catch (error) {
@@ -47,11 +48,12 @@ export const useNotifications = (activeBranchId) => {
       setLoading(true);
 
       // 1. Fetch system calculations (Overdue & Dashboard Alerts)
-      const [overdueItems, dashboardNotifs, persistentNotifs] = await Promise.all([
-        creditService.getOverdueItems(activeBranchId),
-        productService.getDashboardNotifications(activeBranchId),
-        notificationService.getNotifications(activeBranchId)
-      ]);
+      const [overdueItems, dashboardNotifs, persistentNotifs] =
+        await Promise.all([
+          creditService.getOverdueItems(activeBranchId),
+          productService.getDashboardNotifications(activeBranchId),
+          notificationService.getNotifications(activeBranchId),
+        ]);
 
       // Transform Overdue Items
       const overdueNotifications = overdueItems.map((item) => {
@@ -78,7 +80,7 @@ export const useNotifications = (activeBranchId) => {
               : "ครบกำหนดวันนี้",
           created_at: rawDate || new Date().toISOString(),
           link: "/finance/overdue",
-          isRead: false
+          isRead: false,
         };
       });
 
@@ -116,15 +118,20 @@ export const useNotifications = (activeBranchId) => {
         : [];
 
       // Transform Persistent Notifications
-      const formattedPersistent = (persistentNotifs || []).map(n => ({
+      const formattedPersistent = (persistentNotifs || []).map((n) => ({
         id: n.id,
-        type: n.category || n.type || 'info',
-        title: n.title || (n.type === 'low_stock' ? 'แจ้งเตือนสต็อก' : 'แจ้งเตือนระบบ'),
+        type: n.category || n.type || "info",
+        title:
+          n.title ||
+          (n.type === "low_stock" ? "แจ้งเตือนสต็อก" : "แจ้งเตือนระบบ"),
         message: n.message,
         isRead: n.is_read,
         created_at: n.created_at,
-        time: new Date(n.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-        actionUrl: n.action_url
+        time: new Date(n.created_at).toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        actionUrl: n.action_url,
       }));
 
       // 3. Merge, Filter and Sort
@@ -134,8 +141,8 @@ export const useNotifications = (activeBranchId) => {
         ...expiringNotifications,
         ...formattedPersistent,
       ]
-      .filter(n => !n.isRead && !hiddenIds.has(n.id))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        .filter((n) => !n.isRead && !hiddenIds.has(n.id))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       setNotifications(allNotifications);
     } catch (error) {
@@ -143,7 +150,12 @@ export const useNotifications = (activeBranchId) => {
     } finally {
       setLoading(false);
     }
-  }, [activeBranchId, settings.notifications, settings.stockAlert, Array.from(hiddenIds).join(',')]);
+  }, [
+    activeBranchId,
+    settings.notifications,
+    settings.stockAlert,
+    Array.from(hiddenIds).join(","),
+  ]);
 
   useEffect(() => {
     fetchSettings();
@@ -171,7 +183,7 @@ export const useNotifications = (activeBranchId) => {
       )
       .subscribe();
 
-    // Listen for settings changes from SettingPage (Custom Event)
+    // Listen for settings changes (Custom Event)
     const handleSettingsChanged = () => {
       fetchSettings().then(() => fetchNotifications());
     };
@@ -188,15 +200,15 @@ export const useNotifications = (activeBranchId) => {
     try {
       // Mark all in DB as read
       await notificationService.markAllAsRead(activeBranchId);
-      
+
       // Also hide all current ones locally (including computed ones)
-      const currentIds = notifications.map(n => n.id);
-      setHiddenIds(prev => {
+      const currentIds = notifications.map((n) => n.id);
+      setHiddenIds((prev) => {
         const next = new Set(prev);
-        currentIds.forEach(id => next.add(id));
+        currentIds.forEach((id) => next.add(id));
         return next;
       });
-      
+
       setNotifications([]);
     } catch (error) {
       console.error("Error clearing notifications:", error.message);
@@ -205,15 +217,17 @@ export const useNotifications = (activeBranchId) => {
 
   const deleteNotification = async (id) => {
     // Hide locally immediately
-    setHiddenIds(prev => {
+    setHiddenIds((prev) => {
       const next = new Set(prev);
       next.add(id);
       return next;
     });
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
 
     // If it's a UUID (persistent), mark in DB as read
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ) {
       try {
         await notificationService.markAsRead(id);
       } catch (error) {
