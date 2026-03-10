@@ -193,7 +193,7 @@ const EditProductModal = ({
           </div>
         </div>
 
-        <div className="p-6 flex flex-col lg:flex-row gap-6">
+        <div className="p-6 flex flex-col md:flex-row gap-6">
           <div className="w-full lg:w-[55%] flex flex-col justify-start items-center">
             <div className="w-full aspect-[4/5] relative group">
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -218,7 +218,7 @@ const EditProductModal = ({
             </div>
           </div>
 
-          <div className="w-full lg:w-[45%] space-y-4">
+          <div className="w-full md:w-[45%] space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1"><div className="w-0.5 h-3.5 bg-primary rounded-full" /><h3 className="text-sm font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3></div>
               <div className="grid grid-cols-1 gap-3">
@@ -237,7 +237,28 @@ const EditProductModal = ({
               <div className="flex items-center gap-2 px-1"><div className="w-0.5 h-3.5 bg-emerald-500 rounded-full" /><h3 className="text-sm font-bold text-[#1B2559]">ราคา</h3></div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5"><label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาทุน</label><div className="relative"><input type="number" step="any" name="cost" value={formData.cost} onChange={handleChange} className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm focus:ring-emerald-500/20" placeholder="0.00" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-black">THB</span></div></div>
-                <div className="space-y-1.5"><label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาขาย</label><div className="relative"><input type="number" step="any" name="price" value={formData.price} onChange={handleChange} className="w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md focus:ring-emerald-500/30" placeholder="0.00" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span></div></div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาขาย</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md focus:ring-emerald-500/30 ${
+                        errors.price || errors.priceLowerThanCost ? "ring-2 ring-rose-500/50" : ""
+                      }`}
+                      placeholder="0.00"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span>
+                  </div>
+                  {(errors.price || errors.priceLowerThanCost) && (
+                    <p className="text-[10px] font-bold text-rose-500 px-1">
+                      {errors.price ? "ห้ามค่าติดลบ" : "ราคาขายต่ำกว่าราคาทุน"}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -281,7 +302,7 @@ const EditProductModal = ({
                       </div>
                       <div className="space-y-2 pt-1">
                         <label className="text-[10px] font-black text-orange-600/70 uppercase tracking-widest px-1 flex items-center gap-2"><AlertCircle size={12} /> แจ้งเตือนเมื่อสต็อกต่ำกว่า</label>
-                        <div className="relative"><input type="number" step="any" min="0" name="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className={`w-full bg-orange-50/30 border border-dashed border-orange-200 rounded-[14px] px-4 py-2 text-xs font-bold text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-16 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"}`} placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span></div>
+                        <div className="relative"><input type="number" step="any" min="0" name="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className={`w-full bg-orange-50/30 border border-dashed border-orange-200 rounded-[12px] px-4 py-2 text-xs font-bold text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-16 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"}`} placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span></div>
                       </div>
                     </>
                   )}
@@ -294,9 +315,65 @@ const EditProductModal = ({
             </div>
 
             <div className="pt-2 flex justify-center">
-              <button onClick={() => { const newErrors = {}; if (!formData.name.trim()) newErrors.name = true; if (!formData.id.trim()) newErrors.id = true; if (formData.id && products.some(p => p.barcode === formData.id && p.id !== product?.id && p.name.trim() !== formData.name.trim())) { alert("รหัสสินค้าซ้ำ"); return; } if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; } onSave(formData); }} disabled={isLoading} className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 overflow-hidden">
+              <button
+                onClick={() => {
+                  const newErrors = {};
+                  if (!formData.name.trim()) newErrors.name = true;
+                  if (!formData.id.trim()) newErrors.id = true;
+                  if (
+                    formData.id &&
+                    products.some(
+                      (p) =>
+                        p.barcode === formData.id &&
+                        p.id !== product?.id &&
+                        p.name.trim() !== formData.name.trim(),
+                    )
+                  ) {
+                    alert("รหัสสินค้าซ้ำ");
+                    return;
+                  }
+
+                  // TC: Warning if selling price < cost price
+                  if (
+                    formData.price !== "" &&
+                    formData.cost !== "" &&
+                    Number(formData.price) < Number(formData.cost)
+                  ) {
+                    newErrors.priceLowerThanCost = true;
+                  }
+
+                  if (Object.keys(newErrors).length > 0) {
+                    setErrors(newErrors);
+                    return;
+                  }
+
+                  const handleSave = async () => {
+                    setIsLoading(true);
+                    try {
+                      await onSave(formData);
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  };
+
+                  handleSave();
+                }}
+                disabled={isLoading}
+                className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 overflow-hidden"
+              >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative flex items-center justify-center gap-3">{isLoading ? <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} strokeWidth={3} />}{isLoading ? "กำลังบันทึก..." : product ? "บันทึกการแก้ไข" : "เพิ่มสินค้าใหม่เข้าสต็อก"}</span>
+                <span className="relative flex items-center justify-center gap-3">
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Check size={20} strokeWidth={3} />
+                  )}
+                  {isLoading
+                    ? "กำลังบันทึก..."
+                    : product
+                      ? "บันทึกการแก้ไข"
+                      : "เพิ่มสินค้าใหม่เข้าสต็อก"}
+                </span>
               </button>
             </div>
           </div>
