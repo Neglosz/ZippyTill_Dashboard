@@ -3,12 +3,17 @@ const { supabase } = require("../config/supabase");
 const aggregateByHour = (transactions) => {
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({ name: i.toString().padStart(2, "0") + ":00", income: 0, expense: 0 }));
   transactions.forEach((tx) => {
-    const date = tx.created_at || tx.trans_date;
-    if (!date) return;
-    const hour = new Date(date).getHours();
-    if (isNaN(hour) || hour < 0 || hour >= 24) return;
-    if (tx.trans_type === "income") hourlyData[hour].income += Number(tx.amount || 0);
-    else hourlyData[hour].expense += Number(tx.amount || 0);
+    const dateStr = tx.created_at || tx.trans_date;
+    if (!dateStr) return;
+    
+    // Adjust to Thai Time (+7) for grouping
+    const date = new Date(dateStr);
+    const thaiHour = new Date(date.getTime() + (7 * 60 * 60 * 1000)).getUTCHours();
+    
+    if (thaiHour >= 0 && thaiHour < 24) {
+      if (tx.trans_type === "income") hourlyData[thaiHour].income += Number(tx.amount || 0);
+      else hourlyData[thaiHour].expense += Number(tx.amount || 0);
+    }
   });
   return hourlyData;
 };
@@ -17,12 +22,17 @@ const aggregateByDay = (transactions, date) => {
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => ({ name: (i + 1).toString(), income: 0, expense: 0 }));
   transactions.forEach((tx) => {
-    const d = tx.trans_date || tx.created_at;
-    if (!d) return;
-    const day = new Date(d).getDate();
-    if (isNaN(day) || day < 1 || day > daysInMonth) return;
-    if (tx.trans_type === "income") dailyData[day - 1].income += Number(tx.amount || 0);
-    else dailyData[day - 1].expense += Number(tx.amount || 0);
+    const dStr = tx.trans_date || tx.created_at;
+    if (!dStr) return;
+    
+    // Adjust to Thai Time (+7)
+    const dateObj = new Date(dStr);
+    const thaiDay = new Date(dateObj.getTime() + (7 * 60 * 60 * 1000)).getUTCDate();
+    
+    if (thaiDay >= 1 && thaiDay <= daysInMonth) {
+      if (tx.trans_type === "income") dailyData[thaiDay - 1].income += Number(tx.amount || 0);
+      else dailyData[thaiDay - 1].expense += Number(tx.amount || 0);
+    }
   });
   return dailyData;
 };
@@ -31,12 +41,17 @@ const aggregateByMonth = (transactions) => {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthlyData = months.map((m) => ({ name: m, income: 0, expense: 0 }));
   transactions.forEach((tx) => {
-    const d = tx.trans_date || tx.created_at;
-    if (!d) return;
-    const month = new Date(d).getMonth();
-    if (isNaN(month) || month < 0 || month >= 12) return;
-    if (tx.trans_type === "income") monthlyData[month].income += Number(tx.amount || 0);
-    else monthlyData[month].expense += Number(tx.amount || 0);
+    const dStr = tx.trans_date || tx.created_at;
+    if (!dStr) return;
+    
+    // Adjust to Thai Time (+7)
+    const dateObj = new Date(dStr);
+    const thaiMonth = new Date(dateObj.getTime() + (7 * 60 * 60 * 1000)).getUTCMonth();
+    
+    if (thaiMonth >= 0 && thaiMonth < 12) {
+      if (tx.trans_type === "income") monthlyData[thaiMonth].income += Number(tx.amount || 0);
+      else monthlyData[thaiMonth].expense += Number(tx.amount || 0);
+    }
   });
   return monthlyData;
 };
@@ -47,48 +62,46 @@ const transactionService = {
     const selectedDate = new Date(date);
     const year = selectedDate.getFullYear(); const month = selectedDate.getMonth(); const day = selectedDate.getDate();
     let startDate, endDate;
+    
+    // Define Thai Day Range in UTC for query
+    // Thai 00:00 is UTC 17:00 (Previous Day)
     if (periodType === "day") {
-      startDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      endDate = startDate;
-    }
-    else if (periodType === "month") {
-      startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-    }
-    else if (periodType === "year") {
-      startDate = `${year}-01-01`;
-      endDate = `${year}-12-31`;
+      const d = new Date(year, month, day);
+      const start = new Date(d.getTime() - (7 * 60 * 60 * 1000));
+      const end = new Date(d.getTime() + (17 * 60 * 60 * 1000) + (59 * 60 * 1000) + 59000);
+      startDate = start.toISOString();
+      endDate = end.toISOString();
+    } else if (periodType === "month") {
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month + 1, 0, 23, 59, 59);
+      startDate = new Date(first.getTime() - (7 * 60 * 60 * 1000)).toISOString();
+      endDate = new Date(last.getTime() - (7 * 60 * 60 * 1000)).toISOString();
+    } else {
+      startDate = `${year}-01-01T00:00:00Z`;
+      endDate = `${year}-12-31T23:59:59Z`;
     }
 
+    // Query from account_transactions
     let query = supabase.from("account_transactions").select("*").eq("store_id", storeId);
-    if (periodType === "day") query = query.eq("trans_date", startDate);
-    else query = query.gte("trans_date", startDate).lte("trans_date", endDate);
+    query = query.gte("created_at", startDate).lte("created_at", endDate);
 
     const { data, error } = await query.order("created_at", { ascending: true });
     if (error) throw error;
 
-    // Also include sales from orders that might not be in account_transactions
+    // Query from orders
     let orderQuery = supabase.from("orders").select("total_amount, created_at, payment_type, payment_status").eq("store_id", storeId);
-    if (periodType === "day") {
-      orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${startDate}T23:59:59`);
-    } else {
-      orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${endDate}T23:59:59`);
-    }
+    orderQuery = orderQuery.gte("created_at", startDate).lte("created_at", endDate);
 
     const { data: orderData } = await orderQuery;
 
     const combinedData = [...(data || [])];
     (orderData || []).forEach(o => {
-      // TC001 FIX: Don't add credit sales to income until they are paid
-      if (o.payment_type === "credit_sale" && o.payment_status !== "paid") {
-        return;
-      }
+      if (o.payment_type === "credit_sale" && o.payment_status !== "paid") return;
 
       combinedData.push({
         amount: o.total_amount,
         trans_type: "income",
         created_at: o.created_at,
-        trans_date: o.created_at ? o.created_at.split("T")[0] : null
       });
     });
 
