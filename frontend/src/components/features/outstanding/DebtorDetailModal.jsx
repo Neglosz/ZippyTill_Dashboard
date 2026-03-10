@@ -187,7 +187,8 @@ const DebtorDetailModal = ({
       ? dateString.split("T")[0]
       : dateString;
     const [year, month, day] = datePart.split("-");
-    return `${day}-${month}-${year}`;
+    const thaiYear = parseInt(year, 10) + 543;
+    return `${day}-${month}-${thaiYear}`;
   };
 
   const getImageUrl = (path) => {
@@ -388,7 +389,13 @@ const DebtorDetailModal = ({
               </div>
               <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-4">วันที่ครบกำหนดเลยมาแล้ว!</h3>
               <p className="text-gray-500 font-medium text-base leading-relaxed mb-10 px-2">
-                คุณกำลังเลือกวันที่ในอดีต <span className="text-gray-900 font-bold">({new Date(editForm.customerDueDate).toLocaleDateString('th-TH')})</span><br/>
+                คุณกำลังเลือกวันที่ในอดีต <span className="text-gray-900 font-bold">({
+                  (() => {
+                    const d = new Date(editForm.customerDueDate);
+                    const thaiYear = d.getFullYear() + 543;
+                    return d.toLocaleDateString('th-TH').replace(d.getFullYear().toString(), thaiYear.toString());
+                  })()
+                })</span><br/>
                 ซึ่งจะทำให้สถานะบิลนี้เป็น <span className="text-rose-500 font-black underline decoration-2 underline-offset-4">"เกินกำหนด"</span> ทันที<br/>
                 ต้องการดำเนินการต่อหรือไม่?
               </p>
@@ -405,7 +412,11 @@ const DebtorDetailModal = ({
         visible={!!selectedBill}
         transaction={selectedBill ? {
           receiptNo: selectedBill.orderNo || "-",
-          date: new Date(selectedBill.createdAt || selectedBill.dueDate).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" }),
+          date: (() => {
+            const d = new Date(selectedBill.createdAt || selectedBill.dueDate);
+            const thaiYear = d.getFullYear() + 543;
+            return d.toLocaleDateString("th-TH", { month: "long", day: "numeric" }) + ` ${thaiYear}`;
+          })(),
           paymentMethod: "เครดิต",
           items: isLoadingDetails ? [{ name: "กำลังโหลด...", quantity: 0, price: 0, subtotal: 0 }] : 
                  fullOrderData?.order_items?.map(detail => ({ name: detail.products?.name || "สินค้า", quantity: detail.qty, unit: detail.products?.unit_type, price: detail.price_per_unit, subtotal: detail.subtotal })) || [],
