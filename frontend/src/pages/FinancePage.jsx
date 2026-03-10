@@ -27,6 +27,7 @@ import {
   Legend,
 } from "recharts";
 import { useBranch } from "../contexts/BranchContext";
+import { supabase } from "../lib/supabase";
 
 import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
@@ -269,6 +270,46 @@ const FinancePage = () => {
       fetchChartData();
     }
   }, [activeBranchId, viewMode, selectedDate, fetchChartData]);
+
+  // Real-time synchronization
+  useEffect(() => {
+    if (!activeBranchId) return;
+
+    const handleRealtimeUpdate = () => {
+      // Invalidate cache to force new data fetch
+      dataCache.current = {};
+      fetchFinanceData();
+      fetchChartData();
+    };
+
+    const financeChannel = supabase
+      .channel(`finance_sync_${activeBranchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        handleRealtimeUpdate
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "account_transactions",
+          filter: `store_id=eq.${activeBranchId}`,
+        },
+        handleRealtimeUpdate
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(financeChannel);
+    };
+  }, [activeBranchId, fetchFinanceData, fetchChartData]);
 
   const handlePrevDate = useCallback(() => {
     const newDate = new Date(selectedDate);
