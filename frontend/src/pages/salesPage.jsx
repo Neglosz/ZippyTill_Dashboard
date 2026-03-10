@@ -276,7 +276,7 @@ const SalesPage = () => {
     <>
       <PageBackground />
 
-      <div className="flex flex-col gap-8 pb-10">
+      <div className="flex flex-col gap-4 pb-10">
         <PageHeader
           title="ยอดขาย"
           description="สรุปภาพรวมยอดขายและสถิติสินค้าที่สำคัญ"

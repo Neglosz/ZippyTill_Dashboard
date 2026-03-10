@@ -68,7 +68,7 @@ const transactionService = {
     if (error) throw error;
 
     // Also include sales from orders that might not be in account_transactions
-    let orderQuery = supabase.from("orders").select("total_amount, created_at").eq("store_id", storeId);
+    let orderQuery = supabase.from("orders").select("total_amount, created_at, payment_type, payment_status").eq("store_id", storeId);
     if (periodType === "day") {
       orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${startDate}T23:59:59`);
     } else {
@@ -79,6 +79,11 @@ const transactionService = {
 
     const combinedData = [...(data || [])];
     (orderData || []).forEach(o => {
+      // TC001 FIX: Don't add credit sales to income until they are paid
+      if (o.payment_type === "credit_sale" && o.payment_status !== "paid") {
+        return;
+      }
+
       combinedData.push({
         amount: o.total_amount,
         trans_type: "income",
@@ -156,7 +161,11 @@ const transactionService = {
 
     (orders || []).forEach(o => {
       const amount = Number(o.total_amount || 0);
-      totalOrderRevenue += amount;
+      
+      // TC001 FIX: Credit sales shouldn't count as revenue until paid
+      if (!(o.payment_type === "credit_sale" && o.payment_status !== "paid")) {
+        totalOrderRevenue += amount;
+      }
 
       // Calculate COGS from order items
       if (o.order_items) {
