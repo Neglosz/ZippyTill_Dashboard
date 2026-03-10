@@ -252,7 +252,7 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
                 }}
                 className="w-full bg-[#F8FAFD] border-none rounded-[18px] px-5 py-4 text-base font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm shadow-indigo-100/20 flex justify-between items-center"
             >
-                <span className={!value ? "text-gray-400" : "text-[#1B2559]"}>
+                <span className={!value ? "text-gray-400 text-sm" : "text-[#1B2559]"}>
                     {value ? formatDateToBE(value) : placeholder}
                 </span>
                 <CalendarIcon size={20} className="text-gray-400" />
