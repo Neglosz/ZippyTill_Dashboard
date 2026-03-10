@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Settings2,
   Edit,
+  Scale,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import PromoProductEditModal from "./PromoProductEditModal";
@@ -174,11 +175,15 @@ const CreatePromotionModal = ({
             .sort();
           const expiryDate = futureBatches[0] || null;
 
+          // Normalize unit names
+          let unit = product.unit_type || "ชิ้น";
+          if (["กก.", "กิโล", "กิโลกรัม"].includes(unit)) unit = "กิโลกรัม";
+
           return {
             id: product.id,
             name: product.name,
             sku: product.sku || product.barcode || "",
-            unitType: product.unit_type || "ชิ้น",
+            unitType: unit,
             price: product.price,
             costPrice: product.cost_price,
             profit: profit,
@@ -191,6 +196,7 @@ const CreatePromotionModal = ({
             lowStockThreshold: product.low_stock_threshold || 5,
             image: product.image_url || null,
             category: product.product_categories?.name || "ทั้งหมด",
+            isWeightable: product.is_weightable || ["กิโลกรัม", "ขีด"].includes(unit),
           };
         });
 
@@ -269,6 +275,7 @@ const CreatePromotionModal = ({
     let list = products;
     if (activeTab === 1) list = expiringProducts;
     if (activeTab === 2) list = overstockedProducts;
+    if (activeTab === 3) list = products.filter(p => p.isWeightable);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -288,6 +295,7 @@ const CreatePromotionModal = ({
             { id: 0, label: "สินค้าทั้งหมด", icon: Package },
             { id: 1, label: "ใกล้หมดอายุ", icon: AlertCircle },
             { id: 2, label: "สต็อกเยอะ", icon: TrendingUp },
+            { id: 3, label: "สินค้าชั่งขาย", icon: Scale },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -606,10 +614,50 @@ const CreatePromotionModal = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">จำนวนขั้นต่ำ ({commonUnit})</label>
-                  <div className="relative">
-                    <input type="number" value={promoData.minSpend} onChange={(e) => setPromoData({ ...promoData, minSpend: e.target.value })} className={`w-full px-5 py-3 pr-16 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${step2Validation.errors.minSpend ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`} placeholder="0" />
-                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs uppercase">{commonUnit}</div>
-                  </div>
+                  {commonUnit === "กิโลกรัม" ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            value={Math.floor(Number(promoData.minSpend || 0))}
+                            onChange={(e) => {
+                              const kg = parseInt(e.target.value) || 0;
+                              const currentKhid = (Number(promoData.minSpend || 0) % 1) * 10;
+                              const total = kg + (currentKhid / 10);
+                              setPromoData(prev => ({ ...prev, minSpend: total }));
+                            }}
+                            className={`w-full px-5 py-3 pr-16 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${step2Validation.errors.minSpend ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`}
+                            placeholder="0"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px] uppercase">กิโลกรัม</div>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="9"
+                            value={Math.round((Number(promoData.minSpend || 0) % 1) * 10)}
+                            onChange={(e) => {
+                              const khid = Math.min(9, Math.max(0, parseInt(e.target.value) || 0));
+                              const currentKg = Math.floor(Number(promoData.minSpend || 0));
+                              const total = currentKg + (khid / 10);
+                              setPromoData(prev => ({ ...prev, minSpend: total }));
+                            }}
+                            className={`w-full px-5 py-3 pr-12 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${step2Validation.errors.minSpend ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`}
+                            placeholder="0"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px] uppercase">ขีด</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input type="number" value={promoData.minSpend} onChange={(e) => setPromoData({ ...promoData, minSpend: e.target.value })} className={`w-full px-5 py-3 pr-16 rounded-xl border-2 focus:outline-none focus:ring-4 text-sm font-semibold transition-all ${step2Validation.errors.minSpend ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`} placeholder="0" />
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs uppercase">{commonUnit}</div>
+                    </div>
+                  )}
                   {step2Validation.errors.minSpend && <p className="text-red-500 text-[10px] font-bold mt-1.5 ml-1 flex items-center gap-1"><AlertCircle size={10} /> {step2Validation.errors.minSpend}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">

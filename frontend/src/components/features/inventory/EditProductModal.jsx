@@ -24,6 +24,7 @@ const EditProductModal = ({
     image: "",
     unit: "ชิ้น",
     productType: "general",
+    lowStockThreshold: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -50,37 +51,33 @@ const EditProductModal = ({
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Categories
       await fetchCategories();
-
-      // 2. Map Product Data
       if (product) {
         let expDate = "";
         try {
           const batches = await productService.getProductBatches(product.id);
           if (batches && batches.length > 0) {
-            // Take the most recent batch expiry date
             expDate = batches[0].expire_date || "";
           }
         } catch (batchErr) {
           console.error("Error fetching batches:", batchErr);
         }
 
+        const isWeighted = ["กิโลกรัม", "กก.", "กรัม", "ขีด", "กิโล"].includes(product.unit_type);
+
         setFormData({
           id: product.barcode || product.id || "",
-          dbId: product.id, // Keep original DB ID for updates
+          dbId: product.id,
           name: product.name || "",
           category: product.category_id || "",
-          qty: product.stock_qty || "",
-          cost: product.cost_price || "",
-          price: product.price || "",
+          qty: product.stock_qty || 0,
+          cost: product.cost_price || 0,
+          price: product.price || 0,
           exp: expDate,
           image: product.image_url || product.image || "",
-          unit: product.unit_type || "ชิ้น",
-          productType: ["กก.", "กรัม", "ขีด", "กิโลกรัม", "กิโล"].includes(product.unit_type)
-            ? "weighted"
-            : "general",
-          lowStockThreshold: product.low_stock_threshold || "",
+          unit: isWeighted ? "กิโลกรัม" : (product.unit_type || "ชิ้น"),
+          productType: isWeighted ? "weighted" : "general",
+          lowStockThreshold: product.low_stock_threshold || 0,
         });
       }
     } catch (err) {
@@ -93,7 +90,6 @@ const EditProductModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when typing
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -121,22 +117,11 @@ const EditProductModal = ({
       alert("กรุณากรอกชื่อหมวดหมู่");
       return;
     }
-
     try {
       setIsLoading(true);
-      const newCategory = await productService.createCategory(
-        newCategoryName.trim(),
-        activeBranchId,
-        formData.productType,
-      );
-
-      // Refresh categories list
+      const newCategory = await productService.createCategory(newCategoryName.trim(), activeBranchId, formData.productType);
       await fetchCategories();
-
-      // Auto-select the newly created category
       setFormData((prev) => ({ ...prev, category: newCategory.id }));
-
-      // Reset and close inline form
       setNewCategoryName("");
       setIsAddingCategory(false);
     } catch (err) {
@@ -152,10 +137,7 @@ const EditProductModal = ({
     setNewCategoryName("");
   };
 
-  // Filter categories based on current product type
-  const filteredCategories = categories.filter(
-    (cat) => !cat.category_type || cat.category_type === formData.productType,
-  );
+  const filteredCategories = categories.filter((cat) => !cat.category_type || cat.category_type === formData.productType);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -166,30 +148,27 @@ const EditProductModal = ({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Simple resizing to avoid huge base64 strings
         const img = new Image();
         img.src = reader.result;
         img.onload = () => {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
-          const MAX_WIDTH = 800; // Limit width
+          const MAX_WIDTH = 800;
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7); // Compress
-
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
           setFormData((prev) => ({ ...prev, image: compressedBase64 }));
         };
       };
       reader.readAsDataURL(file);
     }
-    // Reset input so the same file can be picked again
     e.target.value = "";
   };
 
   const handleDeleteImage = (e) => {
-    e.stopPropagation(); // Don't trigger file input
+    e.stopPropagation();
     if (confirm("คุณต้องการลบรูปภาพใช่หรือไม่?")) {
       setFormData((prev) => ({ ...prev, image: "" }));
     }
@@ -197,457 +176,134 @@ const EditProductModal = ({
 
   return createPortal(
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-      <div className="bg-white rounded-[20px] w-full max-w-[900px] relative shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-[20px] w-full max-w-[900px] relative shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-bold text-[#1B2559]">
-            {product ? "แก้ไขรายละเอียดสินค้า" : "เพิ่มสินค้าใหม่"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
-          >
-            <X size={24} />
-          </button>
+          <h2 className="text-xl font-bold text-[#1B2559]">{product ? "แก้ไขรายละเอียดสินค้า" : "เพิ่มสินค้าใหม่"}</h2>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"><X size={24} /></button>
         </div>
 
-        {/* Product Type Display (Locked for Editing) */}
+        {/* Product Type (Locked) */}
         <div className="px-6 pt-4">
           <div className="bg-[#F8FAFD] p-1 rounded-[16px] flex gap-1 items-center max-w-fit shadow-sm border border-gray-100">
-            {product ? (
-              <div className="flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold bg-white text-primary shadow-sm ring-1 ring-black/5 cursor-default">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                {formData.productType === "weighted"
-                  ? "สินค้าชั่งขาย"
-                  : "สินค้าทั่วไป"}
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      productType: "general",
-                      unit: "ชิ้น",
-                      category: "",
-                    }))
-                  }
-                  className={`flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold transition-all duration-300 ${formData.productType === "general"
-                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
-                    : "text-gray-400 hover:text-gray-600"
-                    }`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${formData.productType === "general"
-                      ? "bg-primary animate-pulse"
-                      : "bg-gray-300"
-                      }`}
-                  />
-                  สินค้าทั่วไป
-                </button>
-                <button
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      productType: "weighted",
-                      unit: "กก.",
-                      category: "",
-                    }))
-                  }
-                  className={`flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold transition-all duration-300 ${formData.productType === "weighted"
-                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
-                    : "text-gray-400 hover:text-gray-600"
-                    }`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${formData.productType === "weighted"
-                      ? "bg-primary animate-pulse"
-                      : "bg-gray-300"
-                      }`}
-                  />
-                  สินค้าชั่งขาย
-                </button>
-              </>
-            )}
+            <div className="flex items-center gap-2 px-5 py-2 rounded-[12px] text-xs font-bold bg-white text-primary shadow-sm ring-1 ring-black/5 cursor-default">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              {formData.productType === "weighted" ? "สินค้าชั่งขาย" : "สินค้าทั่วไป"}
+            </div>
           </div>
         </div>
 
         <div className="p-6 flex flex-col lg:flex-row gap-6">
-          {/* Left Column: Image - Upload Focus (55%) */}
           <div className="w-full lg:w-[55%] flex flex-col justify-start items-center">
-            {/* Premium Image Frame */}
             <div className="w-full aspect-[4/5] relative group">
-              {/* Decorative Blur Background */}
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-              {/* Main Container - View Only */}
-              <div
-                onClick={handleImageClick}
-                className="w-full h-full bg-white rounded-[24px] flex items-center justify-center p-4 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_20px_40px_-10px_rgba(27,37,89,0.12)] cursor-pointer"
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  className="hidden"
-                />
-
-                {/* Subtle Gradient Overlay */}
+              <div onClick={handleImageClick} className="w-full h-full bg-white rounded-[24px] flex items-center justify-center p-4 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden transition-all duration-500 group-hover:shadow-[0_20px_40px_-10px_rgba(27,37,89,0.12)] cursor-pointer">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white/20 opacity-50" />
-
                 {formData.image ? (
                   <>
-                    <img
-                      src={formData.image}
-                      alt={formData.name}
-                      className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[16px]"
-                      onError={(e) => {
-                        e.target.src =
-                          "https://via.placeholder.com/300x400?text=No+Image";
-                      }}
-                    />
-                    {/* Hover Controls */}
+                    <img src={formData.image} alt={formData.name} className="w-full h-full object-contain drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-[16px]" />
                     <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl text-white border border-white/30">
-                          <Upload size={24} strokeWidth={3} />
-                        </div>
-                        <p className="text-white font-black text-lg">เปลี่ยนรูปภาพ</p>
-                      </div>
-                      <button
-                        onClick={handleDeleteImage}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-rose-500/20 active:scale-95"
-                      >
-                        <Trash2 size={18} />
-                        ลบรูปภาพ
-                      </button>
+                      <div className="flex items-center gap-3"><div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl text-white border border-white/30"><Upload size={24} strokeWidth={3} /></div><p className="text-white font-black text-lg">เปลี่ยนรูปภาพ</p></div>
+                      <button onClick={handleDeleteImage} className="flex items-center gap-2 px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold shadow-lg">ลบรูปภาพ</button>
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-3 text-gray-300 group-hover:text-primary transition-colors relative z-10">
-                    <div className="w-16 h-16 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
-                      <Upload size={24} strokeWidth={2.5} />
-                    </div>
-                    <p className="text-sm font-bold text-gray-400 group-hover:text-primary/70">
-                      อัปโหลดรูปภาพ
-                    </p>
+                    <div className="w-16 h-16 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-all"><Upload size={24} strokeWidth={2.5} /></div>
+                    <p className="text-sm font-bold text-gray-400 group-hover:text-primary/70">อัปโหลดรูปภาพ</p>
                   </div>
                 )}
-
-                {/* Shiny Corner Effect */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/80 to-transparent opacity-50 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          {/* Right Column: Form (45%) */}
           <div className="w-full lg:w-[45%] space-y-4">
-            {/* Section: Basic Info */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <div className="w-0.5 h-3.5 bg-primary rounded-full" />
-                <h3 className="text-sm font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3>
-              </div>
-
+              <div className="flex items-center gap-2 px-1"><div className="w-0.5 h-3.5 bg-primary rounded-full" /><h3 className="text-sm font-bold text-[#1B2559]">ข้อมูลทั่วไป</h3></div>
               <div className="grid grid-cols-1 gap-3">
-                {/* Product Name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
-                    <Check size={12} className={errors.name ? "text-rose-500" : "text-primary"} />
-                    ชื่อสินค้า <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.name ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
-                      }`}
-                    placeholder="ระบุชื่อสินค้า"
-                  />
-                  {errors.name && (
-                    <p className="text-[10px] font-bold text-rose-500 px-1">กรุณากรอกชื่อสินค้า</p>
-                  )}
+                  <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2"><Check size={12} className={errors.name ? "text-rose-500" : "text-primary"} />ชื่อสินค้า *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm ${errors.name ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"}`} placeholder="ระบุชื่อสินค้า" />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Product ID */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
-                      <Plus size={12} className={errors.id ? "text-rose-500" : "text-primary"} />
-                      รหัสสินค้า <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="id"
-                      value={formData.id}
-                      onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm shadow-indigo-100/20 ${errors.id ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"
-                        }`}
-                      placeholder="รหัสสินค้า"
-                    />
-                    {errors.id && (
-                      <p className="text-[10px] font-bold text-rose-500 px-1">กรุณากรอกรหัสสินค้า</p>
-                    )}
-                    {formData.id && products.some(p => p.barcode === formData.id && p.id !== product.id && p.name.trim() !== formData.name.trim()) && (
-                      <p className="text-[10px] font-bold text-rose-500 px-1">รหัสสินค้าซ้ำ</p>
-                    )}
-                  </div>
+                  <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2"><Plus size={12} className={errors.id ? "text-rose-500" : "text-primary"} />รหัสสินค้า *</label><input type="text" name="id" value={formData.id} onChange={handleChange} className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 shadow-sm ${errors.id ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"}`} placeholder="รหัสสินค้า" /></div>
+                  <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2"><X size={12} className="text-primary rotate-45" /> หมวดหมู่</label><select name="category" value={isAddingCategory ? "__add_new__" : formData.category} onChange={handleCategoryChange} className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm"><option value="">เลือกหมวดหมู่</option>{filteredCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}<option value="__add_new__" className="text-primary font-black">+ เพิ่มหมวดหมู่ใหม่</option></select></div>
+                </div>
+              </div>
+            </div>
 
-                  {/* Category */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-500 block px-1 flex items-center gap-2">
-                      <X size={12} className="text-primary rotate-45" /> หมวดหมู่
-                    </label>
-                    <div className="relative group">
-                      <select
-                        name="category"
-                        value={isAddingCategory ? "__add_new__" : formData.category}
-                        onChange={handleCategoryChange}
-                        className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm shadow-indigo-100/20"
-                      >
-                        <option value="">เลือกหมวดหมู่</option>
-                        {(filteredCategories || []).map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                        <option
-                          value="__add_new__"
-                          className="text-primary font-black"
-                        >
-                          + เพิ่มหมวดหมู่ใหม่
-                        </option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-primary transition-all">
-                        <Plus size={16} />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-1"><div className="w-0.5 h-3.5 bg-emerald-500 rounded-full" /><h3 className="text-sm font-bold text-[#1B2559]">ราคา</h3></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาทุน</label><div className="relative"><input type="number" step="any" name="cost" value={formData.cost} onChange={handleChange} className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm focus:ring-emerald-500/20" placeholder="0.00" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-black">THB</span></div></div>
+                <div className="space-y-1.5"><label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาขาย</label><div className="relative"><input type="number" step="any" name="price" value={formData.price} onChange={handleChange} className="w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md focus:ring-emerald-500/30" placeholder="0.00" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span></div></div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-orange-400 rounded-full" />
+                  <h3 className="text-sm font-bold text-[#1B2559]">การจัดการสต็อก</h3>
+                </div>
+                {formData.productType === "weighted" && (
+                  <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-widest">
+                    โหมดชั่งขาย
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-[#F8FAFD]/50 rounded-[20px] p-4 border border-gray-100 min-h-[280px] flex flex-col justify-between animate-in fade-in duration-300">
+                <div className="space-y-5 flex-1">
+                  {formData.productType === "weighted" ? (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">จำนวนสต็อกคงเหลือ</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="relative"><input type="number" min="0" value={Math.floor(Number(formData.qty || 0))} onChange={(e) => { const kg = parseInt(e.target.value) || 0; const currentKhid = (Number(formData.qty || 0) % 1) * 10; setFormData(prev => ({ ...prev, qty: kg + (currentKhid / 10) })); }} className="w-full bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-black text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-16 shadow-sm" placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase">กิโลกรัม</span></div>
+                          <div className="relative"><input type="number" min="0" max="9" value={Math.round((Number(formData.qty || 0) % 1) * 10)} onChange={(e) => { const khid = Math.min(9, Math.max(0, parseInt(e.target.value) || 0)); const currentKg = Math.floor(Number(formData.qty || 0)); setFormData(prev => ({ ...prev, qty: currentKg + (khid / 10) })); }} className="w-full bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-black text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12 shadow-sm" placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase">ขีด</span></div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Inline Category Creation Form */}
-                {isAddingCategory && (
-                  <div className="relative z-50 p-4 bg-gradient-to-br from-primary/5 to-orange-50/30 rounded-[18px] border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-200 shadow-lg shadow-primary/5">
-                    <label className="text-xs font-bold text-[#1B2559] block mb-2 px-1">
-                      ชื่อหมวดหมู่ใหม่
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="flex-1 bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-gray-400"
-                        placeholder="พิมพ์ชื่อ..."
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateCategory}
-                        className="p-2.5 bg-primary text-white rounded-[14px] hover:bg-primary/90 transition-all shadow-sm hover:shadow-md active:scale-95"
-                      >
-                        <Check size={18} strokeWidth={3} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCancelAddCategory}
-                        className="p-2.5 bg-gray-200 text-gray-600 rounded-[14px] hover:bg-gray-300 transition-all shadow-sm active:scale-95"
-                      >
-                        <X size={18} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section: Pricing */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <div className="w-0.5 h-3.5 bg-emerald-500 rounded-full" />
-                <h3 className="text-sm font-bold text-[#1B2559]">ราคา</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาทุน</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      name="cost"
-                      value={formData.cost}
-                      onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm shadow-emerald-100/20 ${errors.cost ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/20"
-                        }`}
-                      placeholder="0.00"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-black">THB</span>
-                  </div>
-                  {errors.cost && (
-                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">ราคาขาย</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md shadow-emerald-200/20 ${errors.price ? "ring-2 ring-rose-500/50" : "focus:ring-emerald-500/30"
-                        }`}
-                      placeholder="0.00"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400 text-[10px] font-black">THB</span>
-                  </div>
-                  {errors.price && (
-                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
-                  )}
-                </div>
-              </div>
-              {((Number(formData.cost) > Number(formData.price) && Number(formData.price) > 0) ||
-                (formData.cost !== "" && formData.price !== "" && Number(formData.cost) === 0 && Number(formData.price) === 0)) && (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
-                    <AlertCircle size={14} className="text-amber-600" />
-                    <p className="text-[10px] font-bold text-amber-700">
-                      {Number(formData.cost) === 0 && Number(formData.price) === 0
-                        ? "ราคาทุนและราคาขายเป็น 0 โปรดตรวจสอบความถูกต้อง"
-                        : "ราคาทุนสูงกว่าราคาขาย โปรดตรวจสอบความถูกต้อง"}
-                    </p>
-                  </div>
-                )}
-            </div>
-
-            {/* Section: Inventory */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <div className="w-0.5 h-3.5 bg-orange-400 rounded-full" />
-                <h3 className="text-sm font-bold text-[#1B2559]">สต็อกสินค้า</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1">จำนวนคงเหลือ</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      name="qty"
-                      value={formData.qty}
-                      onChange={handleChange}
-                      className={`w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.qty ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
-                        }`}
-                      placeholder="0"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
-                  </div>
-                  {errors.qty && (
-                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block px-1 whitespace-nowrap overflow-hidden text-ellipsis italic">แจ้งเตือนขั้นต่ำ</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      name="lowStockThreshold"
-                      value={formData.lowStockThreshold}
-                      onChange={handleChange}
-                      className={`w-full bg-orange-50/50 text-orange-600 border border-dashed border-orange-200 rounded-[12px] px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"
-                        }`}
-                      placeholder="0"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span>
-                  </div>
-                  {errors.lowStockThreshold && (
-                    <p className="text-[10px] font-bold text-rose-500 px-1">ห้ามค่าติดลบ</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Expiry Date */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-gray-400 px-1 flex items-center gap-2">
-                    <Calendar size={12} className="text-primary" /> วันหมดอายุ
-                  </label>
-                  <div className="w-[220px] scale-95 origin-right">
-                    <BEDatePicker
-                      value={formData.exp}
-                      onChange={handleChange}
-                      align="right"
-                    />
-                  </div>
-                </div>
-                {formData.exp && new Date(formData.exp).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
-                    <AlertCircle size={14} className="text-amber-600" />
-                    <p className="text-[10px] font-bold text-amber-700">
-                      วันที่เลือกเป็นวันที่ผ่านมาแล้ว โปรดตรวจสอบ
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 flex justify-center">
-              <button
-                onClick={() => {
-                  const newErrors = {};
-                  if (!formData.name.trim()) newErrors.name = true;
-                  if (!formData.id.trim()) newErrors.id = true;
-
-                  // Duplicate barcode check with alert
-                  if (formData.id && products.some(p => p.barcode === formData.id && p.id !== product.id && p.name.trim() !== formData.name.trim())) {
-                    alert("รหัสสินค้าซ้ำ");
-                    return;
-                  }
-
-                  // Negative value validation
-                  if (formData.cost !== "" && Number(formData.cost) < 0) newErrors.cost = true;
-                  if (formData.price !== "" && Number(formData.price) < 0) newErrors.price = true;
-                  if (formData.qty !== "" && Number(formData.qty) < 0) newErrors.qty = true;
-                  if (formData.lowStockThreshold !== "" && Number(formData.lowStockThreshold) < 0) newErrors.lowStockThreshold = true;
-
-                  if (Object.keys(newErrors).length > 0) {
-                    setErrors(newErrors);
-                    return;
-                  }
-                  onSave(formData);
-                }}
-                disabled={isLoading}
-                className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative flex items-center justify-center gap-3">
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-orange-600/70 uppercase tracking-widest px-1 flex items-center gap-2"><AlertCircle size={12} /> แจ้งเตือนเมื่อสต็อกต่ำกว่า</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="relative"><input type="number" min="0" value={Math.floor(Number(formData.lowStockThreshold || 0))} onChange={(e) => { const kg = parseInt(e.target.value) || 0; const currentKhid = (Number(formData.lowStockThreshold || 0) % 1) * 10; setFormData(prev => ({ ...prev, lowStockThreshold: kg + (currentKhid / 10) })); }} className="w-full bg-orange-50/30 border border-dashed border-orange-200 rounded-[14px] px-4 py-2 text-xs font-bold text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-16" placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase">กิโลกรัม</span></div>
+                          <div className="relative"><input type="number" min="0" max="9" value={Math.round((Number(formData.lowStockThreshold || 0) % 1) * 10)} onChange={(e) => { const khid = Math.min(9, Math.max(0, parseInt(e.target.value) || 0)); const currentKg = Math.floor(Number(formData.lowStockThreshold || 0)); setFormData(prev => ({ ...prev, lowStockThreshold: currentKg + (khid / 10) })); }} className="w-full bg-orange-50/30 border border-dashed border-orange-200 rounded-[14px] px-4 py-2 text-xs font-bold text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-12" placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase">ขีด</span></div>
+                        </div>
+                      </div>
+                    </>
                   ) : (
-                    <Check size={20} strokeWidth={3} />
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">จำนวนสต็อกคงเหลือ</label>
+                        <div className="relative"><input type="number" step="any" min="0" name="qty" value={formData.qty} onChange={handleChange} className={`w-full bg-white border border-gray-200 rounded-[14px] px-4 py-2.5 text-sm font-black text-[#1B2559] focus:outline-none focus:ring-2 transition-all text-right pr-16 shadow-sm ${errors.qty ? "ring-2 ring-rose-500/50" : "focus:ring-primary/20"}`} placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span></div>
+                      </div>
+                      <div className="space-y-2 pt-1">
+                        <label className="text-[10px] font-black text-orange-600/70 uppercase tracking-widest px-1 flex items-center gap-2"><AlertCircle size={12} /> แจ้งเตือนเมื่อสต็อกต่ำกว่า</label>
+                        <div className="relative"><input type="number" step="any" min="0" name="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className={`w-full bg-orange-50/30 border border-dashed border-orange-200 rounded-[14px] px-4 py-2 text-xs font-bold text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-right pr-16 shadow-sm ${errors.lowStockThreshold ? "ring-2 ring-rose-500/50" : "focus:ring-orange-500/20"}`} placeholder="0" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-300 text-[9px] font-black uppercase tracking-wider">{formData.unit}</span></div>
+                      </div>
+                    </>
                   )}
-                  {isLoading
-                    ? "กำลังบันทึก..."
-                    : product
-                      ? "บันทึกการแก้ไข"
-                      : "เพิ่มสินค้าใหม่เข้าสต็อก"}
-                </span>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Calendar size={12} className="text-primary" /> วันหมดอายุสินค้า</label>
+                  <div className="w-[180px] scale-90 origin-right"><BEDatePicker value={formData.exp} onChange={handleChange} align="right" /></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-center">
+              <button onClick={() => { const newErrors = {}; if (!formData.name.trim()) newErrors.name = true; if (!formData.id.trim()) newErrors.id = true; if (formData.id && products.some(p => p.barcode === formData.id && p.id !== product?.id && p.name.trim() !== formData.name.trim())) { alert("รหัสสินค้าซ้ำ"); return; } if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; } onSave(formData); }} disabled={isLoading} className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center justify-center gap-3">{isLoading ? <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} strokeWidth={3} />}{isLoading ? "กำลังบันทึก..." : product ? "บันทึกการแก้ไข" : "เพิ่มสินค้าใหม่เข้าสต็อก"}</span>
               </button>
             </div>
           </div>
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 };
 
