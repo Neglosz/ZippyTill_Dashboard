@@ -464,20 +464,20 @@ const InventoryPage = () => {
 
         {/* Stats Cards - Only for Products Tab */}
         {activeTab === "products" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {/* Card 1: Total Products */}
-            <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
+            <div className="bg-white rounded-[32px] p-6 md:p-7 flex items-center gap-4 md:gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-              <div className="bg-blue-50 p-4 rounded-[22px] text-blue-500 shadow-sm group-hover:rotate-6 transition-transform border border-blue-100 shrink-0">
-                <Package size={28} strokeWidth={2.5} />
+              <div className="bg-blue-50 p-3 md:p-4 rounded-[22px] text-blue-500 shadow-sm group-hover:rotate-6 transition-transform border border-blue-100 shrink-0">
+                <Package size={24} md:size={28} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
                   สินค้าทั้งหมด
                 </p>
-                <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-gray-900 leading-none">
                   {totalCount}{" "}
-                  <span className="text-lg font-black text-inactive">
+                  <span className="text-base md:text-lg font-black text-inactive">
                     รายการ
                   </span>
                 </h3>
@@ -485,18 +485,18 @@ const InventoryPage = () => {
             </div>
 
             {/* Card 2: Low Stock */}
-            <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
+            <div className="bg-white rounded-[32px] p-6 md:p-7 flex items-center gap-4 md:gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-              <div className="bg-amber-50 p-4 rounded-[22px] text-amber-500 shadow-sm group-hover:rotate-6 transition-transform border border-amber-100 shrink-0">
-                <Truck size={28} strokeWidth={2.5} />
+              <div className="bg-amber-50 p-3 md:p-4 rounded-[22px] text-amber-500 shadow-sm group-hover:rotate-6 transition-transform border border-amber-100 shrink-0">
+                <Truck size={24} md:size={28} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
                   สินค้าใกล้หมด
                 </p>
-                <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
+                <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-gray-900 leading-none text-amber-600">
                   {stats.lowStock}{" "}
-                  <span className="text-lg font-black text-inactive">
+                  <span className="text-base md:text-lg font-black text-inactive">
                     รายการ
                   </span>
                 </h3>
@@ -504,18 +504,18 @@ const InventoryPage = () => {
             </div>
 
             {/* Card 3: Expired Products */}
-            <div className="bg-white rounded-[32px] p-7 flex items-center gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500">
+            <div className="bg-white rounded-[32px] p-6 md:p-7 flex items-center gap-4 md:gap-6 shadow-premium border border-gray-100 relative overflow-hidden group hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 md:col-span-2 xl:col-span-1">
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
-              <div className="bg-rose-50 p-4 rounded-[22px] text-rose-500 shadow-sm group-hover:rotate-6 transition-transform border border-rose-100 shrink-0">
-                <AlertCircle size={28} strokeWidth={2.5} />
+              <div className="bg-rose-50 p-3 md:p-4 rounded-[22px] text-rose-500 shadow-sm group-hover:rotate-6 transition-transform border border-rose-100 shrink-0">
+                <AlertCircle size={24} md:size={28} strokeWidth={2.5} />
               </div>
               <div>
                 <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-1">
                   สินค้าหมดอายุ
                 </p>
-                <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none text-rose-600">
+                <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-gray-900 leading-none text-rose-600">
                   {stats.expired}{" "}
-                  <span className="text-lg font-black text-inactive">
+                  <span className="text-base md:text-lg font-black text-inactive">
                     รายการ
                   </span>
                 </h3>
@@ -554,10 +554,10 @@ const InventoryPage = () => {
         ) : (
           <>
             {/* Filters Section */}
-            <div className="bg-white rounded-[24px] p-2 sm:p-4 shadow-premium flex flex-col lg:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10 w-full">
+            <div className="bg-white rounded-[24px] p-2 sm:p-4 shadow-premium flex flex-col xl:flex-row gap-4 justify-between items-center border border-gray-100 relative z-10 w-full">
               {/* Search & Filter */}
-              <div className="flex items-center gap-3 w-full lg:w-auto">
-                <div className="relative w-full lg:w-[320px]">
+              <div className="flex items-center gap-3 w-full xl:w-auto">
+                <div className="relative flex-1 xl:w-[320px]">
                   <Search
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-inactive"
                     size={18}
@@ -636,7 +636,7 @@ const InventoryPage = () => {
             </div>
 
             {/* Product Grid - Horizontal Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {isLoading ? (
                 <div className="col-span-full bg-white rounded-[32px] p-20 text-center shadow-premium border border-gray-100">
                   <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -697,12 +697,12 @@ const InventoryPage = () => {
                   return (
                     <div
                       key={product.id}
-                      className="group bg-white rounded-[32px] p-6 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-6 relative overflow-hidden"
+                      className="group bg-white rounded-[32px] p-5 lg:p-6 shadow-premium border border-gray-100 hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-4 lg:gap-6 relative overflow-hidden"
                     >
                       {/* Top Section: Image and Info */}
-                      <div className="flex flex-col sm:flex-row gap-6">
+                      <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 w-full">
                         {/* Left: Image with Status Indicator */}
-                        <div className="w-full sm:w-40 h-56 sm:h-40 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md bg-gray-50">
+                        <div className="w-full md:w-40 xl:w-32 h-48 md:h-40 xl:h-32 rounded-[24px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500 overflow-hidden relative shadow-md bg-gray-50 aspect-square">
                           {product.image_url ? (
                             <img
                               src={product.image_url}
@@ -725,22 +725,22 @@ const InventoryPage = () => {
                           {/* Status Badges - Stacked Vertically on Left */}
                           <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 items-start">
                             {isOutOfStock && (
-                              <div className="bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                              <div className="bg-gray-800 text-white text-[9px] lg:text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                 🚫 หมดสต็อก
                               </div>
                             )}
                             {!isOutOfStock && isLowStock && (
-                              <div className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                              <div className="bg-amber-500 text-white text-[9px] lg:text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
                                 ⚠️ ใกล้หมด
                               </div>
                             )}
                             {isExpired && (
-                              <div className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                              <div className="bg-rose-600 text-white text-[9px] lg:text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                 ❌ หมดอายุ
                               </div>
                             )}
                             {!isExpired && isExpiringSoon && (
-                              <div className="bg-orange-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                              <div className="bg-orange-400 text-white text-[9px] lg:text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
                                 🕒 ใกล้หมดอายุ
                               </div>
                             )}
@@ -749,30 +749,30 @@ const InventoryPage = () => {
                         </div>
 
                         {/* Right: Details */}
-                        <div className="flex-1 flex flex-col min-w-0 pr-1">
+                        <div className="flex-1 flex flex-col min-w-0 pr-1 w-full relative">
                           {/* Header Area */}
-                          <div className="flex justify-between items-start gap-3">
+                          <div className="flex justify-between items-start gap-2">
                             <div className="min-w-0 flex-1">
-                              <h4 className="text-[22px] font-black text-[#1B2559] group-hover:text-primary transition-colors truncate leading-snug pt-1.5 mb-1.5">
+                              <h4 className="text-[18px] lg:text-[22px] font-black text-[#1B2559] group-hover:text-primary transition-colors truncate leading-snug pt-1 mb-1">
                                 {product.name}
                               </h4>
-                              <span className="inline-flex items-center text-[10px] font-black text-white bg-[#1B2559] px-2.5 py-1 rounded-[10px] shadow-sm tracking-wider">
+                              <span className="inline-flex items-center text-[10px] font-black text-white bg-[#1B2559] px-2 py-0.5 rounded-[10px] shadow-sm tracking-wider">
                                 #{(product.barcode || product.id || "").toString().slice(0, 13)}
                               </span>
                             </div>
-                            <div className="flex gap-1.5 pt-1">
+                            <div className="flex gap-1 shrink-0 pt-1">
                               <button
                                 onClick={() => {
                                   setEditingProduct(product);
                                   setIsEditModalOpen(true);
                                 }}
-                                className="p-2.5 bg-[#F4F7FE] border border-transparent hover:border-primary/20 hover:bg-white rounded-[16px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
+                                className="p-2 bg-[#F4F7FE] border border-transparent hover:border-primary/20 hover:bg-white rounded-[16px] text-[#1B2559]/40 hover:text-primary transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
                               >
                                 <Edit size={20} strokeWidth={2.5} />
                               </button>
                               <button
                                 onClick={() => setDeleteConfirm(product)}
-                                className="p-2.5 bg-[#F4F7FE] border border-transparent hover:border-rose-200 hover:bg-white rounded-[16px] text-[#1B2559]/40 hover:text-rose-500 transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
+                                className="p-2 bg-[#F4F7FE] border border-transparent hover:border-rose-200 hover:bg-white rounded-[16px] text-[#1B2559]/40 hover:text-rose-500 transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
                               >
                                 <Trash2 size={20} strokeWidth={2.5} />
                               </button>
@@ -780,29 +780,29 @@ const InventoryPage = () => {
                           </div>
 
                           {/* Middle Area: Meta Chips */}
-                          <div className="flex flex-wrap gap-2 mt-4">
-                            <div className="flex items-center gap-2 bg-[#F5F7FF] px-3 py-2 rounded-[14px] border border-indigo-50/20 shadow-sm transition-all hover:shadow-md">
+                          <div className="flex flex-wrap gap-1.5 mt-2 md:mt-3">
+                            <div className="flex items-center gap-1.5 bg-[#F5F7FF] px-2.5 py-1.5 rounded-[12px] border border-indigo-50/20 shadow-sm transition-all hover:shadow-md">
                               <span className="text-primary">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
                                   <path d="M7 7h.01"></path>
                                 </svg>
                               </span>
-                              <span className="text-[13px] font-black text-[#1B2559]">
+                              <span className="text-[12px] lg:text-[13px] font-black text-[#1B2559]">
                                 {product.product_categories?.name || "ทั่วไป"}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 bg-[#FFF5F5] px-3 py-2 rounded-[14px] border border-rose-50/20 shadow-sm transition-all hover:shadow-md">
+                            <div className="flex items-center gap-1.5 bg-[#FFF5F5] px-2.5 py-1.5 rounded-[12px] border border-rose-50/20 shadow-sm transition-all hover:shadow-md">
                               <span className={isExpired ? "text-rose-500" : isExpiringSoon ? "text-orange-500" : "text-primary"}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                   <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
                                   <line x1="16" x2="16" y1="2" y2="6"></line>
                                   <line x1="8" x2="8" y1="2" y2="6"></line>
                                   <line x1="3" x2="21" y1="10" y2="10"></line>
                                 </svg>
                               </span>
-                              <span className={`text-[13px] font-black ${isExpired ? "text-rose-500" : isExpiringSoon ? "text-orange-500" : "text-[#1B2559]"}`}>
-                                หมดอายุ: {expDate}
+                              <span className={`text-[12px] lg:text-[13px] font-black ${isExpired ? "text-rose-500" : isExpiringSoon ? "text-orange-500" : "text-[#1B2559]"}`}>
+                                EXP: {expDate}
                               </span>
                             </div>
                           </div>
@@ -810,15 +810,15 @@ const InventoryPage = () => {
                       </div>
 
                       {/* Bottom Area: Stock & Pricing Row */}
-                      <div className="mt-auto pt-5 border-t border-gray-100/60 flex items-center justify-between gap-4">
+                      <div className="mt-auto pt-4 md:pt-5 border-t border-gray-100/60 flex flex-wrap xl:flex-nowrap items-center justify-between gap-3">
                         {/* Left: Stock */}
-                        <div className="flex flex-col gap-0.5 min-w-[80px]">
+                        <div className="flex flex-col gap-0.5 sm:min-w-fit">
                           <p className="text-[10px] font-black text-[#A3AED0] uppercase tracking-wider mb-0.5">
                             {product.is_weightable ? "คงเหลือ (KG)" : "คงเหลือ"}
                           </p>
-                          <div className="flex items-center gap-2">
-                            <div className={`p-1.5 rounded-lg ${product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold ? "bg-rose-50 text-rose-500" : "bg-primary/5 text-primary"}`}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <div className="flex items-center gap-1.5">
+                            <div className={`p-1 lg:p-1.5 rounded-lg ${product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold ? "bg-rose-50 text-rose-500" : "bg-primary/5 text-primary"}`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="m21 8-9-5-9 5v8l9 5 9-5Z"></path>
                                 <path d="m3 8 9 5 9-5"></path>
                                 <path d="M12 21v-8"></path>
@@ -830,16 +830,16 @@ const InventoryPage = () => {
                           </div>
                         </div>
 
-                        {/* Right: Pricing Box */}
-                        <div className="bg-[#F4F7FE]/70 backdrop-blur-sm rounded-[24px] px-6 py-3.5 flex items-center gap-8 group-hover:bg-primary/5 transition-all duration-500 min-w-[190px] border border-transparent group-hover:border-primary/10">
+                        {/* Right: Pricing Box - Flexible for Tablet */}
+                        <div className="bg-[#F4F7FE]/70 backdrop-blur-sm rounded-[24px] px-4 md:px-5 lg:px-6 py-3.5 flex flex-1 items-center justify-center gap-4 sm:gap-6 md:gap-8 group-hover:bg-primary/5 transition-all duration-500 min-w-max border border-transparent group-hover:border-primary/10">
                           <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black text-[#A3AED0] uppercase tracking-wider mb-1">ราคาทุน</span>
+                            <span className="text-[9px] font-black text-[#A3AED0] uppercase tracking-wider mb-0.5">ทุน</span>
                             <span className="text-base font-bold text-[#1B2559]/40">฿{product.cost_price ?? 0}</span>
                           </div>
                           <div className="h-8 w-[1px] bg-[#1B2559]/10" />
                           <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-black text-[#A3AED0] uppercase tracking-widest mb-1 ml-auto">ราคาขาย</span>
-                            <span className="text-[26px] font-black text-primary leading-none">฿{product.price ?? 0}</span>
+                            <span className="text-[9px] font-black text-[#A3AED0] uppercase tracking-widest mb-0.5 ml-auto">ขาย</span>
+                            <span className="text-[20px] sm:text-[24px] lg:text-[26px] font-black text-primary leading-tight">฿{product.price ?? 0}</span>
                           </div>
                         </div>
                       </div>

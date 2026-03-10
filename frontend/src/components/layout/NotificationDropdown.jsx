@@ -164,9 +164,9 @@ const NotificationDropdown = ({
           {notifications.length > 0 && (
             <button
               onClick={() => setIsConfirmOpen(true)}
-              className="text-[10px] font-black text-inactive hover:text-red-500 transition-colors uppercase tracking-widest"
+              className="text-[10px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest"
             >
-              ล้างทั้งหมด
+              อ่านทั้งหมด
             </button>
           )}
         </div>
@@ -245,11 +245,11 @@ const NotificationDropdown = ({
           onClearAll();
           setIsConfirmOpen(false);
         }}
-        title="ล้างแจ้งเตือนทั้งหมด?"
-        message="คุณแน่ใจหรือไม่ว่าต้องการล้างการแจ้งเตือนทั้งหมด? การดำเนินการนี้ไม่สามารถย้อนกลับได้"
-        confirmText="ล้างทั้งหมด"
+        title="ยืนยันการอ่านทั้งหมด?"
+        message="คุณต้องการทำเครื่องหมายว่าอ่านแล้วสำหรับการแจ้งเตือนทั้งหมดหรือไม่?"
+        confirmText="ตกลง"
         cancelText="ยกเลิก"
-        isDestructive={true}
+        isDestructive={false}
       />
     </>
   );

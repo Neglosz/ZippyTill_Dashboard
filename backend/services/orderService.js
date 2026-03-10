@@ -1,4 +1,5 @@
 const { supabase } = require("../config/supabase");
+const notificationService = require("./notificationService");
 
 const orderService = {
   async createOrder(orderData, items, branchId) {
@@ -82,34 +83,53 @@ const orderService = {
       .from("order_items")
       .insert(orderItems);
     if (itemsError) throw itemsError;
-    const stockUpdates = items.map((item) => {
-      return supabase
-        .rpc("decrement_stock", {
+
+    // Process Stock Updates and Check for Notifications
+    const stockUpdates = items.map(async (item) => {
+      try {
+        const { error: rpcError } = await supabase.rpc("decrement_stock", {
           p_id: item.productId,
           p_qty: item.qty,
           p_store_id: branchId,
-        })
-        .then(({ error }) => {
-          if (error) {
-            return supabase
-              .from("products")
-              .select("stock_qty")
-              .eq("id", item.productId)
-              .eq("store_id", branchId)
-              .single()
-              .then(({ data }) => {
-                if (data)
-                  return supabase
-                    .from("products")
-                    .update({
-                      stock_qty: Math.max(0, data.stock_qty - item.qty),
-                    })
-                    .eq("id", item.productId)
-                    .eq("store_id", branchId);
-              });
-          }
         });
+
+        // Fallback to manual decrement if RPC fails
+        if (rpcError) {
+          const { data: pData } = await supabase
+            .from("products")
+            .select("stock_qty")
+            .eq("id", item.productId)
+            .eq("store_id", branchId)
+            .single();
+          
+          if (pData) {
+            await supabase
+              .from("products")
+              .update({ stock_qty: Math.max(0, pData.stock_qty - item.qty) })
+              .eq("id", item.productId)
+              .eq("store_id", branchId);
+          }
+        }
+
+        // Check for Low Stock / Out of Stock after decrement
+        const { data: product } = await supabase
+          .from("products")
+          .select("name, stock_qty, low_stock_threshold, unit_type")
+          .eq("id", item.productId)
+          .single();
+
+        if (product) {
+          if (product.stock_qty <= 0) {
+            await notificationService.createNotification(branchId, 'out_of_stock', `สินค้า "${product.name}" หมดสต็อกแล้ว`, { productId: item.productId });
+          } else if (product.low_stock_threshold && product.stock_qty <= product.low_stock_threshold) {
+            await notificationService.createNotification(branchId, 'low_stock', `สินค้า "${product.name}" เหลือเพียง ${product.stock_qty} ${product.unit_type || 'ชิ้น'}`, { productId: item.productId, currentQty: product.stock_qty });
+          }
+        }
+      } catch (err) {
+        console.error("[Stock Update] Failed for product:", item.productId, err.message);
+      }
     });
+
     await Promise.all(stockUpdates);
     return order;
   },

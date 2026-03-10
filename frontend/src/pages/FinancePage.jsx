@@ -193,10 +193,11 @@ const FinancePage = () => {
 
   const prefetchAdjacentData = useCallback(async () => {
     try {
-      // Calculate Previous and Next Dates
+      const adjacentDates = [];
       const prevDate = new Date(selectedDate);
       const nextDate = new Date(selectedDate);
 
+      // 1. Calculate Adjacent Dates based on current view
       if (viewMode === "day") {
         prevDate.setDate(selectedDate.getDate() - 1);
         nextDate.setDate(selectedDate.getDate() + 1);
@@ -207,31 +208,29 @@ const FinancePage = () => {
         prevDate.setFullYear(selectedDate.getFullYear() - 1);
         nextDate.setFullYear(selectedDate.getFullYear() + 1);
       }
+      adjacentDates.push({ mode: viewMode, date: prevDate });
+      adjacentDates.push({ mode: viewMode, date: nextDate });
 
-      const prevKey = getCacheKey(viewMode, prevDate);
-      const nextKey = getCacheKey(viewMode, nextDate);
-
-      // Fetch Previous if not cached
-      if (!dataCache.current[prevKey]) {
-        transactionService
-          .getAggregatedTransactions(activeBranchId, viewMode, prevDate)
-          .then((data) => {
-            dataCache.current[prevKey] = data;
-          })
-          .catch(() => { }); // Ignore prefetch errors
+      // 2. Cross-mode prefetching (if on day, prefetch month)
+      if (viewMode === "day") {
+        adjacentDates.push({ mode: "month", date: selectedDate });
+      } else if (viewMode === "month") {
+        adjacentDates.push({ mode: "year", date: selectedDate });
       }
 
-      if (!dataCache.current[nextKey]) {
-        transactionService
-          .getAggregatedTransactions(activeBranchId, viewMode, nextDate)
-          .then((data) => {
-            dataCache.current[nextKey] = data;
-          })
-          .catch(() => { }); // Ignore prefetch errors
-      }
-    } catch {
-      // Silently fail prefetch
-    }
+      // Execute Prefetching
+      adjacentDates.forEach(({ mode, date }) => {
+        const key = getCacheKey(mode, date);
+        if (!dataCache.current[key]) {
+          transactionService
+            .getAggregatedTransactions(activeBranchId, mode, date)
+            .then((data) => {
+              dataCache.current[key] = data;
+            })
+            .catch(() => {});
+        }
+      });
+    } catch (err) {}
   }, [selectedDate, viewMode, activeBranchId, getCacheKey]);
 
   const fetchChartData = useCallback(async () => {
@@ -804,12 +803,12 @@ const FinancePage = () => {
           icon={DollarSign}
         />
 
-        {/* 4 Cards - High Dimension */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 4 Cards - Responsive Grid (1 col on tablet, 4 on desktop) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
           {financeTopics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white border border-gray-100 rounded-[28px] p-6 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group min-h-[140px] flex items-center"
+              className="bg-white border border-gray-100 rounded-[28px] p-5 md:p-6 shadow-premium hover:shadow-float hover:-translate-y-1.5 transition-all duration-500 relative overflow-hidden group min-h-[130px] md:min-h-[140px] flex items-center"
             >
               {/* Edge lighting */}
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-white opacity-90 z-20"></div>
@@ -842,8 +841,8 @@ const FinancePage = () => {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-                      <span className="text-2xl mr-1">฿</span>
+                    <h3 className="text-2xl md:text-3xl font-black tracking-tighter text-gray-900 leading-none">
+                      <span className="text-xl md:text-2xl mr-1">฿</span>
                       {topic.amount}
                     </h3>
                     <p
@@ -856,10 +855,10 @@ const FinancePage = () => {
                 </div>
 
                 <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-premium group-hover:rotate-6 transition-all duration-500 ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
+                  className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center border shadow-premium group-hover:rotate-6 transition-all duration-500 ${topic.color} ${topic.iconBg.replace("bg-", "border-")}/20`}
                 >
                   <topic.icon
-                    size={28}
+                    size={24}
                     strokeWidth={2.5}
                     className={topic.iconBg.replace("bg-", "text-")}
                   />
@@ -869,9 +868,9 @@ const FinancePage = () => {
           ))}
         </div>
 
-        {/* Chart Section */}
-        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative">
-          <div className="flex justify-between items-start mb-8 relative z-20">
+        {/* Chart Section - Responsive Padding */}
+        <div className="bg-white rounded-[32px] p-5 md:p-8 border border-gray-100 shadow-premium relative">
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8 relative z-20">
             <div>
               <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
                 กระแสเงิน
@@ -906,14 +905,14 @@ const FinancePage = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
               {/* Date Controls */}
-              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 w-full sm:w-auto">
                 {["day", "month", "year"].map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
+                    className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
                       ? "bg-white text-primary shadow-sm"
                       : "text-inactive hover:text-gray-600"
                       }`}
@@ -924,7 +923,7 @@ const FinancePage = () => {
               </div>
 
               {/* Date Navigation */}
-              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100 w-full sm:w-auto">
                 <button
                   onClick={handlePrevDate}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-colors shadow-sm"
@@ -932,7 +931,7 @@ const FinancePage = () => {
                   <ChevronLeft size={16} />
                 </button>
 
-                <div className="w-[160px]">
+                <div className="flex-1 sm:w-[160px]">
                   <CustomDatePicker
                     key={formatDateForPicker(selectedDate)}
                     value={formatDateForPicker(selectedDate)}
@@ -950,11 +949,11 @@ const FinancePage = () => {
             </div>
           </div>
 
-          <div className="h-[300px] w-full relative z-10">
+          <div className="h-[250px] md:h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%" key={`${viewMode}-${selectedDate.getTime()}`}>
               <BarChart
                 data={dailyGraphData || []}
-                margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+                margin={{ top: 5, right: 10, bottom: 5, left: -20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -965,7 +964,7 @@ const FinancePage = () => {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#94A3B8", fontSize: 12 }}
+                  tick={{ fill: "#94A3B8", fontSize: 10 }}
                   dy={10}
                 />
                 <YAxis
@@ -976,21 +975,21 @@ const FinancePage = () => {
                     `฿${value >= 1000 ? Math.round(value / 1000) + "K" : value}`
                   }
                   allowDecimals={false}
-                  dx={-10}
+                  dx={-5}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={false} />
                 <Legend 
                   verticalAlign="top" 
                   align="right" 
-                  wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }}
+                  wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 'bold' }}
                 />
                 <Bar
                   dataKey="income"
                   fill="url(#incomeGradient)"
                   name="รายรับ"
-                  radius={[8, 8, 2, 2]}
+                  radius={[6, 6, 2, 2]}
                   barSize={
-                    viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
+                    viewMode === "day" ? 20 : viewMode === "month" ? 10 : 40
                   }
                   animationDuration={500}
                   activeBar={{ fill: "url(#incomeGradientActive)" }}
@@ -999,9 +998,9 @@ const FinancePage = () => {
                   dataKey="expense"
                   fill="url(#expenseGradient)"
                   name="รายจ่าย"
-                  radius={[8, 8, 2, 2]}
+                  radius={[6, 6, 2, 2]}
                   barSize={
-                    viewMode === "day" ? 28 : viewMode === "month" ? 14 : 50
+                    viewMode === "day" ? 20 : viewMode === "month" ? 10 : 40
                   }
                   animationDuration={500}
                   activeBar={{ fill: "url(#expenseGradientActive)" }}
@@ -1011,59 +1010,91 @@ const FinancePage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Payment Channels Section */}
-          <div className="lg:col-span-4 bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+          <div className="xl:col-span-4 bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-premium relative overflow-hidden">
             <h2 className="text-xl font-black text-gray-900 tracking-tight mb-8">
               ช่องทางการชำระเงิน
             </h2>
             <div className="flex flex-col gap-6">
               {paymentChannelDisplay.length > 0 ? (
-                paymentChannelDisplay.map((channel) => (
-                  <div key={channel.id} className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${channel.iconBg}`}
-                    >
-                      <channel.icon size={22} strokeWidth={2.5} />
-                    </div>
+                <>
+                  <div className="space-y-5">
+                    {paymentChannelDisplay.map((channel) => (
+                      <div key={channel.id} className="flex items-center gap-4 group/item">
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/item:scale-110 ${channel.iconBg}`}
+                        >
+                          <channel.icon size={22} strokeWidth={2.5} />
+                        </div>
 
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-gray-900 font-bold tracking-tight">
-                          {channel.name}
-                        </span>
-                        <div className="text-right">
-                          <p className="text-gray-900 font-black tracking-tighter">
-                            <span className="text-sm mr-0.5">฿</span>
-                            {channel.amount}
-                          </p>
+                        <div className="flex-1">
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-900 font-bold tracking-tight text-sm">
+                              {channel.name}
+                            </span>
+                            <div className="text-right">
+                              <p className="text-gray-900 font-black tracking-tighter tabular-nums">
+                                <span className="text-xs mr-0.5 opacity-50">฿</span>
+                                {channel.amount}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden border border-gray-100/50">
+                            <div
+                              className={`h-full rounded-full transition-all duration-1000 ${channel.color.includes('primary') ? 'bg-gradient-to-r from-primary to-orange-400' : channel.color}`}
+                              style={{ width: `${channel.percent}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${channel.color}`}
-                          style={{ width: `${channel.percent}%` }}
-                        ></div>
+                    ))}
+                  </div>
+
+                  {/* Enhanced Total Row */}
+                  <div className="mt-4 p-5 rounded-[24px] bg-gradient-to-br from-orange-50 to-white border border-orange-100/50 relative overflow-hidden group/total">
+                    <div className="absolute -right-4 -bottom-4 opacity-[0.05] text-primary transform -rotate-12 group-hover/total:rotate-0 transition-transform duration-700">
+                      <TrendingUp size={80} />
+                    </div>
+                    
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-orange-glow animate-pulse-slow">
+                          <TrendingUp size={20} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-gray-900 font-black tracking-tight text-sm">ยอดรวมทุกช่องทาง</span>
+                          <span className="text-[10px] text-primary/70 font-bold uppercase tracking-widest">Total Revenue</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black tracking-tighter text-primary tabular-nums">
+                          <span className="text-base mr-1">฿</span>
+                          {(metrics?.paymentChannels || []).reduce((sum, pc) => sum + (pc.amount || 0), 0).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>
-                ))
+                </>
               ) : (
-                <div className="text-center text-inactive py-8">
-                  ไม่มีข้อมูลการชำระเงิน
+                <div className="text-center text-inactive py-12 flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                    <Wallet size={32} />
+                  </div>
+                  <p className="font-bold text-sm">ไม่มีข้อมูลการชำระเงิน</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Recent Transactions Section */}
-          <div className="lg:col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 shadow-premium relative overflow-hidden">
+          <div className="xl:col-span-8 bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-premium relative overflow-hidden">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative z-10">
               <h2 className="text-xl font-black text-gray-900 tracking-tight">
                 รายการล่าสุด
               </h2>
 
-              <div className="flex flex-1 w-full sm:w-auto gap-3 items-center justify-end">
+              <div className="flex flex-col sm:flex-row flex-1 w-full sm:w-auto gap-3 items-center justify-end">
                 <div className="relative w-full max-w-[300px] group/search">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-inactive group-focus-within/search:text-primary transition-colors">
                     <Search size={18} strokeWidth={2.5} />
@@ -1079,15 +1110,15 @@ const FinancePage = () => {
 
                 <button
                   onClick={() => setIsExportModalOpen(true)}
-                  className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20 shrink-0"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20 shrink-0"
                 >
                   <LogOut size={16} strokeWidth={2.5} />
                   Export
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-hide">
-              <table className="w-full relative">
+            <div className="overflow-x-auto scrollbar-hide">
+              <table className="w-full relative min-w-[600px]">
                 <thead className="sticky top-0 bg-white z-10 shadow-sm">
                   <tr className="border-b border-gray-50">
                     <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">

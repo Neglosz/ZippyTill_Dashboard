@@ -365,64 +365,63 @@ const saleService = {
     if (!branchId) throw new Error("Branch ID is required");
 
     const now = new Date();
-    const fourteenDaysAgo = new Date(now);
-    fourteenDaysAgo.setDate(now.getDate() - 14);
+    // Adjust to Thai Time
+    const thaiNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    
+    // Find current Monday
+    const currentDay = thaiNow.getUTCDay(); // 0 = Sun, 1 = Mon...
+    const diff = currentDay === 0 ? -6 : 1 - currentDay; // Distance to Monday
+    
+    const monday = new Date(thaiNow);
+    monday.setUTCDate(thaiNow.getUTCDate() + diff);
+    monday.setUTCHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    sunday.setUTCHours(23, 59, 59, 999);
+
+    // Fetch orders for this current week (Mon-Sun)
+    // Convert Thai Mon-Sun range back to UTC for DB query
+    const startUTC = new Date(monday.getTime() - (7 * 60 * 60 * 1000)).toISOString();
+    const endUTC = new Date(sunday.getTime() - (7 * 60 * 60 * 1000)).toISOString();
 
     const { data: orders, error } = await supabase
       .from("orders")
       .select("total_amount, created_at")
       .eq("store_id", branchId)
       .neq("payment_status", "cancelled")
-      .gte("created_at", fourteenDaysAgo.toISOString());
+      .gte("created_at", startUTC)
+      .lte("created_at", endUTC);
 
     if (error) throw error;
 
-    const dailyData = {};
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(now);
-      date.setDate(now.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
-      dailyData[dateStr] = 0;
-    }
+    const thaiDays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสฯ", "ศุกร์", "เสาร์"];
+    const orderedLabels = ["จันทร์", "อังคาร", "พุธ", "พฤหัสฯ", "ศุกร์", "เสาร์", "อาทิตย์"];
+    
+    const dailyMap = {};
+    orderedLabels.forEach(label => dailyMap[label] = 0);
 
     (orders || []).forEach((o) => {
-      const dateStr = new Date(o.created_at).toISOString().split("T")[0];
-      if (dailyData[dateStr] !== undefined) {
-        dailyData[dateStr] += o.total_amount || 0;
+      const date = new Date(o.created_at);
+      const tDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+      const label = thaiDays[tDate.getUTCDay()];
+      if (dailyMap[label] !== undefined) {
+        dailyMap[label] += Number(o.total_amount || 0);
       }
     });
 
-    const days = Object.keys(dailyData).sort().reverse();
-    const currentWeekSales = [];
-    let currentWeekTotal = 0;
-    let previousWeekTotal = 0;
+    const chartData = orderedLabels.map(label => ({
+      day: label,
+      value: dailyMap[label]
+    }));
 
-    for (let i = 0; i < 7; i++) {
-      const dateStr = days[i];
-      const sales = dailyData[dateStr] || 0;
-      currentWeekSales.push({
-        day: new Date(dateStr).toLocaleDateString("en-US", {
-          weekday: "short",
-        })[0],
-        value: sales,
-      });
-      currentWeekTotal += sales;
-    }
+    const currentWeekTotal = chartData.reduce((sum, d) => sum + d.value, 0);
 
-    for (let i = 7; i < 14; i++) {
-      previousWeekTotal += dailyData[days[i]] || 0;
-    }
-
-    let growth =
-      previousWeekTotal > 0
-        ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
-        : currentWeekTotal > 0
-          ? 100
-          : 0;
-
+    // Calculate growth (compare this week so far vs last week same period if needed, 
+    // or just keep simple for now)
     return {
-      chartData: currentWeekSales.reverse(),
-      growth: Math.round(growth * 10) / 10,
+      chartData,
+      growth: 0, // Placeholder for growth calculation
       totalWeekRevenue: currentWeekTotal,
     };
   },

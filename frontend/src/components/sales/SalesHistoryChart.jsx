@@ -9,10 +9,26 @@ import {
   ComposedChart,
 } from "recharts";
 
+const formatThaiDate = (dateString) => {
+  if (!dateString) return "";
+  if (!dateString.includes("-")) return dateString;
+  
+  const date = new Date(dateString);
+  if (isNaN(date)) return dateString;
+
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const d = date.getDate();
+  const m = months[date.getMonth()];
+  const y = (date.getFullYear() + 543).toString().slice(-2);
+  
+  return `${d} ${m} ${y}`;
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
-    const dateLabel = payload[0].payload.fullDate || label;
+    const rawDateLabel = payload[0].payload.fullDate || label;
+    const dateLabel = formatThaiDate(rawDateLabel);
     return (
       <div className="bg-white/98 backdrop-blur-[10px] p-3 rounded-[20px] shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
         <p className="text-[#1E293B] font-extrabold text-[11px] mb-1 uppercase">

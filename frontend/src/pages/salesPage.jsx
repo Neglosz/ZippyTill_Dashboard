@@ -250,11 +250,8 @@ const SalesPage = () => {
     }));
   }, [historyData]);
 
-  // Pie Chart Data
-  const pieData =
-    categorySales.length > 0
-      ? categorySales
-      : [{ name: "ไม่มีข้อมูล", value: 1, color: "#F1F5F9", percentage: 0 }];
+  // Pie Chart Data - No fallback value to avoid "1 Baht" issue
+  const pieData = categorySales;
 
   if (isLoading) {
     return (
@@ -303,16 +300,16 @@ const SalesPage = () => {
         </PageHeader>
 
         {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {stats.map((topic) => (
             <StatsCard key={topic.id} {...topic} />
           ))}
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left Chart: Total Sales */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
+          <div className="xl:col-span-2 bg-white p-5 md:p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -321,19 +318,19 @@ const SalesPage = () => {
                     สถิติยอดขาย
                   </span>
                 </div>
-                <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                  <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+                <p className="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter">
+                  <span className="text-xl md:text-2xl opacity-50 mr-1 tracking-normal font-bold">
                     ฿
                   </span>
                   {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
                 </p>
               </div>
-              <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5">
+              <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1.5 w-full sm:w-auto overflow-x-auto">
                 {["1D", "1W", "1M", "1Y"].map((range) => (
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                    className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                       timeRange === range
                         ? "bg-white shadow-sm text-primary border border-gray-100"
                         : "text-inactive hover:text-gray-900"
@@ -352,8 +349,8 @@ const SalesPage = () => {
             />
           </div>
 
-          {/* Right: Income Structure - Modern Card Design */}
-          <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
+          {/* Right: Income Structure */}
+          <div className="bg-white p-5 md:p-8 rounded-[32px] shadow-premium border border-gray-100 flex flex-col">
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-1">
                 <BarChart3 className="w-4 h-4 text-primary" />
@@ -361,8 +358,8 @@ const SalesPage = () => {
                   โครงสร้างรายได้
                 </span>
               </div>
-              <p className="text-3xl font-black text-gray-900 tracking-tighter">
-                <span className="text-2xl opacity-50 mr-1 tracking-normal font-bold">
+              <p className="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter">
+                <span className="text-xl md:text-2xl opacity-50 mr-1 tracking-normal font-bold">
                   ฿
                 </span>
                 {Math.ceil(salesSummary.totalRevenue || 0).toLocaleString()}
@@ -388,7 +385,7 @@ const SalesPage = () => {
             <div
               className="space-y-3 relative overflow-y-auto pr-1"
               style={{
-                maxHeight: "276px",
+                maxHeight: "300px",
                 scrollbarWidth: "thin",
                 scrollbarColor: "#E2E8F0 transparent",
               }}
@@ -487,7 +484,7 @@ const SalesPage = () => {
         </div>
 
         {/* Top 5 Products Section */}
-        <div className="bg-white p-8 rounded-[32px] shadow-premium border border-gray-100 relative">
+        <div className="bg-white p-5 md:p-8 rounded-[32px] shadow-premium border border-gray-100 relative">
           {isRefreshing && (
             <div className="absolute top-8 right-8 z-10">
               <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -497,20 +494,20 @@ const SalesPage = () => {
             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
               สินค้าขายดี Top 5
             </h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="text-left text-inactive text-[10px] font-black uppercase tracking-[0.2em] border-b border-gray-50">
-                  <th className="pb-6 pl-4">อันดับ</th>
-                  <th className="pb-6 pl-4">รูปสินค้า</th>
+                  <th className="pb-6 pl-4 w-20">อันดับ</th>
+                  <th className="pb-6 pl-4 w-24">รูปสินค้า</th>
                   <th className="pb-6">ชื่อสินค้า</th>
-                  <th className="pb-6">ยอดขาย</th>
-                  <th className="pb-6">รายได้</th>
-                  <th className="pb-6">แนวโน้ม</th>
+                  <th className="pb-6 w-32 text-center">ยอดขาย</th>
+                  <th className="pb-6 w-32 text-right">รายได้</th>
+                  <th className="pb-6 w-32 text-right">แนวโน้ม</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -593,26 +590,41 @@ const SalesPage = () => {
                         <td className="py-6 text-gray-900 font-black tracking-tight">
                           {product.name}
                         </td>
-                        <td className="py-6 text-inactive font-bold">
+                        <td className="py-6 text-inactive font-bold text-center">
                           {product.sold_qty} ชิ้น
                         </td>
-                        <td className="py-6 text-gray-900 font-black tracking-tight">
+                        <td className="py-6 text-gray-900 font-black tracking-tight text-right pr-4">
                           ฿
                           {Math.ceil(
                             product.revenue || product.sold_qty * product.price,
                           ).toLocaleString()}
                         </td>
-                        <td className="py-6">
-                          <div
-                            className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-flex bg-emerald-50 text-emerald-600 border border-emerald-100`}
-                          >
-                            {product.sold_qty > 0 ? (
-                              <TrendingUp className="w-3 h-3" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3" />
-                            )}
-                            <span>{product.trend || "Stable"}</span>
-                          </div>
+                        <td className="py-6 text-right pr-4">
+                          {(() => {
+                            const trend = (product.trend || "Stable").toUpperCase();
+                            let trendStyles = "bg-gray-50 text-inactive border-gray-100";
+                            let TrendIcon = TrendingUp; // Fallback
+                            let trendLabel = "คงที่";
+
+                            if (trend === "UP") {
+                              trendStyles = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                              TrendIcon = TrendingUp;
+                              trendLabel = "เพิ่มขึ้น";
+                            } else if (trend === "DOWN") {
+                              trendStyles = "bg-rose-50 text-rose-600 border-rose-100";
+                              TrendIcon = TrendingDown;
+                              trendLabel = "ลดลง";
+                            }
+
+                            return (
+                              <div
+                                className={`flex items-center justify-end gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-flex border ${trendStyles}`}
+                              >
+                                <TrendIcon className="w-3 h-3" />
+                                <span>{trendLabel}</span>
+                              </div>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );
