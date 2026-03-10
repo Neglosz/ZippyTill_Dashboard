@@ -117,9 +117,9 @@ const FinancePage = () => {
   const [viewMode, setViewMode] = useState("day"); // 'day', 'month', 'year'
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const fetchFinanceData = useCallback(async () => {
+  const fetchFinanceData = useCallback(async (showLoader = true) => {
     if (!activeBranchId) return;
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const [stats, recentOrders, recentManual] = await Promise.all([
         transactionService.getFinanceStats(activeBranchId, viewMode, selectedDate),
@@ -128,8 +128,8 @@ const FinancePage = () => {
       ]);
 
       setMetrics(stats);
-
-      // Merge and normalize
+      
+      // ... same normalization logic ...
       const formatPaymentMethod = (sale) => {
         if (sale.payment_type === "credit_sale") return "ค้างชำระ";
         const method = sale.payments?.[0]?.method;
@@ -149,7 +149,7 @@ const FinancePage = () => {
       }));
 
       const normalizedManual = (recentManual || [])
-        .filter((m) => !(m.category === "sales" && m.reference_order_id)) // Filter out duplicates from store sales
+        .filter((m) => !(m.category === "sales" && m.reference_order_id)) 
         .map((m) => {
           let displayName = m.description || m.category || "ไม่ระบุรายการ";
           const customerName = m.orders?.customers_info?.name;
@@ -166,7 +166,7 @@ const FinancePage = () => {
             displayName,
             displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
             isIncome: m.trans_type === "income",
-            clickable: false, // Manual transactions do not show receipt
+            clickable: false,
           };
         });
 
@@ -178,7 +178,7 @@ const FinancePage = () => {
     } catch (error) {
       console.error("Failed to fetch finance data:", error);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }, [activeBranchId, viewMode, selectedDate]);
 
@@ -233,13 +233,13 @@ const FinancePage = () => {
     } catch (err) {}
   }, [selectedDate, viewMode, activeBranchId, getCacheKey]);
 
-  const fetchChartData = useCallback(async () => {
+  const fetchChartData = useCallback(async (showLoader = false) => {
     const cacheKey = getCacheKey(viewMode, selectedDate);
 
-    // Check Cache
-    if (dataCache.current[cacheKey]) {
+    // Check Cache (only use cache if NOT a background refresh)
+    if (dataCache.current[cacheKey] && showLoader) {
       setDailyGraphData(dataCache.current[cacheKey]);
-      prefetchAdjacentData(); // Still try to prefetch adjacent
+      prefetchAdjacentData(); 
       return;
     }
 
@@ -253,96 +253,49 @@ const FinancePage = () => {
       // Update Cache
       dataCache.current[cacheKey] = data;
       setDailyGraphData(data);
-
-      // Trigger Prefetch
       prefetchAdjacentData();
     } catch (error) {
       console.error("Failed to fetch chart data:", error);
     }
-  }, [
-    selectedDate,
-    viewMode,
-    activeBranchId,
-    prefetchAdjacentData,
-    getCacheKey,
-  ]);
+  }, [selectedDate, viewMode, activeBranchId, prefetchAdjacentData, getCacheKey]);
 
   useEffect(() => {
     if (activeBranchId) {
-      fetchFinanceData();
+      // Regular load with spinner
+      fetchFinanceData(true);
+      fetchChartData(true);
     }
-
-    // TC007: Real-time update for finance KPIs
-    if (!activeBranchId) return;
-
-    const channelOrders = supabase
-      .channel(`finance_orders_${activeBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-          filter: `store_id=eq.${activeBranchId}`,
-        },
-        () => {
-          console.log("Finance: Order change detected, refreshing...");
-          fetchFinanceData();
-          fetchChartData();
-        },
-      )
-      .subscribe();
-
-    const channelTxns = supabase
-      .channel(`finance_txns_${activeBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "account_transactions",
-          filter: `store_id=eq.${activeBranchId}`,
-        },
-        () => {
-          console.log("Finance: Transaction change detected, refreshing...");
-          fetchFinanceData();
-          fetchChartData();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channelOrders);
-      supabase.removeChannel(channelTxns);
-    };
-  }, [activeBranchId, fetchFinanceData, fetchChartData]);
-
-  useEffect(() => {
-    if (activeBranchId) {
-      fetchChartData();
-    }
-  }, [activeBranchId, viewMode, selectedDate, fetchChartData]);
+  }, [activeBranchId, viewMode, selectedDate, fetchFinanceData, fetchChartData]);
 
   // Real-time synchronization
   useEffect(() => {
     if (!activeBranchId) return;
 
-    const handleRealtimeUpdate = () => {
-      // Invalidate cache to force new data fetch
-      dataCache.current = {};
-      fetchFinanceData();
-      fetchChartData();
+    let timeoutId;
+    const handleRealtimeUpdate = (payload) => {
+      const record = payload.new || payload.old;
+      const isRelevant = !record || !record.store_id || String(record.store_id) === String(activeBranchId);
+
+      if (isRelevant) {
+        // debounce slightly to let DB consistency settle and avoid double pops
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          dataCache.current = {}; // Invalidate ALL cache on background update
+          fetchFinanceData(false); // background fetch (no spinner)
+          fetchChartData(false); // background fetch (no spinner)
+        }, 500);
+      }
     };
 
     const financeChannel = supabase
-      .channel(`finance_sync_${activeBranchId}`)
+      .channel(`finance_realtime_${activeBranchId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `store_id=eq.${activeBranchId}`,
+          // Filter moved to callback for better DELETE support
         },
         handleRealtimeUpdate
       )
@@ -352,7 +305,6 @@ const FinancePage = () => {
           event: "*",
           schema: "public",
           table: "account_transactions",
-          filter: `store_id=eq.${activeBranchId}`,
         },
         handleRealtimeUpdate
       )

@@ -3,7 +3,7 @@ const storeService = require("../services/storeService");
 const storeController = {
   async getUserStores(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user.id;
       const data = await storeService.getUserStores(userId);
       res.json(data);
     } catch (error) {

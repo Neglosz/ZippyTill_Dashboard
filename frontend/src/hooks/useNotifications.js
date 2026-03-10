@@ -114,6 +114,10 @@ export const useNotifications = (activeBranchId) => {
     const channel = supabase.channel(`notif_sync_${activeBranchId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `store_id=eq.${activeBranchId}` }, 
       () => fetchNotifications())
+      .on("postgres_changes", { event: "*", schema: "public", table: "products", filter: `store_id=eq.${activeBranchId}` }, 
+      () => fetchNotifications())
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_batches" }, 
+      () => fetchNotifications())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [activeBranchId]); // fetchNotifications removed from deps to break loop

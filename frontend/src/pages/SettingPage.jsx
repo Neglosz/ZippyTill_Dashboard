@@ -266,31 +266,6 @@ const SettingPage = () => {
                 </div>
               </>
             )}
-
-            {/* Divider */}
-            <div className="border-t border-gray-100" />
-
-            {/* Change Password */}
-            <div
-              onClick={handleOpenPasswordModal}
-              className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-primary/5 hover:border-primary/10 transition-all group/item cursor-pointer"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white rounded-xl text-inactive shadow-sm border border-gray-100">
-                  <Key size={18} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    เปลี่ยนรหัสผ่าน
-                  </p>
-                  <p className="text-xs text-inactive">อัปเดตรหัสผ่านของคุณ</p>
-                </div>
-              </div>
-              <ChevronRight
-                size={18}
-                className="text-inactive group-hover/item:text-primary transition-colors"
-              />
-            </div>
           </div>
         </div>
       </div>

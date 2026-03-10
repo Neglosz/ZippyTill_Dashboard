@@ -18,7 +18,6 @@ import {
   CheckCircle,
   ShoppingBasket,
 } from "lucide-react";
-import SystemNotificationModal from "../components/modals/SystemNotificationModal";
 import ReceiptModal from "../components/modals/ReceiptModal";
 import { productService } from "../services/productService";
 import { saleService } from "../services/saleService";
@@ -37,10 +36,12 @@ const DashboardPage = () => {
     activeBranchPhone,
   } = useBranch();
   const scrollRef = React.useRef(null);
-  const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isInitialLoading, setIsInitialLoading] = React.useState(true);
+  
+  // Data States
   const [metrics, setMetrics] = React.useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -64,114 +65,68 @@ const DashboardPage = () => {
     totalWeekRevenue: 0,
   });
 
+  // Individual loading flags for UI feedback
+  const [loadStates, setLoadStates] = React.useState({
+    metrics: true,
+    bestSellers: true,
+    recentSales: true,
+    outstanding: true,
+    analytics: true,
+    notifications: true
+  });
+
   React.useEffect(() => {
     const fetchDashboardData = async () => {
       if (!activeBranchId) return;
-      setIsLoading(true);
-      console.log("Dashboard: Fetching data for branch:", activeBranchId);
-
-      try {
-        // Fetch data independently so one failure doesn't block others
-        const fetchers = [
-          {
-            name: "Notifications",
-            fn: () => productService.getDashboardNotifications(activeBranchId),
-            setter: setNotificationData,
-          },
-          {
-            name: "Metrics",
-            fn: () => saleService.getDashboardMetrics(activeBranchId),
-            setter: setMetrics,
-          },
-          {
-            name: "Best Sellers",
-            fn: () => saleService.getTopSellingProducts(activeBranchId),
-            setter: setBestSellers,
-          },
-          {
-            name: "Recent Orders",
-            fn: () => orderService.getRecentOrders(activeBranchId),
-            setter: setRecentSales,
-          },
-          {
-            name: "Overdue Items",
-            fn: () => creditService.getOverdueItems(activeBranchId),
-            setter: (items) => {
-              // Calculate outstanding balance and unique customers
-              const totalOutstanding = (items || []).reduce(
-                (sum, item) => sum + (item.amount || 0),
-                0,
-              );
-              const uniqueCustomers = [
-                ...new Set((items || []).map((i) => i.customerId)),
-              ];
-              const customerAvatars = (items || [])
-                .slice(0, 4)
-                .map(
-                  (i) =>
-                    i.imageUrl ||
-                    `https://api.dicebear.com/7.x/pixel-art/svg?seed=${i.customerId}`,
-                );
-
-              setOutstanding({
-                amount: totalOutstanding,
-                customerCount: uniqueCustomers.length,
-                customers: customerAvatars,
-              });
-            },
-          },
-          {
-            name: "Weekly Analytics",
-            fn: () => saleService.getWeeklyAnalytics(activeBranchId),
-            setter: setWeeklyAnalytics,
-          },
-        ];
-
-        await Promise.all(
-          fetchers.map(async (f) => {
-            try {
-              const data = await f.fn();
-              console.log(`Dashboard: ${f.name} loaded:`, data);
-              f.setter(data);
-            } catch (err) {
-              console.error(`Dashboard: Failed to fetch ${f.name}:`, err);
-            }
-          }),
-        );
-
-        // Show notification modal once per session per branch
-        const hasShownNotification = sessionStorage.getItem(
-          `hasShownDashboardNotification_${activeBranchId}`,
-        );
-        
-        // Fetch current notification status to decide if modal should show
-        const currentNotifs = await productService.getDashboardNotifications(activeBranchId);
-        
-        // TC089 Fix: Check if there are actually new/unread items before showing modal
-        const hiddenNotifs = JSON.parse(sessionStorage.getItem(`hiddenNotifs_${activeBranchId}`) || "[]");
-        const hasUnreadItems = [
-          ...(currentNotifs?.expired || []),
-          ...(currentNotifs?.expiringSoon || []),
-          ...(currentNotifs?.lowStock || [])
-        ].some(item => {
-          const id = item.batchId || item.id || item.productId || item.name;
-          return !hiddenNotifs.includes(`expired-${id}`) && 
-                 !hiddenNotifs.includes(`expiring-${id}`) && 
-                 !hiddenNotifs.includes(`lowstock-${id}`);
-        });
-
-        if (!hasShownNotification && hasUnreadItems) {
-          setIsNotificationOpen(true);
-          sessionStorage.setItem(
-            `hasShownDashboardNotification_${activeBranchId}`,
-            "true",
-          );
+      
+      // Helper to fetch and set state independently
+      const loadPart = async (name, fetchFn, setter, stateKey) => {
+        try {
+          const data = await fetchFn();
+          setter(data);
+        } catch (err) {
+          console.error(`Dashboard: ${name} failed:`, err);
+        } finally {
+          setLoadStates(prev => ({ ...prev, [stateKey]: false }));
         }
-      } catch (globalError) {
-        console.error("Dashboard: Unexpected global error:", globalError);
-      } finally {
-        setIsLoading(false);
-      }
+      };
+
+      // Fire and forget - each runs in parallel without waiting for others
+      loadPart("Metrics", () => saleService.getDashboardMetrics(activeBranchId), setMetrics, "metrics");
+      loadPart("Best Sellers", () => saleService.getTopSellingProducts(activeBranchId), setBestSellers, "bestSellers");
+      loadPart("Recent Orders", () => orderService.getRecentOrders(activeBranchId), setRecentSales, "recentSales");
+      loadPart("Weekly Analytics", () => saleService.getWeeklyAnalytics(activeBranchId), setWeeklyAnalytics, "analytics");
+      
+      // Handle notifications for dashboard section
+      const loadNotifications = async () => {
+        try {
+          const data = await productService.getDashboardNotifications(activeBranchId);
+          setNotificationData(data);
+        } catch (err) {
+          console.error("Dashboard: Notifications failed:", err);
+        } finally {
+          setLoadStates(prev => ({ ...prev, notifications: false }));
+        }
+      };
+      loadNotifications();
+
+      // Overdue Items logic
+      const loadOverdue = async () => {
+        try {
+          const items = await creditService.getOverdueItems(activeBranchId);
+          const totalOutstanding = (items || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+          const uniqueCustomers = [...new Set((items || []).map((i) => i.customerId))];
+          const avatars = (items || []).slice(0, 4).map(i => i.imageUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${i.customerId}`);
+          setOutstanding({ amount: totalOutstanding, customerCount: uniqueCustomers.length, customers: avatars });
+        } catch (err) {
+          console.error("Dashboard: Overdue failed:", err);
+        } finally {
+          setLoadStates(prev => ({ ...prev, outstanding: false }));
+        }
+      };
+      loadOverdue();
+
+      setIsInitialLoading(false);
     };
 
     fetchDashboardData();
@@ -190,7 +145,6 @@ const DashboardPage = () => {
           filter: `store_id=eq.${activeBranchId}`,
         },
         (payload) => {
-          console.log("Dashboard: New order detected real-time!", payload);
           fetchDashboardData(); // Refresh metrics and lists
         },
       )
@@ -885,12 +839,6 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
-
-      <SystemNotificationModal
-        isOpen={isNotificationOpen}
-        onClose={() => setIsNotificationOpen(false)}
-        data={notificationData}
-      />
 
       <ReceiptModal
         visible={isReceiptModalOpen}
