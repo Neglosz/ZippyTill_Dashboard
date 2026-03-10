@@ -134,16 +134,27 @@ const orderService = {
     return order;
   },
 
-  async getRecentOrders(storeId) {
+  async getRecentOrders(storeId, date) {
     if (!storeId) throw new Error("Store ID is required");
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from("orders")
       .select(
         `*, customers_info (name, phone), order_items (*, products (name, image_url)), payments(method, tendered_amount, change_amount)`,
       )
-      .eq("store_id", storeId)
+      .eq("store_id", storeId);
+
+    // Filter by date if provided (YYYY-MM-DD)
+    if (date) {
+      const start = `${date}T00:00:00`;
+      const end = `${date}T23:59:59`;
+      query = query.gte("created_at", start).lte("created_at", end);
+    }
+
+    const { data, error } = await query
       .order("created_at", { ascending: false })
       .limit(50);
+      
     if (error) throw error;
     return data;
   },

@@ -57,7 +57,7 @@ const CHAT_PROMPT_TEMPLATES = {
 // CORE AI FUNCTIONS WITH FALLBACK
 // ============================================================
 
-const generateAIContent = async (prompt, modelName = "gemini-2.5-flash-lite") => {
+const generateAIContent = async (prompt, modelName = "gemini-2.5-flash") => {
   try {
     const model = genAI.getGenerativeModel({ model: modelName });
     const result = await model.generateContent(prompt);
@@ -73,13 +73,11 @@ const generateAIContent = async (prompt, modelName = "gemini-2.5-flash-lite") =>
       error.message?.includes("overloaded") ||
       error.message?.includes("high demand");
 
-    // Fallback logic if needed, but keeping gemini-2.0 as primary
+    // Fallback logic: If 2.5 Flash fails or is unavailable, we might want to try 2.0 Flash or just retry
     if (isModelUnavailable || isModelOverloaded) {
-      if (modelName === "gemini-2.5-flash-lite") {
-        console.warn(
-          "Gemini 2.0 Flash fails, falling back to Gemini 1.5 Flash...",
-        );
-        return generateAIContent(prompt, "gemini-2.5-flash-lite");
+      if (modelName === "gemini-2.5-flash") {
+        console.warn("Gemini 2.5 Flash fails, falling back to 2.0 Flash...");
+        return generateAIContent(prompt, "gemini-2.0-flash");
       }
     }
     throw error;
@@ -268,7 +266,7 @@ const aiService = {
     }
   },
 
-  async chatWithAI(message, history = [], modelName = "gemini-2.5-flash-lite") {
+  async chatWithAI(message, history = [], modelName = "gemini-2.5-flash") {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -288,10 +286,11 @@ const aiService = {
 
       // Primary Fallback for Chat
       if (
-        modelName === "gemini-2.5-flash-lite" &&
+        modelName === "gemini-2.5-flash" &&
         (isModelUnavailable || isModelOverloaded)
       ) {
-        return this.chatWithAI(message, history, "gemini-2.5-flash-lite");
+        console.warn("Gemini 2.5 Flash fails, falling back to 2.0 Flash...");
+        return this.chatWithAI(message, history, "gemini-2.0-flash");
       }
 
       throw error;

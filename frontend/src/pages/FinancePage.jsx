@@ -109,9 +109,11 @@ const FinancePage = () => {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Cache State
+  // Refs for debouncing and tracking
   const dataCache = React.useRef({});
+  const refreshTimeoutRef = React.useRef(null);
 
   // Filters State
   const [viewMode, setViewMode] = useState("day"); // 'day', 'month', 'year'
@@ -121,15 +123,19 @@ const FinancePage = () => {
     if (!activeBranchId) return;
     if (showLoader) setLoading(true);
     try {
+      // Format date for API (YYYY-MM-DD)
+      const dateStr = selectedDate instanceof Date 
+        ? selectedDate.toLocaleDateString('en-CA') 
+        : selectedDate;
+
       const [stats, recentOrders, recentManual] = await Promise.all([
-        transactionService.getFinanceStats(activeBranchId, viewMode, selectedDate),
-        orderService.getRecentOrders(activeBranchId),
-        transactionService.getRecentTransactions(activeBranchId, 50),
+        transactionService.getFinanceStats(activeBranchId, viewMode, dateStr),
+        orderService.getRecentOrders(activeBranchId, dateStr),
+        transactionService.getRecentTransactions(activeBranchId, 50, dateStr),
       ]);
 
       setMetrics(stats);
       
-      // ... same normalization logic ...
       const formatPaymentMethod = (sale) => {
         if (sale.payment_type === "credit_sale") return "ค้างชำระ";
         const method = sale.payments?.[0]?.method;
@@ -146,6 +152,7 @@ const FinancePage = () => {
         displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
         isIncome: true,
         clickable: true,
+        isCancelled: o.payment_status === "cancelled" || o.status === "cancelled"
       }));
 
       const normalizedManual = (recentManual || [])
@@ -167,6 +174,7 @@ const FinancePage = () => {
             displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
             isIncome: m.trans_type === "income",
             clickable: false,
+            isCancelled: false
           };
         });
 
@@ -176,7 +184,7 @@ const FinancePage = () => {
 
       setTransactions(combined);
     } catch (error) {
-      console.error("Failed to fetch finance data:", error);
+      console.error("FinancePage: fetchFinanceData failed:", error);
     } finally {
       if (showLoader) setLoading(false);
     }
@@ -222,8 +230,9 @@ const FinancePage = () => {
       adjacentDates.forEach(({ mode, date }) => {
         const key = getCacheKey(mode, date);
         if (!dataCache.current[key]) {
+          const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
           transactionService
-            .getAggregatedTransactions(activeBranchId, mode, date)
+            .getAggregatedTransactions(activeBranchId, mode, dateStr)
             .then((data) => {
               dataCache.current[key] = data;
             })
@@ -244,10 +253,14 @@ const FinancePage = () => {
     }
 
     try {
+      const dateStr = selectedDate instanceof Date 
+        ? selectedDate.toLocaleDateString('en-CA')
+        : selectedDate;
+
       const data = await transactionService.getAggregatedTransactions(
         activeBranchId,
         viewMode,
-        selectedDate,
+        dateStr,
       );
 
       // Update Cache
@@ -255,62 +268,50 @@ const FinancePage = () => {
       setDailyGraphData(data);
       prefetchAdjacentData();
     } catch (error) {
-      console.error("Failed to fetch chart data:", error);
+      console.error("FinancePage: fetchChartData failed:", error);
     }
   }, [selectedDate, viewMode, activeBranchId, prefetchAdjacentData, getCacheKey]);
 
   useEffect(() => {
     if (activeBranchId) {
-      // Regular load with spinner
+      // Regular load + triggered load from realtime
       fetchFinanceData(true);
       fetchChartData(true);
     }
-  }, [activeBranchId, viewMode, selectedDate, fetchFinanceData, fetchChartData]);
+  }, [activeBranchId, viewMode, selectedDate, fetchFinanceData, fetchChartData, refreshTrigger]);
 
-  // Real-time synchronization
+  // TC007: Aggressive Real-time synchronization
   useEffect(() => {
     if (!activeBranchId) return;
 
-    let timeoutId;
-    const handleRealtimeUpdate = (payload) => {
-      const record = payload.new || payload.old;
-      const isRelevant = !record || !record.store_id || String(record.store_id) === String(activeBranchId);
+    console.log(`FinancePage: Subscribing to realtime for branch ${activeBranchId}`);
 
-      if (isRelevant) {
-        // debounce slightly to let DB consistency settle and avoid double pops
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          dataCache.current = {}; // Invalidate ALL cache on background update
-          fetchFinanceData(false); // background fetch (no spinner)
-          fetchChartData(false); // background fetch (no spinner)
-        }, 500);
-      }
+    const handleRealtimeUpdate = (payload) => {
+      console.log("FinancePage: Realtime event detected:", payload.table, payload.eventType);
+      
+      // Clear any existing timeouts to debounce
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      
+      refreshTimeoutRef.current = setTimeout(() => {
+        console.log("FinancePage: Performing background refresh trigger...");
+        dataCache.current = {}; // FORCE INVALIDATE ALL CACHE
+        setRefreshTrigger(prev => prev + 1); // Trigger the main useEffect
+      }, 600); 
     };
 
     const financeChannel = supabase
-      .channel(`finance_realtime_${activeBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-          // Filter moved to callback for better DELETE support
-        },
-        handleRealtimeUpdate
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "account_transactions",
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe();
+      .channel(`finance_global_sync_${activeBranchId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, handleRealtimeUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "account_transactions" }, handleRealtimeUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, handleRealtimeUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, handleRealtimeUpdate)
+      .subscribe((status) => {
+        console.log(`FinancePage: Subscription status: ${status}`);
+      });
 
     return () => {
+      console.log("FinancePage: Unsubscribing from realtime");
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       supabase.removeChannel(financeChannel);
     };
   }, [activeBranchId, fetchFinanceData, fetchChartData]);
@@ -1119,27 +1120,29 @@ const FinancePage = () => {
                         <td className="py-4 px-4 text-sm font-bold text-gray-900">
                           {tx.displayType}
                         </td>
-                        <td
-                          className={`py-4 px-4 text-sm font-black ${tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
-                        >
-                          {tx.isIncome ? "+" : "-"}
+                        <td className="py-4 px-4 text-sm font-black ${tx.isCancelled ? 'opacity-40 grayscale' : tx.isIncome ? 'text-emerald-600' : 'text-rose-600'}">
+                          {tx.isCancelled ? "" : tx.isIncome ? "+" : "-"}
                           <span className="text-xs mr-0.5">฿</span>
                           {tx.displayAmount.toLocaleString()}
                         </td>
                         <td className="py-4 px-4">
                           <span
-                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.source === "manual"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : tx.payment_status === "paid"
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.isCancelled
+                              ? "bg-gray-100 text-gray-500"
+                              : tx.source === "manual"
                                 ? "bg-emerald-50 text-emerald-600"
-                                : "bg-orange-50 text-orange-600"
+                                : tx.payment_status === "paid"
+                                  ? "bg-emerald-50 text-emerald-600"
+                                  : "bg-orange-50 text-orange-600"
                               }`}
                           >
-                            {tx.source === "manual"
-                              ? "สำเร็จ"
-                              : tx.payment_status === "paid"
-                                ? "จ่ายแล้ว"
-                                : "กำลังรอ"}
+                            {tx.isCancelled
+                              ? "ยกเลิก"
+                              : tx.source === "manual"
+                                ? "สำเร็จ"
+                                : tx.payment_status === "paid"
+                                  ? "จ่ายแล้ว"
+                                  : "กำลังรอ"}
                           </span>
                         </td>
                       </tr>

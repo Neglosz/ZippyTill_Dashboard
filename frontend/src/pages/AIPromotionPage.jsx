@@ -541,12 +541,19 @@ const AIPromotionPage = () => {
           onClose={() => {
             setIsModalOpen(false);
             setAiPromoData(null);
+            setUsedRecId(null);
           }}
           initialData={aiPromoData}
           onPromotionCreated={() => {
             fetchPromos();
             fetchChartData();
             setIsModalOpen(false);
+            if (usedRecId) {
+              const updatedRecs = recommendations.filter((r) => r.id !== usedRecId);
+              setRecommendations(updatedRecs);
+              setCache(updatedRecs);
+              setUsedRecId(null);
+            }
           }}
         />
         <PromotionDetailModal
@@ -606,16 +613,31 @@ const AIPromotionPage = () => {
                     กำลังวิเคราะห์...
                   </p>
                 </div>
+              ) : recommendations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3 py-10 opacity-40">
+                  <Target className="w-8 h-8 text-inactive" />
+                  <p className="text-sm font-bold text-inactive">
+                    ไม่มีคำแนะนำในขณะนี้
+                  </p>
+                </div>
               ) : (
                 recommendations.map((rec) => (
                   <div
                     key={rec.id}
-                    className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-lg transition-all group cursor-pointer"
+                    className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-lg transition-all group cursor-pointer relative overflow-hidden"
                   >
-                    <h4 className="font-bold text-gray-900 text-sm group-hover:text-primary mb-1">
+                    {/* AI Badge */}
+                    <div className="absolute top-0 right-0">
+                      <div className="bg-orange-500 text-white text-[8px] font-black px-2 py-0.5 rounded-bl-lg flex items-center gap-1 shadow-sm">
+                        <Sparkles size={8} fill="currentColor" />
+                        AI
+                      </div>
+                    </div>
+
+                    <h4 className="font-bold text-gray-900 text-sm group-hover:text-primary mb-1 pr-6">
                       {rec.title}
                     </h4>
-                    <p className="text-xs text-gray-500 mb-3">{rec.desc}</p>
+                    <p className="text-xs text-gray-500 mb-3 line-clamp-2">{rec.desc}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] font-bold">
                         {rec.benefit}
@@ -626,7 +648,7 @@ const AIPromotionPage = () => {
                           setAiPromoData(rec);
                           setIsModalOpen(true);
                         }}
-                        className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg"
+                        className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all active:scale-95"
                       >
                         สร้างเลย
                       </button>

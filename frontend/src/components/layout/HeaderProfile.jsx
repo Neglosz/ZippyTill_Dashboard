@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
+import { useBranch } from "../../contexts/BranchContext";
 
 /**
  * Header Profile button and dropdown wrapper
  */
 const HeaderProfile = ({ currentUser }) => {
   const [showProfile, setShowProfile] = useState(false);
+  const { activeBranchImage } = useBranch();
 
   const getUserDisplayName = () => {
     if (!currentUser) return "User";
@@ -31,13 +33,17 @@ const HeaderProfile = ({ currentUser }) => {
         }`}
       >
         <div
-          className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors duration-300 ${
+          className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors duration-300 overflow-hidden ${
             showProfile
               ? "bg-white/20 text-white"
               : "bg-primary/10 text-primary"
           }`}
         >
-          {getUserInitials()}
+          {activeBranchImage ? (
+            <img src={activeBranchImage} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            getUserInitials()
+          )}
         </div>
         <div className="text-left hidden md:block">
           <p

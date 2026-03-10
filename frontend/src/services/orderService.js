@@ -5,8 +5,9 @@ export const orderService = {
     return apiClient.post("/orders", { orderData, items, branchId });
   },
 
-  async getRecentOrders(storeId) {
-    return apiClient.get(`/orders/recent?storeId=${storeId}`);
+  async getRecentOrders(storeId, date) {
+    const dateQuery = date ? `&date=${date}` : "";
+    return apiClient.get(`/orders/recent?storeId=${storeId}${dateQuery}`);
   },
 
   async getOrderDetails(orderId, branchId) {

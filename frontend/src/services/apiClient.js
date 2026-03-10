@@ -10,6 +10,9 @@ const getHeaders = async () => {
 
     const headers = {
       "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Expires": "0",
     };
     
     if (session?.access_token) {
