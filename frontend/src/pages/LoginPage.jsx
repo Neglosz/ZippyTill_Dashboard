@@ -16,6 +16,22 @@ const LoginPage = () => {
   const [lockoutUntil, setLockoutUntil] = useState(null);
   const [countdown, setCountdown] = useState(0);
 
+  // Check for existing session to prevent accessing login page while authenticated (TC020)
+  React.useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          // If already logged in, skip login page and go to branch selection
+          navigate("/select-branch", { replace: true });
+        }
+      } catch (err) {
+        // Not logged in or error, stay on login page
+      }
+    };
+    checkExistingSession();
+  }, [navigate]);
+
   // Check for URL errors (e.g., expired reset link)
   React.useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -108,8 +124,13 @@ const LoginPage = () => {
         setCountdown(lockDurationMs / 1000);
       } else {
         // Supabase typically returns an error object with a message property
+        let displayError = err.message;
+        if (displayError === "Invalid login credentials") {
+          displayError = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+        }
+        
         setError(
-          err.message ||
+          displayError ||
           `เกิดข้อผิดพลาดในการเข้าสู่ระบบ (คุณใส่ผิดไปแล้ว ${newAttempts} ครั้ง)`,
         );
       }

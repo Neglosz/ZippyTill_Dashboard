@@ -141,7 +141,7 @@ const NotificationCategory = ({ title, count, icon: Icon, items, color }) => {
               className="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100/50"
             >
               <div className="flex justify-between items-start gap-2 mb-2">
-                <p className="text-[12px] font-bold text-gray-800 leading-tight flex-1">
+                <p className="text-[12px] font-bold text-gray-800 leading-tight flex-1 break-words line-clamp-2 min-h-[2.5em]">
                   {item.name}
                 </p>
                 <span

@@ -107,15 +107,12 @@ const InventoryPage = () => {
           sanitizedProductName.includes(sanitizedQuery) ||
           barcode.includes(query);
 
-        if (query && matchesSearch) {
-          console.log(`Inventory Search: Match found for "${query}" -> "${p.name}"`);
-        }
-
         const matchesCategory =
           !selectedCategory ||
           (selectedCategory === "no-category"
             ? !p.category_id
             : p.category_id === selectedCategory);
+
         return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
@@ -193,7 +190,6 @@ const InventoryPage = () => {
             filter: `store_id=eq.${activeBranchId}`,
           },
           () => {
-            console.log("Inventory: Product change detected, refreshing...");
             fetchProducts();
           },
         )
@@ -210,7 +206,6 @@ const InventoryPage = () => {
             filter: `store_id=eq.${activeBranchId}`,
           },
           () => {
-            console.log("Inventory: Category change detected, refreshing...");
             fetchCategories();
           },
         )
@@ -226,7 +221,6 @@ const InventoryPage = () => {
             table: "product_batches",
           },
           () => {
-            console.log("Inventory: Batch change detected, refreshing...");
             fetchProducts();
           },
         )
@@ -251,18 +245,15 @@ const InventoryPage = () => {
   }, []);
 
   const handleExportPDF = () => {
-    console.log("Exporting PDF...");
     setIsExportModalOpen(false);
   };
 
   const handleExportExcel = () => {
-    console.log("Exporting Excel...");
     setIsExportModalOpen(false);
   };
 
   const handleSaveProduct = async (updatedFormData) => {
     try {
-      console.log("Saving product:", updatedFormData);
       if (!activeBranchId) throw new Error("Branch ID is required");
 
       if (updatedFormData.dbId) {

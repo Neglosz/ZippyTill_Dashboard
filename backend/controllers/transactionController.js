@@ -23,8 +23,8 @@ const transactionController = {
 
   async getFinanceStats(req, res) {
     try {
-      const { storeId } = req.query;
-      const data = await transactionService.getFinanceStats(storeId);
+      const { storeId, viewMode, date } = req.query;
+      const data = await transactionService.getFinanceStats(storeId, viewMode, date);
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });

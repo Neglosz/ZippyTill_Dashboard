@@ -82,15 +82,6 @@ const SalesPage = () => {
           setIsRefreshing(true);
         }
 
-        console.log(
-          "SalesPage: Fetching data for branch:",
-          activeBranchId,
-          "range:",
-          timeRange,
-          "isTimeRangeChange:",
-          isTimeRangeChange,
-        );
-
         if (isTimeRangeChange && !isBackground) {
           // Only fetch history if that's the only thing that changed
           const histData = await saleService.getSalesHistory(
@@ -168,7 +159,6 @@ const SalesPage = () => {
           filter: `store_id=eq.${activeBranchId}`,
         },
         () => {
-          console.log("SalesPage: Real-time update detected from orders table");
           fetchData(true); // background refresh
         },
       )
@@ -176,7 +166,6 @@ const SalesPage = () => {
 
     // 2. Fallback polling interval (every 1 minute)
     const intervalId = setInterval(() => {
-      console.log("SalesPage: Polling refresh...");
       fetchData(true);
     }, 60000);
 

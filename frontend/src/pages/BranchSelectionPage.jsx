@@ -104,19 +104,30 @@ const BranchSelectionPage = () => {
     }
 
     try {
-      // Update last accessed in Supabase (cross-device) + localStorage (fast local fallback)
+      // 1. Update last accessed
       await storeService.updateLastAccessed(branch.id);
       localStorage.setItem("last_accessed_branch_id", branch.id);
       localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
 
+      // 2. Set selection and storage
       selectBranch(branch);
-      // Ensure state is updated before navigating
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 0);
+      sessionStorage.setItem("selected_branch_id", branch.id);
+
+      // 3. FASTEST TRIGGER: Pre-fetch notifications immediately
+      let initialNotifications = null;
+      try {
+        initialNotifications = await productService.getDashboardNotifications(branch.id);
+      } catch (err) {
+        console.error("Pre-fetch notifications failed:", err);
+      }
+
+      // 4. Navigate to dashboard with pre-fetched data
+      navigate("/dashboard", { 
+        replace: true, 
+        state: { initialNotifications } 
+      });
     } catch (err) {
       console.error("Error selecting branch:", err);
-      // Still select branch even if updateLastAccessed fails
       selectBranch(branch);
       navigate("/dashboard", { replace: true });
     }
@@ -231,7 +242,6 @@ const BranchSelectionPage = () => {
         { event: "*", schema: "public", table: "orders" },
         () => {
           if (isMountedRef.current) {
-            console.log("Real-time: Sales updated, refreshing dashboard.");
             debouncedFetch(false);
           }
         },
@@ -245,7 +255,6 @@ const BranchSelectionPage = () => {
         { event: "*", schema: "public", table: "stores" },
         () => {
           if (isMountedRef.current) {
-            console.log("Real-time: Store status updated, refreshing dashboard.");
             debouncedFetch(false);
           }
         },

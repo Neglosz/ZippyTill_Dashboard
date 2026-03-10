@@ -2,40 +2,41 @@ const { supabase } = require("../config/supabase");
 
 const storeService = {
   async getUserStores(userId) {
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-      userId = user.id;
-    }
+    if (!userId) throw new Error("User ID is required");
 
-    // Get user profile to check role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle();
+    // Get stores where the user is the direct owner
+    const { data: ownedStores, error: ownedError } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("owner_id", userId);
+    
+    if (ownedError) throw ownedError;
 
-    let allStores = [];
+    // Get stores where the user is a member (manager, staff, etc.)
+    const { data: membershipData, error: memberError } = await supabase
+      .from("store_members")
+      .select(`store_id, role, stores (*)`)
+      .eq("user_id", userId);
+    
+    if (memberError) throw memberError;
 
-    if (profile && profile.role === "owner") {
-      // Owner role: see ALL stores in the system
-      const { data: stores, error: storesError } = await supabase
-        .from("stores")
-        .select("*");
-      if (storesError) throw storesError;
-      allStores = stores.map((s) => ({ ...s, role: "owner" }));
-    } else {
-      // Others (e.g. manager): see only associated stores
-      const { data: ownedStores, error: ownedError } = await supabase.from("stores").select("*").eq("owner_id", userId);
-      if (ownedError) throw ownedError;
-      const { data: membershipData, error: memberError } = await supabase.from("store_members").select(`store_id, role, stores (*)`).eq("user_id", userId);
-      if (memberError) throw memberError;
-      const memberStores = membershipData.map((m) => ({ ...m.stores, role: m.role }));
-      allStores = [...ownedStores.map((s) => ({ ...s, role: "owner" }))];
-      memberStores.forEach((ms) => { if (!allStores.find((s) => s.id === ms.id)) allStores.push(ms); });
-    }
+    const memberStores = membershipData.map((m) => ({ 
+      ...m.stores, 
+      role: m.role 
+    }));
 
+    // Combine and deduplicate
+    const allStores = [...ownedStores.map((s) => ({ ...s, role: "owner" }))];
+    
+    memberStores.forEach((ms) => {
+      if (!allStores.find((s) => s.id === ms.id)) {
+        allStores.push(ms);
+      }
+    });
+
+    // Sort by last accessed to show most relevant first
     allStores.sort((a, b) => (b.last_accessed_at ? new Date(b.last_accessed_at).getTime() : 0) - (a.last_accessed_at ? new Date(a.last_accessed_at).getTime() : 0));
+    
     return allStores;
   },
 
