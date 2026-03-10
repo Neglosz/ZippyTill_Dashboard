@@ -248,9 +248,9 @@ const AddProductModal = ({
           </div>
         </div>
 
-        <div className="p-6 flex flex-col lg:flex-row gap-6">
+        <div className="p-6 flex flex-col md:flex-row gap-6">
           {/* Left Column: Image - Upload Focus (55%) */}
-          <div className="w-full lg:w-[55%] flex flex-col justify-start items-center">
+          <div className="w-full md:w-[55%] flex flex-col justify-start items-center">
             <div className="w-full aspect-[4/5] relative group">
               <div className="absolute inset-4 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -311,7 +311,7 @@ const AddProductModal = ({
           </div>
 
           {/* Right Column: Form (45%) */}
-          <div className="w-full lg:w-[45%] space-y-4">
+          <div className="w-full md:w-[45%] space-y-4">
             {/* Section: Basic Info */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
@@ -509,7 +509,7 @@ const AddProductModal = ({
                       value={formData.price}
                       onChange={handleChange}
                       className={`w-full bg-emerald-50 text-emerald-600 border-none rounded-[12px] px-4 py-2.5 text-sm font-black focus:outline-none focus:ring-2 transition-all text-right pr-12 shadow-md shadow-emerald-200/5 ${
-                        errors.price
+                        errors.price || errors.priceLowerThanCost
                           ? "ring-2 ring-rose-500/50"
                           : "focus:ring-emerald-500/30"
                       }`}
@@ -519,9 +519,9 @@ const AddProductModal = ({
                       THB
                     </span>
                   </div>
-                  {errors.price && (
+                  {(errors.price || errors.priceLowerThanCost) && (
                     <p className="text-[10px] font-bold text-rose-500 px-1">
-                      ห้ามค่าติดลบ
+                      {errors.price ? "ห้ามค่าติดลบ" : "ราคาขายต่ำกว่าราคาทุน"}
                     </p>
                   )}
                 </div>
@@ -795,19 +795,32 @@ const AddProductModal = ({
                     newErrors.cost = true;
                   if (formData.price !== "" && Number(formData.price) < 0)
                     newErrors.price = true;
-                  if (formData.qty !== "" && Number(formData.qty) < 0)
-                    newErrors.qty = true;
                   if (
                     formData.lowStockThreshold !== "" &&
                     Number(formData.lowStockThreshold) < 0
                   )
                     newErrors.lowStockThreshold = true;
 
+                  // TC: Warning if selling price < cost price
+                  if (formData.price !== "" && formData.cost !== "" && Number(formData.price) < Number(formData.cost)) {
+                    newErrors.priceLowerThanCost = true;
+                  }
+
                   if (Object.keys(newErrors).length > 0) {
                     setErrors(newErrors);
                     return;
                   }
-                  onSave(formData);
+
+                  const handleSave = async () => {
+                    setIsLoading(true);
+                    try {
+                      await onSave(formData);
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  };
+
+                  handleSave();
                 }}
                 disabled={isLoading}
                 className="group relative w-full bg-primary text-white text-base font-black py-3 rounded-[16px] shadow-2xl shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
