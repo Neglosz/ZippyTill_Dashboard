@@ -1,4 +1,4 @@
-const { supabase } = require("../config/supabase");
+const { supabase } = require("../../core/config/supabase");
 
 function calculateOverdueDays(dateString) {
   if (!dateString) return 0;

@@ -1,6 +1,50 @@
-const { supabase } = require("../config/supabase");
+const { supabase } = require("../../core/config/supabase");
+
+/**
+ * Utility to get current time in Thai Timezone (UTC+7)
+ */
+const getThaiTime = (date = new Date()) => {
+  return new Date(date.getTime() + 7 * 60 * 60 * 1000);
+};
+
+/**
+ * Helper to fetch all non-cancelled orders for a branch with pagination
+ * bypasses the 1000-row limit of Supabase
+ */
+const fetchAllOrders = async (branchId, selectStr = "id, total_amount") => {
+  let allOrders = [];
+  let lastId = null;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = supabase
+      .from("orders")
+      .select(selectStr)
+      .eq("store_id", branchId)
+      .neq("payment_status", "cancelled")
+      .order("id", { ascending: true })
+      .limit(1000);
+
+    if (lastId) query = query.gt("id", lastId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      hasMore = false;
+    } else {
+      allOrders = [...allOrders, ...data];
+      lastId = data[data.length - 1].id;
+      if (data.length < 1000) hasMore = false;
+    }
+  }
+  return allOrders;
+};
 
 const saleService = {
+  /**
+   * Fetch top 5 selling products based on quantity sold
+   */
   getTopSellingProducts: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
@@ -35,10 +79,10 @@ const saleService = {
     // 2. Aggregate data by product_id
     const productMap = {};
     items.forEach((item) => {
-      const pId = item.product_id;
-      if (!productMap[pId]) {
-        productMap[pId] = {
-          id: pId,
+      const productId = item.product_id;
+      if (!productMap[productId]) {
+        productMap[productId] = {
+          id: productId,
           name: item.products.name,
           image_url: item.products.image_url,
           price: item.products.price,
@@ -53,8 +97,8 @@ const saleService = {
         parseFloat(item.subtotal) ||
         qty * (parseFloat(item.products.price) || 0);
 
-      productMap[pId].sold_qty += qty;
-      productMap[pId].revenue += itemSubtotal;
+      productMap[productId].sold_qty += qty;
+      productMap[productId].revenue += itemSubtotal;
     });
 
     // 3. Convert to array, sort by sold_qty, and take top 5
@@ -63,6 +107,9 @@ const saleService = {
       .slice(0, 5);
   },
 
+  /**
+   * Get all active products for a branch
+   */
   getProducts: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
     const { data, error } = await supabase
@@ -76,32 +123,16 @@ const saleService = {
     return data;
   },
 
+  /**
+   * Calculate revenue grouped by product category
+   */
   getSalesByCategory: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
     try {
       // 1. Fetch ALL non-cancelled orders to get their IDs
-      let orderIds = [];
-      let lastId = null;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase
-          .from("orders")
-          .select("id")
-          .eq("store_id", branchId)
-          .neq("payment_status", "cancelled")
-          .order("id", { ascending: true })
-          .limit(1000);
-        if (lastId) query = query.gt("id", lastId);
-        const { data } = await query;
-        if (!data || data.length === 0) hasMore = false;
-        else {
-          orderIds = [...orderIds, ...data.map((o) => o.id)];
-          lastId = data[data.length - 1].id;
-          if (data.length < 1000) hasMore = false;
-        }
-      }
+      const allOrders = await fetchAllOrders(branchId, "id");
+      const orderIds = allOrders.map((o) => o.id);
 
       if (orderIds.length === 0) return [];
 
@@ -125,30 +156,31 @@ const saleService = {
 
         if (items) {
           items.forEach((item) => {
-            const catName =
+            const categoryName =
               item.products?.product_categories?.name ||
               "หมวดหมู่อื่นๆ / สินค้าที่ลบออก";
             const revenue = parseFloat(item.subtotal) || 0;
 
-            if (!categoryMap[catName]) {
-              categoryMap[catName] = { name: catName, revenue: 0 };
+            if (!categoryMap[categoryName]) {
+              categoryMap[categoryName] = { name: categoryName, revenue: 0 };
             }
-            categoryMap[catName].revenue += revenue;
+            categoryMap[categoryName].revenue += revenue;
           });
         }
       }
 
-      const sortedCategories = Object.values(categoryMap)
-        .filter((c) => c.revenue > 0)
+      return Object.values(categoryMap)
+        .filter((cat) => cat.revenue > 0)
         .sort((a, b) => b.revenue - a.revenue);
-
-      return sortedCategories;
     } catch (error) {
       console.error("getSalesByCategory Error:", error);
       return [];
     }
   },
 
+  /**
+   * Get overall sales summary including total stock, items sold, and revenue
+   */
   getSalesSummary: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
@@ -159,46 +191,21 @@ const saleService = {
         .select("stock_qty")
         .eq("store_id", branchId)
         .is("deleted_at", null);
+      
       const totalStock = (products || []).reduce(
-        (sum, p) => sum + (parseFloat(p.stock_qty) || 0),
+        (sum, product) => sum + (parseFloat(product.stock_qty) || 0),
         0,
       );
 
-      // 2. Fetch ALL non-cancelled orders using pagination to bypass 1000-row limit
-      let allOrders = [];
-      let lastId = null;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase
-          .from("orders")
-          .select("id, total_amount")
-          .eq("store_id", branchId)
-          .neq("payment_status", "cancelled")
-          .order("id", { ascending: true })
-          .limit(1000);
-
-        if (lastId) query = query.gt("id", lastId);
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          hasMore = false;
-        } else {
-          allOrders = [...allOrders, ...data];
-          lastId = data[data.length - 1].id;
-          if (data.length < 1000) hasMore = false;
-        }
-      }
-
+      // 2. Fetch ALL non-cancelled orders
+      const allOrders = await fetchAllOrders(branchId, "id, total_amount");
+      
       const revenueFromOrders = allOrders.reduce(
-        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
 
-      // 3. Fetch ALL order items for these orders to get total sold qty and verify revenue
-      // We process this in chunks to avoid URL length issues or heavy memory usage
+      // 3. Fetch ALL order items to get total sold qty and verify revenue
       let totalSold = 0;
       let revenueFromItems = 0;
 
@@ -231,88 +238,49 @@ const saleService = {
     }
   },
 
+  /**
+   * Get main metrics for the dashboard (Today's revenue, total revenue, etc.)
+   */
   getDashboardMetrics: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
     try {
       const now = new Date();
-      // Get "today" in Thai time (UTC+7) reliably using Intl, regardless of server timezone.
+      // Get "today" in Thai time (UTC+7)
       const thaiFormatter = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Bangkok",
       });
       const thaiTodayStr = thaiFormatter.format(now); // "YYYY-MM-DD"
 
-      // 1. Query today's orders directly from orders table using created_at date range (UTC+7)
-      const todayStartUTC = new Date(
-        `${thaiTodayStr}T00:00:00+07:00`,
-      ).toISOString();
-      const todayEndUTC = new Date(
-        `${thaiTodayStr}T23:59:59.999+07:00`,
-      ).toISOString();
+      // Today range in ISO
+      const todayStartUTC = new Date(`${thaiTodayStr}T00:00:00+07:00`).toISOString();
+      const todayEndUTC = new Date(`${thaiTodayStr}T23:59:59.999+07:00`).toISOString();
 
-      console.log("[DEBUG getDashboardMetrics] thaiTodayStr:", thaiTodayStr);
-      console.log("[DEBUG getDashboardMetrics] todayStartUTC:", todayStartUTC);
-      console.log("[DEBUG getDashboardMetrics] todayEndUTC:", todayEndUTC);
-      console.log("[DEBUG getDashboardMetrics] branchId:", branchId);
-
+      // 1. Today's revenue
       const { data: todayOrders, error: todayErr } = await supabase
         .from("orders")
-        .select("total_amount, created_at")
+        .select("total_amount")
         .eq("store_id", branchId)
         .neq("payment_status", "cancelled")
         .gte("created_at", todayStartUTC)
         .lte("created_at", todayEndUTC);
 
-      console.log("[DEBUG getDashboardMetrics] todayErr:", todayErr);
-      console.log(
-        "[DEBUG getDashboardMetrics] todayOrders count:",
-        todayOrders?.length,
-        todayOrders,
-      );
-
       if (todayErr) throw todayErr;
 
       const todayRevenue = (todayOrders || []).reduce(
-        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
 
-      console.log("[DEBUG getDashboardMetrics] todayRevenue:", todayRevenue);
-
-      // 2. Fetch ALL non-cancelled orders (paginated) for totalRevenue
-      let allOrders = [];
-      let lastId = null;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase
-          .from("orders")
-          .select("id, total_amount")
-          .eq("store_id", branchId)
-          .neq("payment_status", "cancelled")
-          .order("id", { ascending: true })
-          .limit(1000);
-
-        if (lastId) query = query.gt("id", lastId);
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          hasMore = false;
-        } else {
-          allOrders = [...allOrders, ...data];
-          lastId = data[data.length - 1].id;
-          if (data.length < 1000) hasMore = false;
-        }
-      }
-
+      // 2. All-time revenue & orders
+      const allOrders = await fetchAllOrders(branchId, "id, total_amount");
+      
       const totalRevenue = allOrders.reduce(
-        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
 
-      // 3. Fetch order items in chunks for totalSold
+      // 3. Total items sold
       let totalSold = 0;
       const orderIds = allOrders.map((o) => o.id);
       const chunkSize = 200;
@@ -331,14 +299,15 @@ const saleService = {
         }
       }
 
-      // 4. Get total stock count
+      // 4. Total stock count
       const { data: products } = await supabase
         .from("products")
         .select("stock_qty")
         .eq("store_id", branchId)
         .is("deleted_at", null);
-      const totalProducts = (products || []).reduce(
-        (sum, p) => sum + (parseFloat(p.stock_qty) || 0),
+      
+      const totalProductsCount = (products || []).reduce(
+        (sum, product) => sum + (parseFloat(product.stock_qty) || 0),
         0,
       );
 
@@ -347,7 +316,7 @@ const saleService = {
         todayRevenue,
         totalOrders: allOrders.length,
         totalSold,
-        totalProducts,
+        totalProducts: totalProductsCount,
       };
     } catch (error) {
       console.error("getDashboardMetrics Error:", error);
@@ -361,16 +330,18 @@ const saleService = {
     }
   },
 
+  /**
+   * Weekly analytics for chart (Current week Mon-Sun)
+   */
   getWeeklyAnalytics: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
     const now = new Date();
-    // Adjust to Thai Time
-    const thaiNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    const thaiNow = getThaiTime(now);
     
-    // Find current Monday
+    // Find current Monday in Thai timezone
     const currentDay = thaiNow.getUTCDay(); // 0 = Sun, 1 = Mon...
-    const diff = currentDay === 0 ? -6 : 1 - currentDay; // Distance to Monday
+    const diff = currentDay === 0 ? -6 : 1 - currentDay;
     
     const monday = new Date(thaiNow);
     monday.setUTCDate(thaiNow.getUTCDate() + diff);
@@ -380,8 +351,7 @@ const saleService = {
     sunday.setUTCDate(monday.getUTCDate() + 6);
     sunday.setUTCHours(23, 59, 59, 999);
 
-    // Fetch orders for this current week (Mon-Sun)
-    // Convert Thai Mon-Sun range back to UTC for DB query
+    // Convert Thai range back to UTC for query
     const startUTC = new Date(monday.getTime() - (7 * 60 * 60 * 1000)).toISOString();
     const endUTC = new Date(sunday.getTime() - (7 * 60 * 60 * 1000)).toISOString();
 
@@ -401,12 +371,12 @@ const saleService = {
     const dailyMap = {};
     orderedLabels.forEach(label => dailyMap[label] = 0);
 
-    (orders || []).forEach((o) => {
-      const date = new Date(o.created_at);
-      const tDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-      const label = thaiDays[tDate.getUTCDay()];
+    (orders || []).forEach((order) => {
+      const date = new Date(order.created_at);
+      const thaiDate = getThaiTime(date);
+      const label = thaiDays[thaiDate.getUTCDay()];
       if (dailyMap[label] !== undefined) {
-        dailyMap[label] += Number(o.total_amount || 0);
+        dailyMap[label] += Number(order.total_amount || 0);
       }
     });
 
@@ -415,38 +385,37 @@ const saleService = {
       value: dailyMap[label]
     }));
 
-    const currentWeekTotal = chartData.reduce((sum, d) => sum + d.value, 0);
-
-    // Calculate growth (compare this week so far vs last week same period if needed, 
-    // or just keep simple for now)
     return {
       chartData,
-      growth: 0, // Placeholder for growth calculation
-      totalWeekRevenue: currentWeekTotal,
+      growth: 0,
+      totalWeekRevenue: chartData.reduce((sum, d) => sum + d.value, 0),
     };
   },
 
+  /**
+   * Financial summary including profit and payment channels
+   */
   getFinanceStats: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
+    // 1. Total Revenue and Payment Types
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
-      .select("total_amount, created_at, payment_type")
+      .select("total_amount, payment_type")
       .eq("store_id", branchId)
       .neq("payment_status", "cancelled");
 
     if (ordersError) throw ordersError;
 
     const totalRevenue = (orders || []).reduce(
-      (sum, o) => sum + (o.total_amount || 0),
+      (sum, order) => sum + (order.total_amount || 0),
       0,
     );
 
+    // 2. Total Expense (Cost Price * Quantity)
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select(
-        `qty, products (cost_price), orders!inner (store_id, payment_status)`,
-      )
+      .select(`qty, products (cost_price), orders!inner (store_id, payment_status)`)
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled");
 
@@ -457,20 +426,17 @@ const saleService = {
       0,
     );
 
+    // 3. Payment Distribution
     const paymentStats = {};
-    (orders || []).forEach((o) => {
-      const method = o.payment_type || "Other";
-      paymentStats[method] =
-        (paymentStats[method] || 0) + (o.total_amount || 0);
+    (orders || []).forEach((order) => {
+      const method = order.payment_type || "Other";
+      paymentStats[method] = (paymentStats[method] || 0) + (order.total_amount || 0);
     });
 
     const paymentChannels = Object.keys(paymentStats).map((method) => ({
       method,
       amount: paymentStats[method],
-      percent:
-        totalRevenue > 0
-          ? Math.round((paymentStats[method] / totalRevenue) * 100)
-          : 0,
+      percent: totalRevenue > 0 ? Math.round((paymentStats[method] / totalRevenue) * 100) : 0,
     }));
 
     return {
@@ -481,6 +447,9 @@ const saleService = {
     };
   },
 
+  /**
+   * Hourly breakdown for current day
+   */
   getDailyFinance: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
@@ -488,27 +457,18 @@ const saleService = {
     const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
     const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
-    const { data: orders, error: ordersError } = await supabase
-      .from("orders")
-      .select("total_amount, created_at")
-      .eq("store_id", branchId)
-      .neq("payment_status", "cancelled")
-      .gte("created_at", startOfDay)
-      .lte("created_at", endOfDay);
+    const [ordersRes, itemsRes] = await Promise.all([
+      supabase.from("orders").select("total_amount, created_at")
+        .eq("store_id", branchId).neq("payment_status", "cancelled")
+        .gte("created_at", startOfDay).lte("created_at", endOfDay),
+      supabase.from("order_items")
+        .select(`qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`)
+        .eq("orders.store_id", branchId).neq("orders.payment_status", "cancelled")
+        .gte("created_at", startOfDay).lte("created_at", endOfDay)
+    ]);
 
-    if (ordersError) throw ordersError;
-
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select(
-        `qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`,
-      )
-      .eq("orders.store_id", branchId)
-      .neq("orders.payment_status", "cancelled")
-      .gte("created_at", startOfDay)
-      .lte("created_at", endOfDay);
-
-    if (itemsError) throw itemsError;
+    if (ordersRes.error) throw ordersRes.error;
+    if (itemsRes.error) throw itemsRes.error;
 
     const hourlyData = Array.from({ length: 24 }, (_, i) => ({
       name: i.toString().padStart(2, "0"),
@@ -516,107 +476,65 @@ const saleService = {
       expense: 0,
     }));
 
-    orders.forEach((o) => {
-      hourlyData[new Date(o.created_at).getHours()].income +=
-        o.total_amount || 0;
+    ordersRes.data.forEach((order) => {
+      hourlyData[new Date(order.created_at).getHours()].income += order.total_amount || 0;
     });
 
-    items.forEach((item) => {
-      hourlyData[new Date(item.created_at).getHours()].expense +=
-        (item.products?.cost_price || 0) * (item.qty || 0);
+    itemsRes.data.forEach((item) => {
+      hourlyData[new Date(item.created_at).getHours()].expense += (item.products?.cost_price || 0) * (item.qty || 0);
     });
 
     return hourlyData;
   },
 
+  /**
+   * Monthly breakdown for current year
+   */
   getMonthlyFinance: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
     const year = new Date().getFullYear();
     const startOfYear = new Date(year, 0, 1).toISOString();
 
-    const { data: orders, error: ordersError } = await supabase
-      .from("orders")
-      .select("total_amount, created_at")
-      .eq("store_id", branchId)
-      .neq("payment_status", "cancelled")
-      .gte("created_at", startOfYear);
+    const [ordersRes, itemsRes] = await Promise.all([
+      supabase.from("orders").select("total_amount, created_at")
+        .eq("store_id", branchId).neq("payment_status", "cancelled").gte("created_at", startOfYear),
+      supabase.from("order_items")
+        .select(`qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`)
+        .eq("orders.store_id", branchId).neq("orders.payment_status", "cancelled").gte("created_at", startOfYear)
+    ]);
 
-    if (ordersError) throw ordersError;
+    if (ordersRes.error) throw ordersRes.error;
+    if (itemsRes.error) throw itemsRes.error;
 
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select(
-        `qty, created_at, products (cost_price), orders!inner (store_id, payment_status)`,
-      )
-      .eq("orders.store_id", branchId)
-      .neq("orders.payment_status", "cancelled")
-      .gte("created_at", startOfYear);
-
-    if (itemsError) throw itemsError;
-
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlyData = months.map((m) => ({ name: m, รายรับ: 0, รายจ่าย: 0 }));
 
-    orders.forEach((o) => {
-      monthlyData[new Date(o.created_at).getMonth()].รายรับ +=
-        o.total_amount || 0;
+    ordersRes.data.forEach((order) => {
+      monthlyData[new Date(order.created_at).getMonth()].รายรับ += order.total_amount || 0;
     });
 
-    items.forEach((item) => {
-      monthlyData[new Date(item.created_at).getMonth()].รายจ่าย +=
-        (item.products?.cost_price || 0) * (item.qty || 0);
+    itemsRes.data.forEach((item) => {
+      monthlyData[new Date(item.created_at).getMonth()].รายจ่าย += (item.products?.cost_price || 0) * (item.qty || 0);
     });
 
     return monthlyData;
   },
 
+  /**
+   * Sales history with flexible time range (1D, 1W, 1M, 1Y)
+   */
   getSalesHistory: async (branchId, timeRange) => {
     if (!branchId) throw new Error("Branch ID is required");
 
-    // Use Asia/Bangkok Timezone for calculations
     const now = new Date();
-    const thaiFormatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Bangkok",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-
-    // Helper to get Thai Date object
-    const getThaiDate = (date) => {
-      const parts = thaiFormatter.formatToParts(date);
-      const dict = {};
-      parts.forEach((p) => (dict[p.type] = p.value));
-      return new Date(
-        `${dict.year}-${dict.month}-${dict.day}T${dict.hour}:${dict.minute}:${dict.second}`,
-      );
-    };
-
     let startDate;
     let groupBy = "day";
 
     switch (timeRange) {
       case "1D":
         startDate = new Date(now);
-        startDate.setHours(0, 0, 0, 0); // Start of day in local time
+        startDate.setHours(0, 0, 0, 0);
         groupBy = "hour";
         break;
       case "1W":
@@ -640,15 +558,7 @@ const saleService = {
 
     const { data: items, error } = await supabase
       .from("order_items")
-      .select(
-        `
-        subtotal,
-        orders!inner (
-          payment_status,
-          created_at
-        )
-      `,
-      )
+      .select(`subtotal, orders!inner (payment_status, created_at)`)
       .eq("orders.store_id", branchId)
       .neq("orders.payment_status", "cancelled")
       .gte("orders.created_at", startDate.toISOString());
@@ -663,100 +573,57 @@ const saleService = {
       }
 
       (items || []).forEach((item) => {
-        // Adjust for Thai Timezone (UTC+7)
-        const date = new Date(item.orders.created_at);
-        const thaiHour = new Date(
-          date.getTime() + 7 * 60 * 60 * 1000,
-        ).getUTCHours();
+        const thaiHour = getThaiTime(new Date(item.orders.created_at)).getUTCHours();
         const hourLabel = `${thaiHour.toString().padStart(2, "0")}:00`;
-
         if (hourlyMap[hourLabel] !== undefined) {
           hourlyMap[hourLabel] += parseFloat(item.subtotal) || 0;
         }
       });
 
-      Object.keys(hourlyMap)
-        .sort()
-        .forEach((name) => {
-          historyData.push({ name, totalSales: Math.ceil(hourlyMap[name]) });
-        });
+      Object.keys(hourlyMap).sort().forEach((name) => {
+        historyData.push({ name, totalSales: Math.ceil(hourlyMap[name]) });
+      });
     } else if (groupBy === "day") {
       const dailyMap = {};
 
       if (timeRange === "1W") {
         for (let i = 6; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(now.getDate() - i);
-          const datePart = new Date(d.getTime() + 7 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0];
+          const date = new Date(now);
+          date.setDate(now.getDate() - i);
+          const datePart = getThaiTime(date).toISOString().split("T")[0];
           const days = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
-          const label = days[d.getDay()];
-          dailyMap[datePart] = { name: label, value: 0, fullDate: datePart };
+          dailyMap[datePart] = { name: days[date.getDay()], value: 0, fullDate: datePart };
         }
       } else {
-        // "1M"
-        const daysInMonth = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          0,
-        ).getDate();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         for (let i = 1; i <= daysInMonth; i++) {
-          const d = new Date(now.getFullYear(), now.getMonth(), i);
-          const datePart = new Date(d.getTime() + 7 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0];
-          dailyMap[datePart] = {
-            name: i.toString(),
-            value: 0,
-            fullDate: datePart,
-          };
+          const date = new Date(now.getFullYear(), now.getMonth(), i);
+          const datePart = getThaiTime(date).toISOString().split("T")[0];
+          dailyMap[datePart] = { name: i.toString(), value: 0, fullDate: datePart };
         }
       }
 
       (items || []).forEach((item) => {
-        const date = new Date(item.orders.created_at);
-        const datePart = new Date(date.getTime() + 7 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0];
-
+        const datePart = getThaiTime(new Date(item.orders.created_at)).toISOString().split("T")[0];
         if (dailyMap[datePart]) {
           dailyMap[datePart].value += parseFloat(item.subtotal) || 0;
         }
       });
 
-      Object.keys(dailyMap)
-        .sort()
-        .forEach((key) => {
-          historyData.push({
-            name: dailyMap[key].name,
-            totalSales: Math.ceil(dailyMap[key].value),
-            fullDate: dailyMap[key].fullDate,
-          });
+      Object.keys(dailyMap).sort().forEach((key) => {
+        historyData.push({
+          name: dailyMap[key].name,
+          totalSales: Math.ceil(dailyMap[key].value),
+          fullDate: dailyMap[key].fullDate,
         });
+      });
     } else if (groupBy === "month") {
-      const months = [
-        "ม.ค.",
-        "ก.พ.",
-        "มี.ค.",
-        "เม.ย.",
-        "พ.ค.",
-        "มิ.ย.",
-        "ก.ค.",
-        "ส.ค.",
-        "ก.ย.",
-        "ต.ค.",
-        "พ.ย.",
-        "ธ.ค.",
-      ];
+      const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
       const monthlyMap = {};
       months.forEach((m) => (monthlyMap[m] = 0));
 
       (items || []).forEach((item) => {
-        const date = new Date(item.orders.created_at);
-        const thaiMonth = new Date(
-          date.getTime() + 7 * 60 * 60 * 1000,
-        ).getUTCMonth();
+        const thaiMonth = getThaiTime(new Date(item.orders.created_at)).getUTCMonth();
         monthlyMap[months[thaiMonth]] += parseFloat(item.subtotal) || 0;
       });
 

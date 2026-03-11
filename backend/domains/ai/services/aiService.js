@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const saleService = require("./saleService");
-const productService = require("./productService");
+const saleService = require("../../sales/services/saleService");
+const productService = require("../../inventory/services/productService");
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);

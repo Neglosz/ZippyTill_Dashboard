@@ -1,4 +1,4 @@
-const { supabase } = require("../config/supabase");
+const { supabase } = require("../../core/config/supabase");
 
 const financeService = {
   async getTransactions(branchId, startDate, endDate) {

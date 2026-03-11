@@ -1,5 +1,5 @@
-const { supabase } = require("../config/supabase");
-const { sanitizeHTML } = require("../utils/sanitizer");
+const { supabase } = require("../../core/config/supabase");
+const { sanitizeHTML } = require("../../core/utils/sanitizer");
 
 const productService = {
   // Get all products with category info for a specific branch
@@ -330,7 +330,7 @@ const productService = {
       };
     };
 
-    const notificationService = require("./notificationService");
+    const notificationService = require("../../core/services/notificationService");
 
     // TC017: Sort by urgency (ascending expiry date)
     const notifications = {

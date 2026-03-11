@@ -10,11 +10,11 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
-import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
 import { Modal } from "../components/common/ProfileComponents";
 import TextInput from "../components/common/TextInput";
 import { settingService } from "../services/settingService";
+import { authService } from "../services/authService";
 
 const Toggle = ({ enabled, onToggle }) => (
   <button
@@ -148,29 +148,8 @@ const SettingPage = () => {
 
     setSaving(true);
     try {
-      // Verify current password by re-authenticating
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("ไม่พบผู้ใช้");
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        setPasswordError("รหัสผ่านปัจจุบันไม่ถูกต้อง");
-        setSaving(false);
-        return;
-      }
-
-      // Update password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (updateError) throw updateError;
+      // Update password via Backend API
+      await authService.updatePassword(currentPassword, newPassword);
 
       setPasswordSuccess(true);
       setTimeout(() => {

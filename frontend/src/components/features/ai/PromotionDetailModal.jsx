@@ -1,397 +1,206 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-  Plus,
-  Target,
-  Calendar,
+  X,
+  Sparkles,
+  TrendingUp,
   Package,
-  Trash2,
-  AlertCircle,
+  Calendar,
+  Zap,
+  Target,
+  ArrowRight,
+  Quote,
 } from "lucide-react";
-import { promotionService } from "../../../services/promotionService";
+import { createPortal } from "react-dom";
 
-// ─── Helper utilities ───────────────────────────────────────────────
-const parseLocalDate = (dateStr, isEndDate = false) => {
-  if (!dateStr) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [year, month, day] = dateStr.split("-").map(Number);
-    return isEndDate
-      ? new Date(year, month - 1, day, 23, 59, 59)
-      : new Date(year, month - 1, day, 0, 0, 0);
-  }
-  return new Date(dateStr);
-};
+const PromotionDetailModal = ({ isOpen, onClose, recommendation, onCreate }) => {
+  if (!isOpen || !recommendation) return null;
 
-const getStatusInfo = (isActive, endDate) => {
-  if (!isActive) return { label: "ปิดใช้งาน", color: "bg-gray-400" };
-  if (parseLocalDate(endDate, true) < new Date())
-    return { label: "หมดอายุ", color: "bg-red-500" };
-  return { label: "ใช้งาน", color: "bg-emerald-500" };
-};
-
-const formatDateRange = (start, end) => {
-  if (!start && !end) return "ไม่มีกำหนด";
-  const s = start ? parseLocalDate(start).toLocaleDateString("th-TH") : "...";
-  const e = end
-    ? parseLocalDate(end, true).toLocaleDateString("th-TH")
-    : "ไม่มีกำหนด";
-  return `${s} - ${e}`;
-};
-
-const getPromotionLabel = (promo) => {
-  switch (promo.type) {
-    case "discount_percent":
-      return `ลด ${promo.discount_value}%`;
-    case "discount_amount":
-      return `ลด ฿${promo.discount_value}`;
-    case "buy_x_get_y":
-      return `ซื้อ ${promo.min_qty_required} แถม ${promo.free_qty}`;
-    case "bundle":
-      return "ราคาพิเศษยกชุด";
-    default:
-      return "ส่วนลดพิเศษ";
-  }
-};
-
-const getTimeRemaining = (startDate, endDate) => {
-  const now = new Date();
-  const start = parseLocalDate(startDate) || now;
-  const end = parseLocalDate(endDate, true);
-  if (!end)
-    return {
-      text: "ไม่มีกำหนด",
-      percentage: 0,
-      color: "from-emerald-500 to-emerald-600",
-    };
-
-  const total = end - start;
-  const remaining = end - now;
-
-  if (remaining <= 0)
-    return {
-      text: "หมดเวลา",
-      percentage: 100,
-      color: "from-red-500 to-red-600",
-    };
-
-  const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-  const hours = Math.floor(
-    (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-  );
-  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-  const elapsed = now - start;
-  const percentage = Math.max(0, Math.min(100, (elapsed / total) * 100));
-
-  const remainingPercentage = 100 - percentage;
-  const color =
-    remainingPercentage > 50
-      ? "from-emerald-500 to-emerald-600"
-      : remainingPercentage > 20
-        ? "from-yellow-500 to-yellow-600"
-        : "from-red-500 to-red-600";
-
-  let text;
-  if (days > 0) {
-    text = `${days} วัน ${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
-  } else if (hours > 0) {
-    text = `${hours} ชั่วโมง ${minutes} นาที ${seconds} วินาที`;
-  } else if (minutes > 0) {
-    text = `${minutes} นาที ${seconds} วินาที`;
-  } else {
-    text = `${seconds} วินาที`;
-  }
-
-  return { text, percentage, color };
-};
-
-// ─── Component ────────────────────────────────────────────────────────
-const PromotionDetailModal = ({ promo, onClose, onDeleteSuccess }) => {
-  const [promoProducts, setPromoProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [, setTick] = useState(0);
-
-  // live countdown ticker
-  useEffect(() => {
-    const timer = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // fetch products for this promotion
-  const fetchProducts = async () => {
-    if (!promo) return;
-    setIsLoading(true);
-    try {
-      const data = await promotionService.getPromotionDetails(promo.id);
-      setPromoProducts(
-        data?.promotion_items?.map((item) => item.product).filter(Boolean) ||
-          [],
-      );
-    } catch (e) {
-      console.error("PromotionDetailModal fetch error:", e);
-      setPromoProducts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, [promo?.id]);
-
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true);
-      await promotionService.deletePromotion(promo.id);
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
+  // Function to process AI analysis text into cleaner blocks
+  const processAnalysis = (text) => {
+    if (!text) return [];
+    // Split by common Thai sentence markers or parentheses if needed, 
+    // but here we'll try to split by some logic or just provide it as is with bold keywords
+    return text.split(' ').map((word, i) => {
+      if (word.includes('(') || word.includes(')') || word.includes('%')) {
+        return <b key={i} className="text-gray-900">{word} </b>;
       }
-      onClose();
-    } catch (error) {
-      console.error("Failed to delete promotion:", error);
-      alert("ไม่สามารถลบโปรโมชั่นได้ กรุณาลองใหม่อีกครั้ง");
-    } finally {
-      setIsDeleting(false);
-      setShowConfirmDelete(false);
-    }
+      return word + ' ';
+    });
   };
 
-  const handleDeleteItem = async (productId) => {
-    if (!window.confirm("คุณต้องการลบสินค้านี้ออกจากโปรโมชั่นใช่หรือไม่?")) return;
-    
-    try {
-      setDeletingProductId(productId);
-      await promotionService.deletePromotionItem(promo.id, productId);
-      // Update local state instead of re-fetching to be faster
-      setPromoProducts(prev => prev.filter(p => p.id !== productId));
-      if (onDeleteSuccess) {
-        onDeleteSuccess(); // Refresh parent to update item count
-      }
-    } catch (error) {
-      console.error("Failed to delete promotion item:", error);
-      alert("ไม่สามารถลบสินค้าออกจากโปรโมชั่นได้");
-    } finally {
-      setDeletingProductId(null);
-    }
-  };
-
-  if (!promo) return null;
-
-  const status = getStatusInfo(promo.is_active, promo.end_date);
-  const timeRemaining = promo.end_date
-    ? getTimeRemaining(promo.start_date, promo.end_date)
-    : null;
-
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+      <div 
+        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
-
-      {/* Card */}
-      <div className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/10 to-orange-50 p-8 border-b border-gray-100">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
+      
+      {/* Main Modal Container */}
+      <div className="relative bg-white w-full max-w-4xl rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col border border-gray-100">
+        
+        {/* Header: Minimal & Readable */}
+        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 border border-orange-100">
+              <Sparkles size={24} />
+            </div>
+            <div>
               <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`text-[10px] font-black px-2 py-0.5 rounded-lg text-white ${status.color}`}
-                >
-                  {status.label}
-                </span>
-                <span className="text-[10px] font-bold text-inactive uppercase tracking-wider">
-                  ID: {promo.id.slice(0, 8)}
+                <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest bg-orange-50 px-2 py-0.5 rounded">
+                  AI Power Analysis
                 </span>
               </div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tighter pt-2">
-                {promo.name}
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
+                {recommendation.title}
               </h2>
-              {promo.description && (
-                <p className="text-sm text-gray-500 mt-1">
-                  {promo.description}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button
-                onClick={() => setShowConfirmDelete(true)}
-                className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-red-500 hover:bg-red-50 transition-all border border-red-100 shadow-sm shrink-0"
-                title="ลบโปรโมชั่น"
-              >
-                <Trash2 size={20} />
-              </button>
-              <button
-                onClick={onClose}
-                className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-inactive hover:text-primary hover:bg-primary/5 transition-all border border-gray-100 shadow-sm shrink-0"
-                title="ปิด"
-              >
-                <Plus size={20} className="rotate-45" />
-              </button>
             </div>
           </div>
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="p-8 space-y-4">
-          {/* Discount Type */}
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Target size={18} className="text-primary" />
+        {/* Content Section */}
+        <div className="p-8 grid grid-cols-1 md:grid-cols-12 gap-12 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          
+          {/* LEFT: AI ANALYSIS (5/12) */}
+          <div className="md:col-span-5 space-y-6">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Quote size={18} />
+              <h3 className="text-xs font-bold uppercase tracking-widest">บทวิเคราะห์จาก AI</h3>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
-                ประเภทส่วนลด
-              </p>
-              <p className="text-sm font-black text-gray-900">
-                {getPromotionLabel(promo)}
-              </p>
+            
+            <div className="space-y-4">
+              <div className="text-base md:text-lg text-gray-600 leading-relaxed">
+                {recommendation.desc ? (
+                  <div className="space-y-3">
+                    {recommendation.desc.split(' ').some(w => w.length > 30) ? (
+                      <p>{recommendation.desc}</p>
+                    ) : ( recommendation.desc.split('. ').map((sentence, idx) => (
+                        <p key={idx} className="flex gap-3">
+                          <span className="text-orange-400 mt-1.5 min-w-[6px] h-[6px] rounded-full bg-orange-400" />
+                          <span>{sentence}</span>
+                        </p>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <p>กำลังวิเคราะห์ข้อมูล...</p>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-gray-50 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white font-bold text-[10px]">
+                  ZT
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-900">ZippyTill Intelligence</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Business Optimization</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Date Range */}
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-              <Calendar size={18} className="text-blue-500" />
+          {/* RIGHT: SPECS & STATS (7/12) */}
+          <div className="md:col-span-7 space-y-8">
+            
+            {/* Impact & Confidence Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2 mb-2 text-gray-400">
+                  <TrendingUp size={16} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Expected Impact</span>
+                </div>
+                <p className="text-lg font-bold text-emerald-600">{recommendation.benefit}</p>
+              </div>
+              
+              <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2 mb-2 text-gray-400">
+                  <Target size={16} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">AI Confidence</span>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{recommendation.match}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-inactive uppercase tracking-wider mb-0.5">
-                ระยะเวลา
-              </p>
-              <p className="text-sm font-black text-gray-900">
-                {formatDateRange(promo.start_date, promo.end_date)}
-              </p>
-            </div>
-          </div>
 
-          {/* Products List */}
-          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <Package size={18} className="text-emerald-500" />
+            {/* Promo Details Section */}
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Promotion Specs</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-5 rounded-2xl border border-gray-100 space-y-3">
+                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">กลยุทธ์ส่วนลด</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {recommendation.promotion_type === 'discount_percent' ? `${recommendation.discount_value}% Discount` : 
+                       recommendation.promotion_type === 'discount_amount' ? `฿${recommendation.discount_value} Discount` :
+                       recommendation.promotion_type === 'buy_x_get_y' ? `Buy ${recommendation.min_qty_required} Get ${recommendation.free_qty}` : 'Special Offer'}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-5 rounded-2xl border border-gray-100 space-y-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">เวลาที่แนะนำ</p>
+                    <p className="text-sm font-bold text-gray-900">{recommendation.duration_days} วัน (7 วันแรกสำคัญสุด)</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-inactive uppercase tracking-wider">
-                สินค้าที่ร่วมรายการ ({promoProducts.length} รายการ)
-              </p>
             </div>
-            {isLoading ? (
-              <div className="flex justify-center py-3">
-                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            ) : promoProducts.length === 0 ? (
-              <p className="text-xs text-gray-400 font-medium text-center py-2">
-                ไม่มีข้อมูลสินค้า
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                {promoProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-gray-100 group"
-                  >
-                    <span className="text-sm font-bold text-gray-800 truncate flex-1">
-                      {product.name}
-                    </span>
-                    <div className="flex items-center gap-2 ml-2">
-                      <span className="text-sm font-black text-primary shrink-0">
-                        ฿{product.price?.toLocaleString()}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteItem(product.id)}
-                        disabled={deletingProductId === product.id}
-                        className="text-gray-300 hover:text-red-500 transition-colors p-1"
-                        title="ลบรายการนี้"
-                      >
-                        {deletingProductId === product.id ? (
-                          <div className="w-3.5 h-3.5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 size={14} />
-                        )}
-                      </button>
-                    </div>
+
+            {/* Product Badges */}
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                สินค้าเป้าหมาย ({recommendation.target_products?.length || 0})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {recommendation.target_products?.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 text-gray-600">
+                    <Package size={14} className="text-gray-400" />
+                    <span className="text-xs font-medium">{p.name}</span>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Time Remaining */}
-          {timeRemaining && (
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-              <div className="flex justify-between mb-3">
-                <p className="text-[10px] font-black text-inactive uppercase tracking-wider">
-                  เวลาที่เหลือ
-                </p>
-                <p className="text-[10px] font-black text-gray-900">
-                  {timeRemaining.text}
-                </p>
-              </div>
-              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full bg-gradient-to-r ${timeRemaining.color} rounded-full transition-all duration-1000`}
-                  style={{ width: `${100 - timeRemaining.percentage}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
-        <div className="px-8 pb-8">
-          <button
-            onClick={onClose}
-            className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200 transition-all text-sm"
-          >
-            ปิด
-          </button>
-        </div>
-      </div>
-
-      {/* Delete Confirmation Modal */}
-      {showConfirmDelete && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6 text-center animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-              <AlertCircle size={32} />
-            </div>
-            <h3 className="text-xl font-black text-gray-900 mb-2">
-              ยืนยันการลบโปรโมชั่น?
-            </h3>
-            <p className="text-sm text-gray-500 mb-6">
-              การลบโปรโมชั่นไม่สามารถกู้คืนได้ และจะหยุดให้ส่วนลดทันที
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmDelete(false)}
-                disabled={isDeleting}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>กำลังลบ...</span>
-                  </>
-                ) : (
-                  <span>ยืนยันลบ</span>
-                )}
-              </button>
-            </div>
+        <div className="px-8 py-6 border-t border-gray-100 flex items-center justify-between gap-4 bg-gray-50/30">
+          <p className="hidden sm:block text-[11px] text-gray-400 leading-relaxed max-w-xs">
+            เมื่อกดปุ่ม คุณสามารถไปปรับแต่งเงื่อนไขเพิ่มเติม เช่น ยอดซื้อขั้นต่ำ หรือวันที่เริ่มใช้งานจริงได้
+          </p>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <button
+              onClick={onClose}
+              className="flex-1 sm:flex-none px-6 py-3 bg-white border border-gray-200 text-gray-500 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-50 transition-all"
+            >
+              ปิดหน้าต่าง
+            </button>
+            <button
+              onClick={() => {
+                onCreate(recommendation);
+                onClose();
+              }}
+              className="flex-[1.5] sm:flex-none px-10 py-3 bg-orange-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-orange-600/10"
+            >
+              <span>ปรับแต่งและสร้างเลย</span>
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 
