@@ -74,6 +74,7 @@ const AIPromotionPage = () => {
   const [selectedPromo, setSelectedPromo] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [isRecLoading, setIsRecLoading] = useState(true);
+  const [recError, setRecError] = useState(null);
   const [activePromotions, setActivePromotions] = useState([]);
   const [isPromosLoading, setIsPromosLoading] = useState(true);
   const [aiPromoData, setAiPromoData] = useState(null);
@@ -175,16 +176,18 @@ const AIPromotionPage = () => {
       }
 
       setIsRecLoading(true);
+      setRecError(null);
       try {
         const aiRecs = await aiService.getPromotionRecommendations(
           activeBranchId,
           activeBranchName,
         );
-        setRecommendations(aiRecs);
-        setCache(aiRecs);
+        setRecommendations(aiRecs || []);
+        setCache(aiRecs || []);
         lastFetchedBranchId.current = activeBranchId;
       } catch (error) {
         console.error("Failed to fetch AI recs:", error);
+        setRecError("ไม่สามารถดึงข้อมูล AI ได้ในขณะนี้");
       } finally {
         setIsRecLoading(false);
       }
@@ -612,6 +615,24 @@ const AIPromotionPage = () => {
                   <p className="text-sm font-bold text-inactive">
                     กำลังวิเคราะห์...
                   </p>
+                </div>
+              ) : recError ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3 py-10 text-center px-4">
+                  <AlertCircle className="w-8 h-8 text-red-400" />
+                  <div>
+                    <p className="text-sm font-bold text-red-500">
+                      เกิดข้อผิดพลาด
+                    </p>
+                    <p className="text-[10px] font-bold text-inactive mt-1">
+                      {recError}
+                    </p>
+                    <button 
+                      onClick={() => fetchRecs(true)}
+                      className="mt-3 text-[10px] font-bold text-primary underline"
+                    >
+                      ลองใหม่อีกครั้ง
+                    </button>
+                  </div>
                 </div>
               ) : recommendations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 py-10 opacity-40">
