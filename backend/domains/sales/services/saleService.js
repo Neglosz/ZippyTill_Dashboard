@@ -197,13 +197,30 @@ const saleService = {
         0,
       );
 
-      // 2. Fetch ALL non-cancelled orders
-      const allOrders = await fetchAllOrders(branchId, "id, total_amount");
+      // 2. Fetch ALL non-cancelled orders and manual transactions
+      const [allOrders, allManualTxns] = await Promise.all([
+        fetchAllOrders(branchId, "id, total_amount"),
+        supabase
+          .from("account_transactions")
+          .select("amount, trans_type, category, reference_order_id")
+          .eq("store_id", branchId)
+      ]);
       
-      const revenueFromOrders = allOrders.reduce(
+      const totalOrderRevenue = allOrders.reduce(
         (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
+
+      const totalOtherIncome = (allManualTxns.data || [])
+        .filter(t => t.trans_type === "income" && !(t.category === "sales" && t.reference_order_id))
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+      const totalOtherExpense = (allManualTxns.data || [])
+        .filter(t => t.trans_type === "expense")
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+      // Total Net Revenue
+      const totalRevenue = totalOrderRevenue + totalOtherIncome - totalOtherExpense;
 
       // 3. Fetch ALL order items to get total sold qty and verify revenue
       let totalSold = 0;
@@ -230,7 +247,7 @@ const saleService = {
       return {
         totalProducts: totalStock || 0,
         totalSold: totalSold || 0,
-        totalRevenue: Math.max(revenueFromOrders, revenueFromItems),
+        totalRevenue: Math.ceil(totalRevenue),
       };
     } catch (error) {
       console.error("getSalesSummary Error:", error);
@@ -252,33 +269,65 @@ const saleService = {
       });
       const thaiTodayStr = thaiFormatter.format(now); // "YYYY-MM-DD"
 
-      // Today range in ISO
+      // Today range in ISO for Created At
       const todayStartUTC = new Date(`${thaiTodayStr}T00:00:00+07:00`).toISOString();
       const todayEndUTC = new Date(`${thaiTodayStr}T23:59:59.999+07:00`).toISOString();
 
-      // 1. Today's revenue
-      const { data: todayOrders, error: todayErr } = await supabase
-        .from("orders")
-        .select("total_amount")
-        .eq("store_id", branchId)
-        .neq("payment_status", "cancelled")
-        .gte("created_at", todayStartUTC)
-        .lte("created_at", todayEndUTC);
+      // 1. Today's Data
+      const [todayOrders, todayManualTxns] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("total_amount")
+          .eq("store_id", branchId)
+          .neq("payment_status", "cancelled")
+          .gte("created_at", todayStartUTC)
+          .lte("created_at", todayEndUTC),
+        supabase
+          .from("account_transactions")
+          .select("amount, trans_type, category, reference_order_id")
+          .eq("store_id", branchId)
+          .eq("trans_date", thaiTodayStr)
+      ]);
 
-      if (todayErr) throw todayErr;
-
-      const todayRevenue = (todayOrders || []).reduce(
+      const todayOrderRevenue = (todayOrders.data || []).reduce(
         (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
+
+      const todayOtherIncome = (todayManualTxns.data || [])
+        .filter(t => t.trans_type === "income" && !(t.category === "sales" && t.reference_order_id))
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+      
+      const todayOtherExpense = (todayManualTxns.data || [])
+        .filter(t => t.trans_type === "expense")
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+      // Today's Net Revenue/Cashflow
+      const todayRevenue = todayOrderRevenue + todayOtherIncome - todayOtherExpense;
 
       // 2. All-time revenue & orders
-      const allOrders = await fetchAllOrders(branchId, "id, total_amount");
+      const [allOrders, allManualTxns] = await Promise.all([
+        fetchAllOrders(branchId, "id, total_amount"),
+        supabase
+          .from("account_transactions")
+          .select("amount, trans_type, category, reference_order_id")
+          .eq("store_id", branchId)
+      ]);
       
-      const totalRevenue = allOrders.reduce(
+      const totalOrderRevenue = allOrders.reduce(
         (sum, order) => sum + (parseFloat(order.total_amount) || 0),
         0,
       );
+
+      const totalOtherIncome = (allManualTxns.data || [])
+        .filter(t => t.trans_type === "income" && !(t.category === "sales" && t.reference_order_id))
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+      const totalOtherExpense = (allManualTxns.data || [])
+        .filter(t => t.trans_type === "expense")
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+      const totalRevenue = totalOrderRevenue + totalOtherIncome - totalOtherExpense;
 
       // 3. Total items sold
       let totalSold = 0;
