@@ -128,6 +128,7 @@ router.get("/ai/templates", aiController.getChatTemplates);
 router.get("/ai/promotions", aiController.getPromotionRecommendations);
 router.post("/ai/chat", aiController.chatWithAI);
 router.post("/ai/generate-promo-name", aiController.generatePromoName);
+router.post("/ai/parse-promo-prompt", aiController.parsePromoPrompt);
 
 // Tax Routes
 router.get("/tax/summary", taxController.getTaxSummary);
