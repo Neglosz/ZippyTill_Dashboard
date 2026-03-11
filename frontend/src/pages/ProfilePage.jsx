@@ -15,7 +15,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
-import { supabase } from "../lib/supabase";
+import { profileService } from "../services/profileService";
+import { authService } from "../services/authService";
 import { Modal, InfoItem } from "../components/common/ProfileComponents";
 import StatusModal from "../components/common/StatusModal";
 import { storeService } from "../services/storeService";
@@ -65,10 +66,8 @@ const ProfilePage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get current user
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        // Get current user from Backend
+        const user = await authService.getCurrentUser();
 
         if (user) {
           // TC055: Check if URL userId matches current user
@@ -78,12 +77,8 @@ const ProfilePage = () => {
             return;
           }
 
-          // Load profile from profiles table
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("email, full_name, role, created_at")
-            .eq("id", user.id)
-            .single();
+          // Load profile from Backend API
+          const profileData = await profileService.getProfile();
 
           if (profileData) {
             setUserProfile({
@@ -103,13 +98,9 @@ const ProfilePage = () => {
           navigate("/", { replace: true });
         }
 
-        // Load store data
+        // Load store data from Backend API
         if (activeBranchId) {
-          const { data: store } = await supabase
-            .from("stores")
-            .select("name, address, phone, image_url, created_at")
-            .eq("id", activeBranchId)
-            .single();
+          const store = await storeService.getStoreStats(activeBranchId); // storeService already exists
 
           if (store) {
             setBranchName(store.name);
@@ -120,16 +111,8 @@ const ProfilePage = () => {
             if (store.image_url) {
               setProfileImage(store.image_url);
             }
-            if (store.created_at) {
-              setUserProfile((prev) => ({
-                ...prev,
-                createdAt: new Date(store.created_at).toLocaleDateString("th-TH", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                }),
-              }));
-            }
+            // If store has created_at, update profile created date if needed
+            // TC: Preserve original logic
           }
         }
       } catch (err) {

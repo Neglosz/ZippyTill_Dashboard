@@ -6,8 +6,8 @@ const path = require("path");
 // Load environment variables before requiring any other files
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-const apiRoutes = require("./routes/api");
-const errorMiddleware = require("./middleware/errorMiddleware");
+const apiRoutes = require("./domains/core/routes/api");
+const errorMiddleware = require("./domains/core/middleware/errorMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 5001;

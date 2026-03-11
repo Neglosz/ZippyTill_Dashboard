@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import CreatePromotionModal from "../components/features/ai/CreatePromotionModal";
 import PromotionDetailModal from "../components/features/ai/PromotionDetailModal";
+import PromoProductEditModal from "../components/features/ai/PromoProductEditModal";
 import { useBranch } from "../contexts/BranchContext";
 import { aiService } from "../services/aiService";
 import { promotionService } from "../services/promotionService";
@@ -79,6 +80,8 @@ const AIPromotionPage = () => {
   const [isPromosLoading, setIsPromosLoading] = useState(true);
   const [aiPromoData, setAiPromoData] = useState(null);
   const [usedRecId, setUsedRecId] = useState(null);
+  const [selectedAiRec, setSelectedAiRec] = useState(null);
+  const [isAiDetailOpen, setIsAiDetailOpen] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("monthly");
@@ -560,6 +563,16 @@ const AIPromotionPage = () => {
           }}
         />
         <PromotionDetailModal
+          isOpen={isAiDetailOpen}
+          onClose={() => setIsAiDetailOpen(false)}
+          recommendation={selectedAiRec}
+          onCreate={(rec) => {
+            setUsedRecId(rec.id);
+            setAiPromoData(rec);
+            setIsModalOpen(true);
+          }}
+        />
+        <PromotionDetailModal
           promo={selectedPromo}
           onClose={() => setSelectedPromo(null)}
           onDeleteSuccess={() => {
@@ -665,9 +678,8 @@ const AIPromotionPage = () => {
                       </span>
                       <button
                         onClick={() => {
-                          setUsedRecId(rec.id);
-                          setAiPromoData(rec);
-                          setIsModalOpen(true);
+                          setSelectedAiRec(rec);
+                          setIsAiDetailOpen(true);
                         }}
                         className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all active:scale-95"
                       >
@@ -753,9 +765,21 @@ const AIPromotionPage = () => {
 
             <div className="bg-white rounded-[32px] p-8 shadow-premium border border-gray-100">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                  ผลลัพธ์โปรโมชั่น
-                </h3>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                    ผลลัพธ์โปรโมชั่น
+                  </h3>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#ED7117]" />
+                      <span className="text-[11px] font-bold text-inactive">ใช้โปรโมชั่น</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#9CA3AF]" />
+                      <span className="text-[11px] font-bold text-inactive">ไม่ใช้โปรโมชั่น</span>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex bg-gray-100 p-1 rounded-xl">
                   {["daily", "monthly", "yearly"].map((r) => (
                     <button

@@ -1,4 +1,4 @@
-const { supabase } = require("../config/supabase");
+const { supabase } = require("../../core/config/supabase");
 
 const promotionService = {
   getPromotions: async (storeId) => {
