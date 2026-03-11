@@ -18,4 +18,8 @@ export const aiService = {
   generatePromoName: async ({ products, type, value }) => {
     return apiClient.post("/ai/generate-promo-name", { products, type, value });
   },
+
+  parsePromoPrompt: async ({ prompt }) => {
+    return apiClient.post("/ai/parse-promo-prompt", { prompt });
+  },
 };

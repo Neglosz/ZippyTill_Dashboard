@@ -101,6 +101,14 @@ const aiService = {
         productService.getTopStockProducts(branchId),
       ]);
 
+    // Guard clause: If no sales at all (no top products AND no growth/data), return empty
+    const totalTopSold = (topProducts || []).reduce((sum, p) => sum + (Number(p.sold_qty) || 0), 0);
+
+    if (totalTopSold === 0 && (!salesData || salesData.total_sales === 0 || !salesData.total_sales)) {
+        console.log(`New shop or zero sales detected for branch ${branchId}. Skipping AI recommendations.`);
+        return [];
+    }
+
     const contextData = {
       branchName: branchName || "Unknown Branch",
       topSellingItems: topProducts.slice(0, 10).map((p) => ({
@@ -262,6 +270,49 @@ const aiService = {
       return text.replace(/["\u201C\u201D]/g, "").trim();
     } catch (error) {
       console.error("Generate Promo Name Error:", error);
+      throw error;
+    }
+  },
+
+  async parsePromoPrompt({ prompt }) {
+    const aiPrompt = `
+คุณคือ AI วิเคราะห์โปรโมชั่นสำหรับระบบร้านค้า
+
+วิเคราะห์ข้อความโปรโมชั่นและคืนค่า JSON ที่มีโครงสร้างดังนี้
+
+{
+  "promotion_name": "",
+  "promotion_type": "percent | fixed | buy_x_get_y | bundle",
+  "conditions": {
+      "min_purchase": number | null,
+      "product_id": null,
+      "category": null
+  },
+  "reward": {
+      "discount_percent": null,
+      "discount_amount": null,
+      "free_item": null,
+      "free_quantity": null
+  },
+  "raw_text": ""
+}
+
+กฎ:
+- ห้ามสร้างข้อมูลที่ไม่มี
+- ถ้าไม่แน่ใจให้ใช้ null
+- ห้ามอธิบาย
+- ตอบ JSON เท่านั้น
+
+ข้อความโปรโมชั่น:
+"${prompt}"
+    `;
+
+    try {
+      const text = await generateAIContent(aiPrompt);
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanJson);
+    } catch (error) {
+      console.error("Parse Promo Prompt Error:", error);
       throw error;
     }
   },

@@ -62,6 +62,7 @@ const CreatePromotionModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExpiredAlert, setShowExpiredAlert] = useState(false);
   const [isGeneratingName, setIsGeneratingName] = useState(false);
+  const [isParsingPrompt, setIsParsingPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleCreatePromotion = async () => {
@@ -598,10 +599,14 @@ const CreatePromotionModal = ({
             {promoData.type === "custom" ? (
               <div className="animate-fade-in">
                 <label className="block text-xs font-bold text-gray-600 mb-3 uppercase tracking-wide flex items-center gap-2"><Sparkles size={14} className="text-primary" />ระบุรายละเอียดโปรโมชั่น (Prompt)</label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-orange-400/5 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative group flex flex-col gap-3">
                   <textarea value={promoData.prompt} onChange={(e) => setPromoData({ ...promoData, prompt: e.target.value })} placeholder="เช่น ซื้อครบ 500 บาท แถมฟรีน้ำแข็งไสเมนูปกติ 1 ถ้วย หรือ ลดราคา 50% สำหรับสมาชิกใหม่..." className={`relative w-full h-48 px-5 py-4 rounded-2xl border-2 bg-white focus:outline-none focus:ring-4 text-sm font-medium transition-all resize-none leading-relaxed placeholder:text-gray-300 ${step2Validation.errors.prompt ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`} />
-                  <div className="absolute bottom-4 right-5 flex items-center gap-2 text-[10px] font-bold text-gray-400"><AlertCircle size={10} />สามารถพิมพ์ภาษาไทยได้</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400"><AlertCircle size={10} />สามารถพิมพ์ภาษาไทยได้</div>
+                    <button type="button" disabled={isParsingPrompt || !promoData.prompt.trim()} onClick={async (e) => { e.preventDefault(); e.stopPropagation(); setIsParsingPrompt(true); try { const result = await aiService.parsePromoPrompt({ prompt: promoData.prompt }); if (result) { setPromoData((prev) => { const mappedType = result.promotion_type === 'percent' ? 'percent' : result.promotion_type === 'fixed' ? 'amount' : result.promotion_type === 'buy_x_get_y' ? 'buy_get' : 'custom'; return { ...prev, name: result.promotion_name || prev.name, type: result.promotion_type ? mappedType : prev.type, value: result.reward?.discount_percent || result.reward?.discount_amount || prev.value, minSpend: result.conditions?.min_purchase || prev.minSpend }; }); } } catch (err) { console.error(err); alert("ไม่สามารถวิเคราะห์ข้อมูลได้ กรุณาลองใหม่อีกครั้ง"); } finally { setIsParsingPrompt(false); } }} className="px-4 py-2.5 bg-gradient-to-r from-primary to-orange-600 text-white rounded-xl font-bold text-xs hover:shadow-lg hover:scale-105 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2">
+                       <Sparkles size={14} className={isParsingPrompt ? "animate-spin" : ""} />{isParsingPrompt ? "กำลังวิเคราะห์..." : "AI วิเคราะห์เงื่อนไข"}
+                    </button>
+                  </div>
                 </div>
                 {step2Validation.errors.prompt && <p className="text-red-500 text-[10px] font-bold mt-1.5 ml-1 flex items-center gap-1"><AlertCircle size={10} /> {step2Validation.errors.prompt}</p>}
               </div>

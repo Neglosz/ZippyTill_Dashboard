@@ -42,6 +42,16 @@ const aiController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  async parsePromoPrompt(req, res) {
+    try {
+      const { prompt } = req.body;
+      const data = await aiService.parsePromoPrompt({ prompt });
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = aiController;
