@@ -107,8 +107,11 @@ const transactionService = {
     const { data: orderData } = await orderQuery;
 
     const combinedData = [...(data || [])];
+    const txnOrderIds = new Set(data?.map(t => t.reference_order_id).filter(Boolean) || []);
+
     (orderData || []).forEach(o => {
       if (o.payment_type === "credit_sale" && o.payment_status !== "paid") return;
+      if (txnOrderIds.has(o.id)) return; // Skip if already in account_transactions
 
       combinedData.push({
         amount: o.total_amount,
@@ -131,8 +134,25 @@ const transactionService = {
       .eq("store_id", storeId);
 
     if (date) {
-      // Assuming trans_date is stored as YYYY-MM-DD or similar
-      query = query.eq("trans_date", date);
+      if (date.length === 4) {
+        // YYYY
+        const startStr = `${date}-01-01`;
+        const endStr = `${date}-12-31`;
+        query = query.gte("trans_date", startStr).lte("trans_date", endStr);
+      } else if (date.length === 7) {
+        // YYYY-MM
+        const year = parseInt(date.substring(0, 4));
+        const month = parseInt(date.substring(5, 7)) - 1;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const startStr = `${date}-01`;
+        const endStr = `${date}-${String(lastDay).padStart(2, '0')}`;
+        query = query.gte("trans_date", startStr).lte("trans_date", endStr);
+      } else {
+        // YYYY-MM-DD
+        // Filter by both trans_date (for legacy/manual) OR created_at (for real-time)
+        // We use or condition to be safe
+        query = query.or(`trans_date.eq.${date},and(created_at.gte.${date}T00:00:00,created_at.lte.${date}T23:59:59)`);
+      }
     }
 
     const { data, error } = await query
@@ -164,7 +184,7 @@ const transactionService = {
     }
 
     // 1. Get manual transactions
-    let txnQuery = supabase.from("account_transactions").select("amount, trans_type").eq("store_id", storeId);
+    let txnQuery = supabase.from("account_transactions").select("amount, trans_type, category, reference_order_id").eq("store_id", storeId);
     if (periodType && periodType !== "all") {
       txnQuery = txnQuery.gte("trans_date", startDate).lte("trans_date", endDate);
     }
@@ -172,6 +192,9 @@ const transactionService = {
 
     let totalOtherIncome = 0, totalOtherExpense = 0;
     (transactions || []).forEach((tx) => {
+      // Skip order-linked sales transactions to avoid double counting with order revenue
+      if (tx.category === "sales" && tx.reference_order_id) return;
+      
       if (tx.trans_type === "income") totalOtherIncome += Number(tx.amount || 0);
       else totalOtherExpense += Number(tx.amount || 0);
     });

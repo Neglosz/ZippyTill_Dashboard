@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
+  TrendingDown,
   ShoppingCart,
   Package,
   Users,
@@ -22,6 +23,7 @@ import ReceiptModal from "../components/modals/ReceiptModal";
 import { productService } from "../services/productService";
 import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
+import { transactionService } from "../services/transactionService";
 import { creditService } from "../services/creditService";
 import { useBranch } from "../contexts/BranchContext";
 import { supabase } from "../lib/supabase";
@@ -94,7 +96,59 @@ const DashboardPage = () => {
       // Fire and forget - each runs in parallel without waiting for others
       loadPart("Metrics", () => saleService.getDashboardMetrics(activeBranchId), setMetrics, "metrics");
       loadPart("Best Sellers", () => saleService.getTopSellingProducts(activeBranchId), setBestSellers, "bestSellers");
-      loadPart("Recent Orders", () => orderService.getRecentOrders(activeBranchId), setRecentSales, "recentSales");
+      
+      const fetchRecentTransactions = async () => {
+        const [recentOrders, recentManual] = await Promise.all([
+          orderService.getRecentOrders(activeBranchId),
+          transactionService.getRecentTransactions(activeBranchId, 20),
+        ]);
+
+        const formatPaymentMethodStr = (sale) => {
+          if (sale.payment_type === "credit_sale") return "ค้างชำระ";
+          const method = sale.payments?.[0]?.method;
+          if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
+          return "เงินสด";
+        };
+
+        const normalizedOrders = (recentOrders || []).map((o) => ({
+          ...o,
+          source: "order",
+          displayType: formatPaymentMethodStr(o),
+          displayAmount: Number(o.total_amount),
+          displayName: o.order_no ? `#${o.order_no.replace("ORD-", "")}` : "รายการขาย",
+          displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
+          isIncome: true,
+          clickable: true,
+          isCancelled: o.payment_status === "cancelled" || o.status === "cancelled",
+        }));
+
+        const normalizedManual = (recentManual || [])
+          .filter((m) => !(m.category === "sales" && m.reference_order_id))
+          .map((m) => {
+            let displayName = m.description || m.category || "ไม่ระบุรายการ";
+            const customerName = m.orders?.customers_info?.name;
+            if (m.category === "debt_payment" && customerName) {
+              displayName = `รับชำระหนี้ : ${customerName}`;
+            }
+            return {
+              ...m,
+              source: "manual",
+              displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+              displayAmount: Number(m.amount),
+              displayName,
+              displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
+              isIncome: m.trans_type === "income",
+              clickable: false,
+              isCancelled: false,
+            };
+          });
+
+        return [...normalizedOrders, ...normalizedManual].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+      };
+
+      loadPart("Recent Transactions", fetchRecentTransactions, setRecentSales, "recentSales");
       loadPart("Weekly Analytics", () => saleService.getWeeklyAnalytics(activeBranchId), setWeeklyAnalytics, "analytics");
       
       // Handle notifications for dashboard section
@@ -474,7 +528,7 @@ const DashboardPage = () => {
                   <div className="p-2 bg-emerald-50 rounded-xl text-emerald-500 border border-emerald-100/50">
                     <ShoppingCart size={20} strokeWidth={2.5} />
                   </div>
-                  รายการขายล่าสุด
+                  ความเคลื่อนไหวล่าสุด
                 </h3>
               </div>
 
@@ -483,20 +537,68 @@ const DashboardPage = () => {
                   <table className="w-full text-left border-separate border-spacing-y-4">
                     <tbody>
                       {recentSales.slice(0, 5).map((sale, idx) => {
+                        if (sale.source === "manual") {
+                          const isExpense = !sale.isIncome;
+                          return (
+                            <tr
+                              key={idx}
+                              className="group/row cursor-default"
+                            >
+                              <td className="py-1">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/row:scale-110 flex items-center justify-center bg-gray-50">
+                                  <div className={`p-2 rounded-full ${isExpense ? 'bg-rose-100 text-rose-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                                    {isExpense ? <TrendingDown size={20} /> : <TrendingUp size={20} />}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-1 pr-8">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-black text-gray-900 group-hover/row:text-primary transition-colors truncate max-w-[150px]">
+                                    {sale.displayName}
+                                  </span>
+                                  <span className="text-[9px] font-black text-primary/40 uppercase tracking-widest">
+                                    {sale.displayType}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-1">
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">
+                                    {sale.displaySubtitle}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-inactive">
+                                    {new Date(sale.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-1 text-right">
+                                <span className={`text-md font-black tracking-tight ${isExpense ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isExpense ? '-' : '+'}<span className="text-[10px] opacity-40 mx-1 font-bold">฿</span>
+                                  {sale.displayAmount?.toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="py-1 pl-4 text-right">
+                                <div className="flex items-center justify-end">
+                                  <div className="h-6 w-6 rounded-lg flex items-center justify-center transition-all bg-gray-50 text-gray-400">
+                                    <CheckCircle size={14} strokeWidth={2.5} />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }
+
                         // Get first product image from order items
                         const firstProduct = sale.order_items?.[0]?.products;
                         const productImage = firstProduct?.image_url;
-                        const customerName =
-                          sale.customers_info?.name || "ลูกค้าทั่วไป";
-                        const isRegularCustomer =
-                          !sale.customers_info?.name ||
-                          customerName === "ลูกค้าทั่วไป";
+                        const customerName = sale.customers_info?.name || "ลูกค้าทั่วไป";
+                        const isRegularCustomer = !sale.customers_info?.name || customerName === "ลูกค้าทั่วไป";
 
                         return (
                           <tr
                             key={idx}
-                            className="group/row cursor-pointer"
-                            onClick={() => handleOrderClick(sale)}
+                            className={`group/row ${sale.clickable ? 'cursor-pointer' : 'cursor-default'}`}
+                            onClick={() => sale.clickable && handleOrderClick(sale)}
                           >
                             <td className="py-1">
                               <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shadow-sm shrink-0 transition-transform duration-500 group-hover/row:scale-110 flex items-center justify-center bg-gray-50">
@@ -586,7 +688,7 @@ const DashboardPage = () => {
                       <FileText size={40} strokeWidth={1} />
                     </div>
                     <p className="text-xs font-bold text-inactive uppercase tracking-[0.2em]">
-                      ไม่มีรายการขายล่าสุด
+                      ไม่มีความเคลื่อนไหวล่าสุด
                     </p>
                   </div>
                 )}

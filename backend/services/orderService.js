@@ -131,6 +131,28 @@ const orderService = {
     });
 
     await Promise.all(stockUpdates);
+
+    // Record in account_transactions for unified ledger
+    // Only record as income if it's not a credit sale or if it's already paid
+    if (!(orderData.paymentStatus === "pending" && orderData.paymentMethod === "credit_sale")) {
+      try {
+        await supabase.from("account_transactions").insert([
+          {
+            store_id: branchId,
+            amount: orderData.totalAmount,
+            trans_type: "income",
+            category: "sales",
+            description: `ขายสินค้า เลขที่ ${order.order_no}`,
+            reference_order_id: order.id,
+            trans_date: new Date().toISOString().split("T")[0],
+            payment_method: orderData.paymentMethod || "cash",
+          },
+        ]);
+      } catch (err) {
+        console.error("[Account Transaction] Failed to record sale:", err.message);
+      }
+    }
+
     return order;
   },
 
@@ -144,10 +166,26 @@ const orderService = {
       )
       .eq("store_id", storeId);
 
-    // Filter by date if provided (YYYY-MM-DD)
+    // Filter by date if provided (YYYY-MM-DD, YYYY-MM, or YYYY)
     if (date) {
-      const start = `${date}T00:00:00`;
-      const end = `${date}T23:59:59`;
+      let start, end;
+      if (date.length === 4) {
+        // YYYY
+        start = `${date}-01-01T00:00:00.000Z`;
+        end = `${date}-12-31T23:59:59.999Z`;
+      } else if (date.length === 7) {
+        // YYYY-MM
+        const year = parseInt(date.substring(0, 4));
+        const month = parseInt(date.substring(5, 7)) - 1;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        start = `${date}-01T00:00:00.000Z`;
+        end = `${date}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+      } else {
+        // YYYY-MM-DD
+        // Use local day range (without Z) to match store's local time
+        start = `${date}T00:00:00`;
+        end = `${date}T23:59:59`;
+      }
       query = query.gte("created_at", start).lte("created_at", end);
     }
 

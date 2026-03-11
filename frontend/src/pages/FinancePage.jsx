@@ -102,7 +102,10 @@ const FinancePage = () => {
     paymentChannels: [],
   });
   const [dailyGraphData, setDailyGraphData] = useState([]);
+  const [tableMode, setTableMode] = useState("day");
+  const [paymentMode, setPaymentMode] = useState("day");
   const [transactions, setTransactions] = useState([]);
+  const [paymentChannelsData, setPaymentChannelsData] = useState([]);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [fullOrderData, setFullOrderData] = useState(null);
@@ -118,77 +121,120 @@ const FinancePage = () => {
   // Filters State
   const [viewMode, setViewMode] = useState("day"); // 'day', 'month', 'year'
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [listFilterDate, setListFilterDate] = useState(null);
 
-  const fetchFinanceData = useCallback(async (showLoader = true) => {
-    if (!activeBranchId) return;
-    if (showLoader) setLoading(true);
-    try {
-      // Format date for API (YYYY-MM-DD)
-      const dateStr = selectedDate instanceof Date 
-        ? selectedDate.toLocaleDateString('en-CA') 
-        : selectedDate;
+  const fetchFinanceData = useCallback(
+    async (showLoader = true) => {
+      if (!activeBranchId) return;
+      if (showLoader) setLoading(true);
+      try {
+        // Format date for API (YYYY-MM-DD)
+        const dateStr =
+          selectedDate instanceof Date
+            ? selectedDate.toLocaleDateString("en-CA")
+            : selectedDate;
 
-      const [stats, recentOrders, recentManual] = await Promise.all([
-        transactionService.getFinanceStats(activeBranchId, viewMode, dateStr),
-        orderService.getRecentOrders(activeBranchId, dateStr),
-        transactionService.getRecentTransactions(activeBranchId, 50, dateStr),
-      ]);
+        const filterDateStr =
+          listFilterDate ||
+          (tableMode === "month"
+            ? dateStr.substring(0, 7)
+            : tableMode === "year"
+              ? dateStr.substring(0, 4)
+              : dateStr);
 
-      setMetrics(stats);
-      
-      const formatPaymentMethod = (sale) => {
-        if (sale.payment_type === "credit_sale") return "ค้างชำระ";
-        const method = sale.payments?.[0]?.method;
-        if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
-        return "เงินสด";
-      };
+        const [stats, pStats, recentOrders, recentManual] = await Promise.all([
+          transactionService.getFinanceStats(activeBranchId, viewMode, dateStr),
+          transactionService.getFinanceStats(
+            activeBranchId,
+            paymentMode,
+            dateStr,
+          ),
+          orderService.getRecentOrders(activeBranchId, filterDateStr),
+          transactionService.getRecentTransactions(
+            activeBranchId,
+            100,
+            filterDateStr,
+          ),
+        ]);
 
-      const normalizedOrders = (recentOrders || []).map((o) => ({
-        ...o,
-        source: "order",
-        displayType: formatPaymentMethod(o),
-        displayAmount: Number(o.total_amount),
-        displayName: o.order_no,
-        displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
-        isIncome: true,
-        clickable: true,
-        isCancelled: o.payment_status === "cancelled" || o.status === "cancelled"
-      }));
+        console.log(
+          `Finance Debug: Orders: ${recentOrders?.length || 0}, Manual: ${recentManual?.length || 0}`,
+        );
 
-      const normalizedManual = (recentManual || [])
-        .filter((m) => !(m.category === "sales" && m.reference_order_id)) 
-        .map((m) => {
-          let displayName = m.description || m.category || "ไม่ระบุรายการ";
-          const customerName = m.orders?.customers_info?.name;
-          
-          if (m.category === "debt_payment" && customerName) {
-            displayName = `รับชำระหนี้ : ${customerName}`;
-          }
+        setMetrics(stats);
+        setPaymentChannelsData(pStats.paymentChannels || []);
 
-          return {
-            ...m,
-            source: "manual",
-            displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
-            displayAmount: Number(m.amount),
-            displayName,
-            displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
-            isIncome: m.trans_type === "income",
-            clickable: false,
-            isCancelled: false
-          };
-        });
+        const formatPaymentMethod = (sale) => {
+          if (sale.payment_type === "credit_sale") return "ค้างชำระ";
+          const method = sale.payments?.[0]?.method;
+          if (method === "qr_promptpay" || method === "transfer")
+            return "โอนเงิน";
+          return "เงินสด";
+        };
 
-      const combined = [...normalizedOrders, ...normalizedManual].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at),
-      );
+        const normalizedOrders = (recentOrders || []).map((o) => ({
+          ...o,
+          source: "order",
+          displayType: formatPaymentMethod(o),
+          displayAmount: Number(o.total_amount),
+          displayName: o.order_no,
+          displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
+          isIncome: true,
+          clickable: true,
+          isCancelled:
+            o.payment_status === "cancelled" || o.status === "cancelled",
+        }));
 
-      setTransactions(combined);
-    } catch (error) {
-      console.error("FinancePage: fetchFinanceData failed:", error);
-    } finally {
-      if (showLoader) setLoading(false);
-    }
-  }, [activeBranchId, viewMode, selectedDate]);
+        const normalizedManual = (recentManual || [])
+          .filter((m) => {
+            return !(m.category === "sales" && m.reference_order_id);
+          })
+          .map((m) => {
+            let displayName = m.description || m.category || "ไม่ระบุรายการ";
+            const customerName = m.orders?.customers_info?.name;
+
+            if (m.category === "debt_payment" && customerName) {
+              displayName = `รับชำระหนี้ : ${customerName}`;
+            }
+
+            return {
+              ...m,
+              source: "manual",
+              displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+              displayAmount: Number(m.amount),
+              displayName,
+              displaySubtitle:
+                m.category === "debt_payment" ? "ชำระหนี้" : m.category,
+              isIncome: m.trans_type === "income",
+              clickable: false,
+              isCancelled: false,
+            };
+          });
+
+        const combined = [...normalizedOrders, ...normalizedManual].sort(
+          (a, b) => {
+            const dateA = new Date(a.created_at || 0).getTime();
+            const dateB = new Date(b.created_at || 0).getTime();
+            return dateB - dateA;
+          },
+        );
+
+        setTransactions(combined);
+      } catch (error) {
+        console.error("FinancePage: fetchFinanceData failed:", error);
+      } finally {
+        if (showLoader) setLoading(false);
+      }
+    },
+    [
+      activeBranchId,
+      viewMode,
+      tableMode,
+      paymentMode,
+      selectedDate,
+      listFilterDate,
+    ],
+  );
 
   const getCacheKey = useCallback(
     (mode, date) => {
@@ -230,7 +276,8 @@ const FinancePage = () => {
       adjacentDates.forEach(({ mode, date }) => {
         const key = getCacheKey(mode, date);
         if (!dataCache.current[key]) {
-          const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
+          const dateStr =
+            date instanceof Date ? date.toISOString().split("T")[0] : date;
           transactionService
             .getAggregatedTransactions(activeBranchId, mode, dateStr)
             .then((data) => {
@@ -242,76 +289,120 @@ const FinancePage = () => {
     } catch (err) {}
   }, [selectedDate, viewMode, activeBranchId, getCacheKey]);
 
-  const fetchChartData = useCallback(async (showLoader = false) => {
-    const cacheKey = getCacheKey(viewMode, selectedDate);
+  const fetchChartData = useCallback(
+    async (showLoader = false) => {
+      const cacheKey = getCacheKey(viewMode, selectedDate);
 
-    // Check Cache (only use cache if NOT a background refresh)
-    if (dataCache.current[cacheKey] && showLoader) {
-      setDailyGraphData(dataCache.current[cacheKey]);
-      prefetchAdjacentData(); 
-      return;
-    }
+      // Check Cache (only use cache if NOT a background refresh)
+      if (dataCache.current[cacheKey] && showLoader) {
+        setDailyGraphData(dataCache.current[cacheKey]);
+        prefetchAdjacentData();
+        return;
+      }
 
-    try {
-      const dateStr = selectedDate instanceof Date 
-        ? selectedDate.toLocaleDateString('en-CA')
-        : selectedDate;
+      try {
+        const dateStr =
+          selectedDate instanceof Date
+            ? selectedDate.toLocaleDateString("en-CA")
+            : selectedDate;
 
-      const data = await transactionService.getAggregatedTransactions(
-        activeBranchId,
-        viewMode,
-        dateStr,
-      );
+        const data = await transactionService.getAggregatedTransactions(
+          activeBranchId,
+          viewMode,
+          dateStr,
+        );
 
-      // Update Cache
-      dataCache.current[cacheKey] = data;
-      setDailyGraphData(data);
-      prefetchAdjacentData();
-    } catch (error) {
-      console.error("FinancePage: fetchChartData failed:", error);
-    }
-  }, [selectedDate, viewMode, activeBranchId, prefetchAdjacentData, getCacheKey]);
+        // Update Cache
+        dataCache.current[cacheKey] = data;
+        setDailyGraphData(data);
+        prefetchAdjacentData();
+      } catch (error) {
+        console.error("FinancePage: fetchChartData failed:", error);
+      }
+    },
+    [selectedDate, viewMode, activeBranchId, prefetchAdjacentData, getCacheKey],
+  );
 
   useEffect(() => {
     if (activeBranchId) {
-      // Regular load + triggered load from realtime
-      fetchFinanceData(true);
-      fetchChartData(true);
+      // Show loader only if it's an initial load or viewMode/date change, not a silent background refresh
+      const isSilentRefresh = refreshTrigger > 0;
+      fetchFinanceData(!isSilentRefresh);
+      fetchChartData(!isSilentRefresh);
     }
-  }, [activeBranchId, viewMode, selectedDate, fetchFinanceData, fetchChartData, refreshTrigger]);
+  }, [
+    activeBranchId,
+    viewMode,
+    tableMode,
+    paymentMode,
+    selectedDate,
+    fetchFinanceData,
+    fetchChartData,
+    refreshTrigger,
+  ]);
 
-  // TC007: Aggressive Real-time synchronization
+  // TC007: Aggressive Real-time synchronization & Polling Fallback
   useEffect(() => {
     if (!activeBranchId) return;
 
-    console.log(`FinancePage: Subscribing to realtime for branch ${activeBranchId}`);
+    console.log(
+      `FinancePage: Subscribing to realtime for branch ${activeBranchId}`,
+    );
 
     const handleRealtimeUpdate = (payload) => {
-      console.log("FinancePage: Realtime event detected:", payload.table, payload.eventType);
-      
+      console.log(
+        "FinancePage: Realtime event detected:",
+        payload.table,
+        payload.eventType,
+      );
+
       // Clear any existing timeouts to debounce
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-      
+
       refreshTimeoutRef.current = setTimeout(() => {
         console.log("FinancePage: Performing background refresh trigger...");
         dataCache.current = {}; // FORCE INVALIDATE ALL CACHE
-        setRefreshTrigger(prev => prev + 1); // Trigger the main useEffect
-      }, 600); 
+        setRefreshTrigger((prev) => prev + 1); // Trigger the main useEffect
+      }, 600);
     };
 
     const financeChannel = supabase
       .channel(`finance_global_sync_${activeBranchId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, handleRealtimeUpdate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "account_transactions" }, handleRealtimeUpdate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, handleRealtimeUpdate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, handleRealtimeUpdate)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        handleRealtimeUpdate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "account_transactions" },
+        handleRealtimeUpdate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payments" },
+        handleRealtimeUpdate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items" },
+        handleRealtimeUpdate,
+      )
       .subscribe((status) => {
         console.log(`FinancePage: Subscription status: ${status}`);
       });
 
+    // Fallback: Poll every 20 seconds to guarantee data freshness even if Supabase Realtime isn't enabled
+    const pollInterval = setInterval(() => {
+      console.log("FinancePage: Polling for fresh data...");
+      dataCache.current = {};
+      setRefreshTrigger((prev) => prev + 1);
+    }, 20000);
+
     return () => {
-      console.log("FinancePage: Unsubscribing from realtime");
+      console.log("FinancePage: Unsubscribing from realtime and polling");
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      clearInterval(pollInterval);
       supabase.removeChannel(financeChannel);
     };
   }, [activeBranchId, fetchFinanceData, fetchChartData]);
@@ -324,6 +415,7 @@ const FinancePage = () => {
     else if (viewMode === "year")
       newDate.setFullYear(selectedDate.getFullYear() - 1);
     setSelectedDate(newDate);
+    setListFilterDate(null);
   }, [selectedDate, viewMode]);
 
   const handleNextDate = useCallback(() => {
@@ -334,6 +426,7 @@ const FinancePage = () => {
     else if (viewMode === "year")
       newDate.setFullYear(selectedDate.getFullYear() + 1);
     setSelectedDate(newDate);
+    setListFilterDate(null);
   }, [selectedDate, viewMode]);
 
   const handleDateChange = useCallback((dateStr) => {
@@ -341,6 +434,7 @@ const FinancePage = () => {
     const [day, month, year] = dateStr.split("/");
     const newDate = new Date(year, month - 1, day);
     setSelectedDate(newDate);
+    setListFilterDate(null);
   }, []);
 
   const formatDateForPicker = (date) => {
@@ -349,6 +443,48 @@ const FinancePage = () => {
       d.getMonth() + 1,
     ).padStart(2, "0")}/${d.getFullYear()}`;
   };
+
+  const handleBarClick = useCallback(
+    (data) => {
+      if (!data || !data.name) return;
+      if (viewMode === "month") {
+        const day = parseInt(data.name);
+        if (!isNaN(day)) {
+          const newDate = new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            day,
+          );
+          // setListFilterDate specifically to the clicked day
+          setListFilterDate(newDate.toLocaleDateString("en-CA"));
+          setTableMode("day");
+        }
+      } else if (viewMode === "year") {
+        const months = [
+          "ม.ค.",
+          "ก.พ.",
+          "มี.ค.",
+          "เม.ย.",
+          "พ.ค.",
+          "มิ.ย.",
+          "ก.ค.",
+          "ส.ค.",
+          "ก.ย.",
+          "ต.ค.",
+          "พ.ย.",
+          "ธ.ค.",
+        ];
+        const monthIndex = months.indexOf(data.name);
+        if (monthIndex !== -1) {
+          const year = selectedDate.getFullYear();
+          const formattedMonth = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+          setListFilterDate(formattedMonth);
+          setTableMode("month");
+        }
+      }
+    },
+    [viewMode, selectedDate],
+  );
 
   const handleTransactionClick = useCallback(
     async (tx) => {
@@ -602,7 +738,7 @@ const FinancePage = () => {
         color: "bg-emerald-50",
         iconBg: "bg-emerald-500",
         icon: TrendingUp,
-        isActive: true
+        isActive: true,
       },
       {
         id: 2,
@@ -613,29 +749,31 @@ const FinancePage = () => {
         color: "bg-emerald-50",
         iconBg: "bg-emerald-500",
         icon: TrendingDown,
-        isActive: true
+        isActive: true,
       },
       {
         id: 3,
         title: "กำไรขั้นต้น",
         amount: (metrics?.grossProfit || 0).toLocaleString(),
         subtext: "ยอดขาย - ต้นทุนขาย",
-        subtextColor: (metrics?.grossProfit >= 0) ? "text-emerald-500" : "text-rose-500",
-        color: (metrics?.grossProfit >= 0) ? "bg-emerald-50" : "bg-rose-50",
-        iconBg: (metrics?.grossProfit >= 0) ? "bg-emerald-500" : "bg-rose-500",
+        subtextColor:
+          metrics?.grossProfit >= 0 ? "text-emerald-500" : "text-rose-500",
+        color: metrics?.grossProfit >= 0 ? "bg-emerald-50" : "bg-rose-50",
+        iconBg: metrics?.grossProfit >= 0 ? "bg-emerald-500" : "bg-rose-500",
         icon: Coins,
-        isActive: true
+        isActive: true,
       },
       {
         id: 4,
         title: "กำไรสุทธิ",
         amount: (metrics?.netProfit || 0).toLocaleString(),
         subtext: "รายรับทั้งหมด - รายจ่ายทั้งหมด",
-        subtextColor: (metrics?.netProfit >= 0) ? "text-emerald-500" : "text-rose-500",
-        color: (metrics?.netProfit >= 0) ? "bg-emerald-50" : "bg-rose-50",
-        iconBg: (metrics?.netProfit >= 0) ? "bg-emerald-500" : "bg-rose-500",
+        subtextColor:
+          metrics?.netProfit >= 0 ? "text-emerald-500" : "text-rose-500",
+        color: metrics?.netProfit >= 0 ? "bg-emerald-50" : "bg-rose-50",
+        iconBg: metrics?.netProfit >= 0 ? "bg-emerald-500" : "bg-rose-500",
         icon: Wallet,
-        isActive: true
+        isActive: true,
       },
     ],
     [metrics],
@@ -678,7 +816,7 @@ const FinancePage = () => {
   );
 
   const paymentChannelDisplay = useMemo(() => {
-    return (metrics?.paymentChannels || []).map((pc, index) => {
+    return (paymentChannelsData || []).map((pc, index) => {
       // Basic mapping based on name or fallback
       let template =
         processedChannels.find(
@@ -695,15 +833,17 @@ const FinancePage = () => {
         iconBg: template.iconBg,
       };
     });
-  }, [metrics, processedChannels]);
+  }, [paymentChannelsData, processedChannels]);
 
   const filteredTransactions = useMemo(() => {
     if (!searchQuery.trim()) return transactions;
     const query = searchQuery.toLowerCase().trim();
-    return transactions.filter(tx =>
-      (tx.displayName && tx.displayName.toLowerCase().includes(query)) ||
-      (tx.displaySubtitle && tx.displaySubtitle.toLowerCase().includes(query)) ||
-      (tx.displayType && tx.displayType.toLowerCase().includes(query))
+    return transactions.filter(
+      (tx) =>
+        (tx.displayName && tx.displayName.toLowerCase().includes(query)) ||
+        (tx.displaySubtitle &&
+          tx.displaySubtitle.toLowerCase().includes(query)) ||
+        (tx.displayType && tx.displayType.toLowerCase().includes(query)),
     );
   }, [transactions, searchQuery]);
 
@@ -860,15 +1000,19 @@ const FinancePage = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
               {/* Date Controls */}
-              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 w-full sm:w-auto">
+              <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-full sm:w-auto shadow-sm">
                 {["day", "month", "year"].map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-inactive hover:text-gray-600"
-                      }`}
+                    onClick={() => {
+                      setViewMode(mode);
+                      setListFilterDate(null);
+                    }}
+                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all ${
+                      viewMode === mode
+                        ? "bg-white text-primary shadow-md transform scale-105"
+                        : "text-inactive hover:text-gray-600 hover:bg-white/50"
+                    }`}
                   >
                     {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
                   </button>
@@ -876,15 +1020,15 @@ const FinancePage = () => {
               </div>
 
               {/* Date Navigation */}
-              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100 w-full sm:w-auto">
+              <div className="flex items-center gap-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-full sm:w-auto shadow-sm">
                 <button
                   onClick={handlePrevDate}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-colors shadow-sm"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={20} />
                 </button>
 
-                <div className="flex-1 sm:w-[160px]">
+                <div className="flex-1 sm:w-[200px]">
                   <CustomDatePicker
                     key={formatDateForPicker(selectedDate)}
                     value={formatDateForPicker(selectedDate)}
@@ -894,16 +1038,20 @@ const FinancePage = () => {
 
                 <button
                   onClick={handleNextDate}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-colors shadow-sm"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-100 text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={20} />
                 </button>
               </div>
             </div>
           </div>
 
           <div className="h-[250px] md:h-[300px] w-full relative z-10">
-            <ResponsiveContainer width="100%" height="100%" key={`${viewMode}-${selectedDate.getTime()}`}>
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              key={`${viewMode}-${selectedDate.getTime()}`}
+            >
               <BarChart
                 data={dailyGraphData || []}
                 margin={{ top: 5, right: 10, bottom: 5, left: -20 }}
@@ -931,10 +1079,14 @@ const FinancePage = () => {
                   dx={-5}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={false} />
-                <Legend 
-                  verticalAlign="top" 
-                  align="right" 
-                  wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 'bold' }}
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  wrapperStyle={{
+                    paddingBottom: "20px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                  }}
                 />
                 <Bar
                   dataKey="income"
@@ -945,7 +1097,12 @@ const FinancePage = () => {
                     viewMode === "day" ? 20 : viewMode === "month" ? 10 : 40
                   }
                   animationDuration={500}
-                  activeBar={{ fill: "url(#incomeGradientActive)" }}
+                  activeBar={{
+                    fill: "url(#incomeGradientActive)",
+                    cursor: "pointer",
+                  }}
+                  onClick={handleBarClick}
+                  style={{ cursor: "pointer" }}
                 />
                 <Bar
                   dataKey="expense"
@@ -956,7 +1113,12 @@ const FinancePage = () => {
                     viewMode === "day" ? 20 : viewMode === "month" ? 10 : 40
                   }
                   animationDuration={500}
-                  activeBar={{ fill: "url(#expenseGradientActive)" }}
+                  activeBar={{
+                    fill: "url(#expenseGradientActive)",
+                    cursor: "pointer",
+                  }}
+                  onClick={handleBarClick}
+                  style={{ cursor: "pointer" }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -966,15 +1128,43 @@ const FinancePage = () => {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Payment Channels Section */}
           <div className="xl:col-span-4 bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-premium relative overflow-hidden">
-            <h2 className="text-xl font-black text-gray-900 tracking-tight mb-8">
-              ช่องทางการชำระเงิน
-            </h2>
+            <div className="flex flex-col gap-4 mb-8">
+              <div className="flex flex-row justify-between items-center ">
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                  ช่องทางการชำระเงิน
+                </h2>
+                <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-inner w-full sm:w-fit">
+                  {["day", "month", "year"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setPaymentMode(mode)}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-[12px] font-black uppercase tracking-wider transition-all ${
+                        paymentMode === mode
+                          ? "bg-white text-primary shadow-md transform scale-105"
+                          : "text-inactive hover:text-gray-600"
+                      }`}
+                    >
+                      {mode === "day"
+                        ? "วัน"
+                        : mode === "month"
+                          ? "เดือน"
+                          : "ปี"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Filter Toggle */}
+            </div>
             <div className="flex flex-col gap-6">
               {paymentChannelDisplay.length > 0 ? (
                 <>
                   <div className="space-y-5">
                     {paymentChannelDisplay.map((channel) => (
-                      <div key={channel.id} className="flex items-center gap-4 group/item">
+                      <div
+                        key={channel.id}
+                        className="flex items-center gap-4 group/item"
+                      >
                         <div
                           className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/item:scale-110 ${channel.iconBg}`}
                         >
@@ -988,14 +1178,16 @@ const FinancePage = () => {
                             </span>
                             <div className="text-right">
                               <p className="text-gray-900 font-black tracking-tighter tabular-nums">
-                                <span className="text-xs mr-0.5 opacity-50">฿</span>
+                                <span className="text-xs mr-0.5 opacity-50">
+                                  ฿
+                                </span>
                                 {channel.amount}
                               </p>
                             </div>
                           </div>
                           <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden border border-gray-100/50">
                             <div
-                              className={`h-full rounded-full transition-all duration-1000 ${channel.color.includes('primary') ? 'bg-gradient-to-r from-primary to-orange-400' : channel.color}`}
+                              className={`h-full rounded-full transition-all duration-1000 ${channel.color.includes("primary") ? "bg-gradient-to-r from-primary to-orange-400" : channel.color}`}
                               style={{ width: `${channel.percent}%` }}
                             ></div>
                           </div>
@@ -1009,21 +1201,27 @@ const FinancePage = () => {
                     <div className="absolute -right-4 -bottom-4 opacity-[0.05] text-primary transform -rotate-12 group-hover/total:rotate-0 transition-transform duration-700">
                       <TrendingUp size={80} />
                     </div>
-                    
+
                     <div className="flex items-center justify-between relative z-10">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-orange-glow animate-pulse-slow">
                           <TrendingUp size={20} strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-gray-900 font-black tracking-tight text-sm">ยอดรวมทุกช่องทาง</span>
-                          <span className="text-[10px] text-primary/70 font-bold uppercase tracking-widest">Total Revenue</span>
+                          <span className="text-gray-900 font-black tracking-tight text-sm">
+                            ยอดรวมทุกช่องทาง
+                          </span>
+                          <span className="text-[10px] text-primary/70 font-bold uppercase tracking-widest">
+                            Total Revenue
+                          </span>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-black tracking-tighter text-primary tabular-nums">
                           <span className="text-base mr-1">฿</span>
-                          {(metrics?.paymentChannels || []).reduce((sum, pc) => sum + (pc.amount || 0), 0).toLocaleString()}
+                          {(paymentChannelsData || [])
+                            .reduce((sum, pc) => sum + (pc.amount || 0), 0)
+                            .toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -1043,9 +1241,43 @@ const FinancePage = () => {
           {/* Recent Transactions Section */}
           <div className="xl:col-span-8 bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-premium relative overflow-hidden">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative z-10">
-              <h2 className="text-xl font-black text-gray-900 tracking-tight">
-                รายการล่าสุด
-              </h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                  รายการล่าสุด
+                </h2>
+
+                {/* Table Filter Toggle */}
+                <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-inner">
+                  {["day", "month", "year"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setTableMode(mode);
+                        setListFilterDate(null);
+                      }}
+                      className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                        tableMode === mode && !listFilterDate
+                          ? "bg-white text-primary shadow-md transform scale-105"
+                          : "text-inactive hover:text-gray-600"
+                      }`}
+                    >
+                      {mode === "day"
+                        ? "วัน"
+                        : mode === "month"
+                          ? "เดือน"
+                          : "ปี"}
+                    </button>
+                  ))}
+                  {listFilterDate && (
+                    <button
+                      onClick={() => setListFilterDate(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-primary bg-primary/10 ml-2 hover:bg-primary hover:text-white transition-all shadow-sm"
+                    >
+                      แสดงทั้งหมด
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div className="flex flex-col sm:flex-row flex-1 w-full sm:w-auto gap-3 items-center justify-end">
                 <div className="relative w-full max-w-[300px] group/search">
@@ -1070,35 +1302,47 @@ const FinancePage = () => {
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto scrollbar-hide">
-              <table className="w-full relative min-w-[600px]">
-                <thead className="sticky top-0 bg-white z-10 shadow-sm">
-                  <tr className="border-b border-gray-50">
-                    <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+            <div className="overflow-x-auto scrollbar-hide h-[500px] overflow-y-auto bg-white rounded-b-2xl border-x border-b border-gray-50">
+              <table className="w-full relative min-w-[600px] border-separate border-spacing-0">
+                <thead className="sticky top-0 bg-white z-20">
+                  <tr className="bg-gray-50/50">
+                    <th className="w-[35%] text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                       รายการ
                     </th>
-                    <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    <th className="w-[15%] text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                       วันที่
                     </th>
-                    <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    <th className="w-[15%] text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                       ประเภท
                     </th>
-                    <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    <th className="w-[20%] text-right py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                       จำนวน
                     </th>
-                    <th className="text-left py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em]">
+                    <th className="w-[15%] text-center py-4 px-4 text-inactive font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                       สถานะ
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {!(filteredTransactions && filteredTransactions.length > 0) ? (
+                  {!(
+                    filteredTransactions && filteredTransactions.length > 0
+                  ) ? (
                     <tr>
                       <td
                         colSpan="5"
-                        className="py-12 text-center text-inactive font-medium"
+                        className="h-[400px] text-center text-inactive font-bold"
                       >
-                        {searchQuery ? "ไม่พบข้อมูลที่ค้นหา" : "ไม่พบรายการเคลื่อนไหว"}
+                        <div className="flex flex-col items-center gap-3">
+                          <Search size={40} className="opacity-20 mb-2" />
+                          <p className="text-sm">
+                            {searchQuery
+                              ? `ไม่พบข้อมูลที่ค้นหา "${searchQuery}"`
+                              : "ไม่พบรายการเคลื่อนไหวในขณะนี้"}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-widest opacity-50">
+                            No transactions found
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -1106,11 +1350,13 @@ const FinancePage = () => {
                       <tr
                         key={index}
                         className={`hover:bg-gray-50/50 transition-colors ${tx.clickable ? "cursor-pointer" : "cursor-default"}`}
-                        onClick={() => tx.clickable && handleTransactionClick(tx)}
+                        onClick={() =>
+                          tx.clickable && handleTransactionClick(tx)
+                        }
                       >
-                        <td className="py-4 px-4 text-xs font-bold text-gray-900">
+                        <td className="py-4 px-4 text-xs font-bold text-gray-900 truncate max-w-0">
                           {tx.displayName}
-                          <p className="text-[10px] text-inactive font-medium">
+                          <p className="text-[10px] text-inactive font-medium truncate">
                             {tx.displaySubtitle}
                           </p>
                         </td>
@@ -1120,21 +1366,24 @@ const FinancePage = () => {
                         <td className="py-4 px-4 text-sm font-bold text-gray-900">
                           {tx.displayType}
                         </td>
-                        <td className="py-4 px-4 text-sm font-black ${tx.isCancelled ? 'opacity-40 grayscale' : tx.isIncome ? 'text-emerald-600' : 'text-rose-600'}">
+                        <td
+                          className={`py-4 px-4 text-sm font-black text-right ${tx.isCancelled ? "opacity-40 grayscale" : tx.isIncome ? "text-emerald-600" : "text-rose-600"}`}
+                        >
                           {tx.isCancelled ? "" : tx.isIncome ? "+" : "-"}
                           <span className="text-xs mr-0.5">฿</span>
                           {tx.displayAmount.toLocaleString()}
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 text-center">
                           <span
-                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${tx.isCancelled
-                              ? "bg-gray-100 text-gray-500"
-                              : tx.source === "manual"
-                                ? "bg-emerald-50 text-emerald-600"
-                                : tx.payment_status === "paid"
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase inline-block min-w-[70px] ${
+                              tx.isCancelled
+                                ? "bg-gray-100 text-gray-500"
+                                : tx.source === "manual"
                                   ? "bg-emerald-50 text-emerald-600"
-                                  : "bg-orange-50 text-orange-600"
-                              }`}
+                                  : tx.payment_status === "paid"
+                                    ? "bg-emerald-50 text-emerald-600"
+                                    : "bg-orange-50 text-orange-600"
+                            }`}
                           >
                             {tx.isCancelled
                               ? "ยกเลิก"
@@ -1146,7 +1395,8 @@ const FinancePage = () => {
                           </span>
                         </td>
                       </tr>
-                    )))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1167,94 +1417,100 @@ const FinancePage = () => {
         transaction={
           selectedTransaction
             ? {
-              receiptNo:
-                selectedTransaction.source === "manual"
-                  ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
-                  : selectedTransaction.order_no || "-",
-              date: new Date(
-                selectedTransaction.created_at,
-              ).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }),
-              paymentMethod: (() => {
-                if (selectedTransaction.payment_type === "credit_sale") return "ค้างชำระ";
-                const method = selectedTransaction.payments?.[0]?.method || (fullOrderData?.payments?.[0]?.method);
-                if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
-                return "เงินสด";
-              })(),
-              items: isLoadingDetails
-                ? [
-                  {
-                    name: "กำลังโหลด...",
-                    quantity: 0,
-                    price: 0,
-                    subtotal: 0,
-                  },
-                ]
-                : selectedTransaction.source === "manual" && !fullOrderData
+                receiptNo:
+                  selectedTransaction.source === "manual"
+                    ? `TX-${selectedTransaction.id?.toString().slice(-8) || "MANUAL"}`
+                    : selectedTransaction.order_no || "-",
+                date: new Date(
+                  selectedTransaction.created_at,
+                ).toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+                paymentMethod: (() => {
+                  if (selectedTransaction.payment_type === "credit_sale")
+                    return "ค้างชำระ";
+                  const method =
+                    selectedTransaction.payments?.[0]?.method ||
+                    fullOrderData?.payments?.[0]?.method;
+                  if (method === "qr_promptpay" || method === "transfer")
+                    return "โอนเงิน";
+                  return "เงินสด";
+                })(),
+                items: isLoadingDetails
                   ? [
-                    {
-                      name: selectedTransaction.displayName || "รายรับอื่น",
-                      quantity: 1,
-                      unit: "รายการ",
-                      price: Number(selectedTransaction.displayAmount || 0),
-                      subtotal: Number(
-                        selectedTransaction.displayAmount || 0,
-                      ),
-                    },
-                  ]
-                  : fullOrderData?.order_items?.map((detail) => ({
-                    name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
-                    quantity: detail.qty,
-                    unit: detail.products?.unit_type,
-                    price: detail.price_per_unit,
-                    subtotal: detail.subtotal,
-                    promotions: detail.promotions,
-                  })) || [
-                    {
-                      name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
-                      quantity: 1,
-                      unit: "ชิ้น",
-                      price: Number(
-                        selectedTransaction.total_amount ||
+                      {
+                        name: "กำลังโหลด...",
+                        quantity: 0,
+                        price: 0,
+                        subtotal: 0,
+                      },
+                    ]
+                  : selectedTransaction.source === "manual" && !fullOrderData
+                    ? [
+                        {
+                          name: selectedTransaction.displayName || "รายรับอื่น",
+                          quantity: 1,
+                          unit: "รายการ",
+                          price: Number(selectedTransaction.displayAmount || 0),
+                          subtotal: Number(
+                            selectedTransaction.displayAmount || 0,
+                          ),
+                        },
+                      ]
+                    : fullOrderData?.order_items?.map((detail) => ({
+                        name: detail.products?.name || "ไม่ทราบชื่อสินค้า",
+                        quantity: detail.qty,
+                        unit: detail.products?.unit_type,
+                        price: detail.price_per_unit,
+                        subtotal: detail.subtotal,
+                        promotions: detail.promotions,
+                      })) || [
+                        {
+                          name: `รายการ #${fullOrderData?.order_no || selectedTransaction.order_no || selectedTransaction.displayName || "-"}`,
+                          quantity: 1,
+                          unit: "ชิ้น",
+                          price: Number(
+                            selectedTransaction.total_amount ||
+                              selectedTransaction.displayAmount ||
+                              0,
+                          ),
+                          subtotal: Number(
+                            selectedTransaction.total_amount ||
+                              selectedTransaction.displayAmount ||
+                              0,
+                          ),
+                        },
+                      ],
+                total: isLoadingDetails
+                  ? Number(
+                      selectedTransaction.total_amount ||
                         selectedTransaction.displayAmount ||
                         0,
-                      ),
-                      subtotal: Number(
-                        selectedTransaction.total_amount ||
+                    )
+                  : fullOrderData?.total_amount ||
+                    Number(
+                      selectedTransaction.total_amount ||
                         selectedTransaction.displayAmount ||
                         0,
-                      ),
-                    },
-                  ],
-              total: isLoadingDetails
-                ? Number(
-                  selectedTransaction.total_amount ||
-                  selectedTransaction.displayAmount ||
-                  0,
-                )
-                : fullOrderData?.total_amount ||
-                Number(
-                  selectedTransaction.total_amount ||
-                  selectedTransaction.displayAmount ||
-                  0,
-                ),
-              received: fullOrderData?.payments?.[0]?.tendered_amount || 0,
-              change: fullOrderData?.payments?.[0]?.change_amount || 0,
-              store: {
-                name:
-                  selectedTransaction.payment_type !== "credit_sale" &&
+                    ),
+                received: fullOrderData?.payments?.[0]?.tendered_amount || 0,
+                change: fullOrderData?.payments?.[0]?.change_amount || 0,
+                store: {
+                  name:
+                    selectedTransaction.payment_type !== "credit_sale" &&
                     selectedTransaction.payment_method !== "credit_sale" &&
-                    (selectedTransaction.customers_info?.name === "ลูกค้าทั่วไป" ||
+                    (selectedTransaction.customers_info?.name ===
+                      "ลูกค้าทั่วไป" ||
                       !selectedTransaction.customers_info?.name)
-                    ? activeBranchName || "Goody"
-                    : selectedTransaction.customers_info?.name || "ลูกค้าทั่วไป",
-                address: activeBranchAddress || "Kasetsart",
-                phone: activeBranchPhone || "0950527411",
-              },
-            }
+                      ? activeBranchName || "Goody"
+                      : selectedTransaction.customers_info?.name ||
+                        "ลูกค้าทั่วไป",
+                  address: activeBranchAddress || "Kasetsart",
+                  phone: activeBranchPhone || "0950527411",
+                },
+              }
             : null
         }
         onClose={() => {
