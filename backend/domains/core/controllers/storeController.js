@@ -21,6 +21,16 @@ const storeController = {
     }
   },
 
+  async getStoreById(req, res) {
+    try {
+      const { id } = req.params;
+      const data = await storeService.getStoreById(id);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async getStoreStats(req, res) {
     try {
       const { id } = req.params;
