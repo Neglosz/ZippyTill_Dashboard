@@ -92,14 +92,23 @@ const taxService = {
             0,
         );
 
+        // 4. Calculate Taxes based on user formula (7/100)
+        const outputTax = totalOrderRevenue * 7 / 100;
+        const inputTax = totalCogs * 7 / 100;
+
         return {
             totalIncome,
             totalExpenses: generalExpenses + totalCogs,
+            outputTax,
+            inputTax,
+            netTax: outputTax - inputTax,
             details: {
                 orderRevenue: totalOrderRevenue,
                 otherIncome: totalOtherIncome,
                 generalExpenses,
                 cogs: totalCogs,
+                outputTax, // Also include in details for clarity
+                inputTax,
                 period,
                 year
             }
