@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Package,
   ArrowUpRight,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useBranch } from "./../../../contexts/BranchContext";
 import { productService } from "../../../services/productService";
+import { supabase } from "../../../lib/supabase";
 
 const StockReportPage = () => {
   const { activeBranchId } = useBranch();
@@ -28,17 +29,9 @@ const StockReportPage = () => {
     lowStockCount: 0,
   });
 
-  useEffect(() => {
-    if (activeBranchId) {
-      setTransactions([]); // reset ก่อนเสมอ เพื่อไม่ให้ข้อมูลร้านเก่าค้าง
-      setSummary({ totalOut: 0, totalIn: 0, lowStockCount: 0 });
-      fetchStockMovements();
-    }
-  }, [activeBranchId]);
-
-  const fetchStockMovements = async () => {
+  const fetchStockMovements = useCallback(async (showLoader = false) => {
     try {
-      setIsLoading(true);
+      if (showLoader) setIsLoading(true);
       setError(null);
 
       // Fetch movements and notifications in parallel
@@ -70,7 +63,48 @@ const StockReportPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeBranchId]);
+
+  useEffect(() => {
+    if (activeBranchId) {
+      setTransactions([]); // reset ก่อนเสมอ
+      setSummary({ totalOut: 0, totalIn: 0, lowStockCount: 0 });
+      fetchStockMovements(true); // Initial load with spinner
+
+      // TC007: Real-time synchronization for Stock Movements
+      const movementsChannel = supabase
+        .channel(`stock_movements_${activeBranchId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "inventory_transactions",
+            filter: `store_id=eq.${activeBranchId}`,
+          },
+          () => {
+            fetchStockMovements(false); // Silent update for realtime
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "orders",
+            filter: `store_id=eq.${activeBranchId}`,
+          },
+          () => {
+            fetchStockMovements(false); // Silent update for realtime
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(movementsChannel);
+      };
+    }
+  }, [activeBranchId, fetchStockMovements]);
 
   const filteredTransactions = useMemo(() => {
     return transactions
@@ -248,15 +282,27 @@ const StockReportPage = () => {
                     </td>
                     <td className="py-4 px-4 align-middle text-center">
                       <div className="flex justify-center">
-                        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-md">
-                          <img
-                            src={tx.imageUrl}
-                            alt={tx.product}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = "https://via.placeholder.com/150";
-                            }}
-                          />
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-md flex items-center justify-center">
+                          {tx.imageUrl ? (
+                            <img
+                              src={tx.imageUrl}
+                              alt={tx.product}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                if (e.target.nextSibling) {
+                                  e.target.nextSibling.style.display = "flex";
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`items-center justify-center w-full h-full text-gray-300 ${
+                              tx.imageUrl ? "hidden" : "flex"
+                            }`}
+                          >
+                            <Package size={32} strokeWidth={1.5} />
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -294,7 +340,7 @@ const StockReportPage = () => {
                         : "+"}
                       {tx.qty.toLocaleString()}
                     </td>
-                    <td className="py-4 px-4 text-center text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px] align-middle">
+                    <td className="py-4 px-4 text-center text-inactive font-medium text-sm group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px] align-middle">
                       <div className="line-clamp-1" title={tx.note}>
                         {tx.note}
                       </div>
