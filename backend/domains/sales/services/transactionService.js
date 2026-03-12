@@ -18,8 +18,9 @@ const aggregateByHour = (transactions) => {
   return hourlyData;
 };
 
-const aggregateByDay = (transactions, date) => {
-  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+const aggregateByDay = (transactions, year, month) => {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => ({ name: (i + 1).toString(), income: 0, expense: 0 }));
   transactions.forEach((tx) => {
     const dStr = tx.trans_date || tx.created_at;
@@ -60,58 +61,55 @@ const transactionService = {
   getAggregatedTransactions: async (storeId, periodType, date) => {
     if (!storeId) throw new Error("Store ID is required");
     
-    // Parse input date (Expects YYYY-MM-DD)
-    const dateParts = date.split('-');
-    const year = parseInt(dateParts[0]);
-    const month = parseInt(dateParts[1]) - 1;
-    const day = parseInt(dateParts[2]);
-    const selectedDate = new Date(year, month, day);
+    // Input date is YYYY-MM-DD (Thai Time)
+    const [year, month, day] = date.split('-').map(Number);
     
-    let startDate, endDate;
+    let startDateStr, endDateStr;
     
-    // Define Thai Day Range in UTC for query
     if (periodType === "day") {
-      // Thai 00:00:00 is UTC 17:00:00 of previous day
-      const start = new Date(Date.UTC(year, month, day, 0, 0, 0));
-      start.setUTCHours(start.getUTCHours() - 7);
-      
-      const end = new Date(start.getTime() + (24 * 60 * 60 * 1000) - 1000);
-      
-      startDate = start.toISOString();
-      endDate = end.toISOString();
+      startDateStr = date;
+      endDateStr = date;
     } else if (periodType === "month") {
-      const first = new Date(Date.UTC(year, month, 1, 0, 0, 0));
-      first.setUTCHours(first.getUTCHours() - 7);
-      
-      const last = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
-      last.setUTCHours(last.getUTCHours() - 7);
-      
-      startDate = first.toISOString();
-      endDate = last.toISOString();
+      startDateStr = `${year}-${String(month).padStart(2, "0")}-01`;
+      endDateStr = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
     } else {
-      startDate = `${year}-01-01T00:00:00Z`;
-      endDate = `${year}-12-31T23:59:59Z`;
+      startDateStr = `${year}-01-01`;
+      endDateStr = `${year}-12-31`;
     }
 
-    // Query from account_transactions
-    let query = supabase.from("account_transactions").select("*").eq("store_id", storeId);
-    query = query.gte("created_at", startDate).lte("created_at", endDate);
+    // 1. Get manual transactions (use trans_date for consistency with summary)
+    let txnQuery = supabase.from("account_transactions")
+      .select("amount, trans_type, category, reference_order_id, created_at, trans_date")
+      .eq("store_id", storeId);
+    
+    txnQuery = txnQuery.gte("trans_date", startDateStr).lte("trans_date", endDateStr);
 
-    const { data, error } = await query.order("created_at", { ascending: true });
+    const { data: manualData, error } = await txnQuery;
     if (error) throw error;
 
-    // Query from orders
-    let orderQuery = supabase.from("orders").select("total_amount, created_at, payment_type, payment_status").eq("store_id", storeId);
-    orderQuery = orderQuery.gte("created_at", startDate).lte("created_at", endDate);
+    // 2. Get order revenue (use created_at with offset for consistency with summary)
+    let orderQuery = supabase.from("orders")
+      .select("total_amount, created_at, payment_type, payment_status")
+      .eq("store_id", storeId)
+      .neq("payment_status", "cancelled");
+
+    orderQuery = orderQuery.gte("created_at", `${startDateStr}T00:00:00+07:00`)
+                           .lte("created_at", `${endDateStr}T23:59:59+07:00`);
 
     const { data: orderData } = await orderQuery;
 
-    const combinedData = [...(data || [])];
-    const txnOrderIds = new Set(data?.map(t => t.reference_order_id).filter(Boolean) || []);
+    const combinedData = [];
+    const txnOrderIds = new Set(manualData?.map(t => t.reference_order_id).filter(Boolean) || []);
+
+    // Filter manual data to remove double counts
+    (manualData || []).forEach(tx => {
+       if (tx.category === "sales" && tx.reference_order_id) return;
+       combinedData.push(tx);
+    });
 
     (orderData || []).forEach(o => {
       if (o.payment_type === "credit_sale" && o.payment_status !== "paid") return;
-      if (txnOrderIds.has(o.id)) return; // Skip if already in account_transactions
+      if (txnOrderIds.has(o.id)) return; 
 
       combinedData.push({
         amount: o.total_amount,
@@ -121,7 +119,7 @@ const transactionService = {
     });
 
     if (periodType === "day") return aggregateByHour(combinedData);
-    else if (periodType === "month") return aggregateByDay(combinedData, selectedDate);
+    else if (periodType === "month") return aggregateByDay(combinedData, year, month);
     else return aggregateByMonth(combinedData);
   },
 
@@ -136,22 +134,22 @@ const transactionService = {
     if (date) {
       if (date.length === 4) {
         // YYYY
-        const startStr = `${date}-01-01`;
-        const endStr = `${date}-12-31`;
-        query = query.gte("trans_date", startStr).lte("trans_date", endStr);
+        const start = `${date}-01-01T00:00:00+07:00`;
+        const end = `${date}-12-31T23:59:59+07:00`;
+        query = query.gte("created_at", start).lte("created_at", end);
       } else if (date.length === 7) {
         // YYYY-MM
         const year = parseInt(date.substring(0, 4));
         const month = parseInt(date.substring(5, 7)) - 1;
         const lastDay = new Date(year, month + 1, 0).getDate();
-        const startStr = `${date}-01`;
-        const endStr = `${date}-${String(lastDay).padStart(2, '0')}`;
-        query = query.gte("trans_date", startStr).lte("trans_date", endStr);
+        const start = `${date}-01T00:00:00+07:00`;
+        const end = `${date}-${String(lastDay).padStart(2, '0')}T23:59:59+07:00`;
+        query = query.gte("created_at", start).lte("created_at", end);
       } else {
         // YYYY-MM-DD
-        // Filter by both trans_date (for legacy/manual) OR created_at (for real-time)
-        // We use or condition to be safe
-        query = query.or(`trans_date.eq.${date},and(created_at.gte.${date}T00:00:00,created_at.lte.${date}T23:59:59)`);
+        const start = `${date}T00:00:00+07:00`;
+        const end = `${date}T23:59:59+07:00`;
+        query = query.gte("created_at", start).lte("created_at", end);
       }
     }
 
@@ -207,7 +205,7 @@ const transactionService = {
       .neq("payment_status", "cancelled");
 
     if (periodType && periodType !== "all") {
-      orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00`).lte("created_at", `${endDate}T23:59:59`);
+      orderQuery = orderQuery.gte("created_at", `${startDate}T00:00:00+07:00`).lte("created_at", `${endDate}T23:59:59+07:00`);
     }
     const { data: orders } = await orderQuery;
 

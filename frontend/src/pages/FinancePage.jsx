@@ -277,7 +277,7 @@ const FinancePage = () => {
         const key = getCacheKey(mode, date);
         if (!dataCache.current[key]) {
           const dateStr =
-            date instanceof Date ? date.toISOString().split("T")[0] : date;
+            date instanceof Date ? date.toLocaleDateString("en-CA") : date;
           transactionService
             .getAggregatedTransactions(activeBranchId, mode, dateStr)
             .then((data) => {
@@ -405,7 +405,7 @@ const FinancePage = () => {
       clearInterval(pollInterval);
       supabase.removeChannel(financeChannel);
     };
-  }, [activeBranchId, fetchFinanceData, fetchChartData]);
+  }, [activeBranchId]);
 
   const handlePrevDate = useCallback(() => {
     const newDate = new Date(selectedDate);
@@ -429,10 +429,8 @@ const FinancePage = () => {
     setListFilterDate(null);
   }, [selectedDate, viewMode]);
 
-  const handleDateChange = useCallback((dateStr) => {
-    if (!dateStr) return;
-    const [day, month, year] = dateStr.split("/");
-    const newDate = new Date(year, month - 1, day);
+  const handleDateChange = useCallback((newDate) => {
+    if (!newDate) return;
     setSelectedDate(newDate);
     setListFilterDate(null);
   }, []);
@@ -999,26 +997,6 @@ const FinancePage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
-              {/* Date Controls */}
-              <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-full sm:w-auto shadow-sm">
-                {["day", "month", "year"].map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => {
-                      setViewMode(mode);
-                      setListFilterDate(null);
-                    }}
-                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all ${
-                      viewMode === mode
-                        ? "bg-white text-primary shadow-md transform scale-105"
-                        : "text-inactive hover:text-gray-600 hover:bg-white/50"
-                    }`}
-                  >
-                    {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
-                  </button>
-                ))}
-              </div>
-
               {/* Date Navigation */}
               <div className="flex items-center gap-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-full sm:w-auto shadow-sm">
                 <button
@@ -1028,11 +1006,12 @@ const FinancePage = () => {
                   <ChevronLeft size={20} />
                 </button>
 
-                <div className="flex-1 sm:w-[200px]">
+                <div className="flex-1 items- sm:w-[200px]">
                   <CustomDatePicker
-                    key={formatDateForPicker(selectedDate)}
+                    key={`${viewMode}-${selectedDate.getTime()}`}
                     value={formatDateForPicker(selectedDate)}
                     onChange={handleDateChange}
+                    mode={viewMode}
                   />
                 </div>
 
@@ -1042,6 +1021,25 @@ const FinancePage = () => {
                 >
                   <ChevronRight size={20} />
                 </button>
+              </div>
+              {/* Date Controls */}
+              <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-fit mx-auto xl:mx-0 shadow-sm">
+                {["day", "month", "year"].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setViewMode(mode);
+                      setListFilterDate(null);
+                    }}
+                    className={`px-8 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all min-w-[90px] ${
+                      viewMode === mode
+                        ? "bg-white text-primary shadow-md transform scale-105"
+                        : "text-inactive hover:text-gray-600 hover:bg-white/50"
+                    }`}
+                  >
+                    {mode === "day" ? "วัน" : mode === "month" ? "เดือน" : "ปี"}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

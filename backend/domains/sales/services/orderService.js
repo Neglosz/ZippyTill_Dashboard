@@ -194,18 +194,18 @@ const orderService = {
     if (date) {
       let start, end;
       if (date.length === 4) { // YYYY format
-        start = `${date}-01-01T00:00:00.000Z`;
-        end = `${date}-12-31T23:59:59.999Z`;
+        start = `${date}-01-01T00:00:00+07:00`;
+        end = `${date}-12-31T23:59:59+07:00`;
       } else if (date.length === 7) { // YYYY-MM format
         const year = parseInt(date.substring(0, 4));
         const month = parseInt(date.substring(5, 7)) - 1;
         const lastDay = new Date(year, month + 1, 0).getDate();
-        start = `${date}-01T00:00:00.000Z`;
-        end = `${date}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+        start = `${date}-01T00:00:00+07:00`;
+        end = `${date}-${String(lastDay).padStart(2, '0')}T23:59:59+07:00`;
       } else { // YYYY-MM-DD format
         // Uses local time range to match the store's operating day
-        start = `${date}T00:00:00`;
-        end = `${date}T23:59:59`;
+        start = `${date}T00:00:00+07:00`;
+        end = `${date}T23:59:59+07:00`;
       }
       query = query.gte("created_at", start).lte("created_at", end);
     }
