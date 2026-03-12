@@ -95,19 +95,6 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
             />
             สลับสาขา
           </button>
-          <button
-            onClick={() => {
-              navigate("/dashboard/settings");
-              onClose();
-            }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-all group"
-          >
-            <Settings
-              size={18}
-              className="text-gray-400 group-hover:text-primary"
-            />
-            Settings
-          </button>
         </div>
 
         <div className="p-2 border-t border-gray-50">
