@@ -61,7 +61,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
       >
         <div className="p-4 border-b border-gray-50 bg-gray-50/30">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-            Account
+            บัญชีผู้ใช้
           </p>
           <p className="text-sm font-bold text-[#1B2559] truncate">
             {displayName}
@@ -83,7 +83,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
               size={18}
               className="text-gray-400 group-hover:text-primary"
             />
-            Profile Info
+            บัญชีผู้ใช้
           </button>
           <button
             onClick={handleSwitchStore}
@@ -106,7 +106,7 @@ const ProfileDropdown = ({ isOpen, onClose, user }) => {
               size={18}
               className="text-red-400 group-hover:text-red-500"
             />
-            Sign Out
+            ออกจากระบบ
           </button>
         </div>
       </div>
