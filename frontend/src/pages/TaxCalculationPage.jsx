@@ -39,6 +39,12 @@ const TaxCalculationPage = () => {
 
           setIncome(data.totalIncome.toString());
           setExpenses(data.totalExpenses.toString());
+
+          // Populate VAT bases from details
+          if (data.details) {
+            setBuyVatAmount(data.details.cogs?.toString() || "0");
+            setSellVatAmount(data.details.orderRevenue?.toString() || "0");
+          }
         } catch (error) {
           console.error("Failed to fetch tax data:", error);
         } finally {
@@ -87,8 +93,8 @@ const TaxCalculationPage = () => {
   }, [taxableIncome]);
 
   // --- VAT Calculation Logic ---
-  const buyVat = ((Number(buyVatAmount) || 0) * 7) / 107;
-  const sellVat = ((Number(sellVatAmount) || 0) * 7) / 107;
+  const buyVat = ((Number(buyVatAmount) || 0) * 7) / 100;
+  const sellVat = ((Number(sellVatAmount) || 0) * 7) / 100;
   const netVat = sellVat - buyVat;
 
   const formatCurrency = (val) => {
@@ -424,7 +430,8 @@ const TaxCalculationPage = () => {
                     handleFormattedInput(e, setBuyVatAmount)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right"
+                  readOnly={true}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right opacity-70 cursor-not-allowed"
                 />
               </div>
               <div className="bg-emerald-50 rounded-xl p-4 flex items-center justify-between border border-emerald-100 overflow-hidden">
@@ -462,7 +469,8 @@ const TaxCalculationPage = () => {
                     handleFormattedInput(e, setSellVatAmount)
                   }
                   onWheel={handleWheel}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right"
+                  readOnly={true}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-200 outline-none text-gray-900 font-black text-lg tracking-tighter transition-all text-right opacity-70 cursor-not-allowed"
                 />
               </div>
               <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between border border-blue-100 overflow-hidden">
