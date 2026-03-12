@@ -32,6 +32,7 @@ router.use(authMiddleware);
 // Feature routes
 router.use("/profile", profileRoutes);
 router.use("/products", productRoutes);
+router.use("/transactions", transactionRoutes);
 router.use("/orders", orderRoutes);
 router.use("/finance", financeRoutes);
 router.use("/credit", creditRoutes);
@@ -39,13 +40,11 @@ router.use("/promotions", promotionRoutes);
 router.use("/sales", saleRoutes);
 
 // --- Store & Notifications Priority Section ---
-// Mount specific notification routes before generic store ID routes
-router.use("/", notificationRoutes); // handles /stores/:id/notifications
-router.use("/stores", settingRoutes); // handles /stores/:id/settings
-router.use("/stores", storeRoutes);   // handles /stores/:id and /stores/:id/stats
+router.use("/", notificationRoutes);
+router.use("/stores", settingRoutes);
+router.use("/stores", storeRoutes);
 // ----------------------------------------------
 
-router.use("/transactions", transactionRoutes);
 router.use("/ai", aiRoutes);
 router.use("/tax", taxRoutes);
 
