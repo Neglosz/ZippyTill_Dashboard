@@ -81,14 +81,14 @@ const productService = {
       });
     }
 
-    if (initialQty > 0 && data?.id) {
+    if (data?.id) {
       const { data: userData } = await supabase.auth.getUser();
       await supabase.from("inventory_transactions").insert({
         product_id: data.id,
         trans_type: "in",
         qty: initialQty,
         reference_type: "product_creation",
-        notes: "นำเข้าสินค้าใหม่",
+        notes: initialQty > 0 ? "นำเข้าสินค้าใหม่" : "เพิ่มสินค้าใหม่ (ยังไม่มีสต็อก)",
         store_id: branchId,
         created_by: userData?.user?.id,
         created_at: new Date().toISOString(),
