@@ -331,11 +331,6 @@ const DashboardPage = () => {
                 <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                   <FileText size={32} strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
-                  <TrendingUp size={14} strokeWidth={3} />{" "}
-                  {weeklyAnalytics.growth > 0 ? "+" : ""}
-                  {weeklyAnalytics.growth}%
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -361,11 +356,6 @@ const DashboardPage = () => {
                 <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                   <ShoppingCart size={32} strokeWidth={2} />
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
-                  <TrendingUp size={14} strokeWidth={3} />{" "}
-                  {weeklyAnalytics.growth > 0 ? "+" : ""}
-                  {Math.round(weeklyAnalytics.growth * 0.8)}%
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -389,11 +379,6 @@ const DashboardPage = () => {
               <div className="flex justify-between items-start mb-8">
                 <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary to-orange-600 text-white shadow-lg border border-orange-400/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                   <Package size={32} strokeWidth={2} />
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border-2 bg-emerald-50 text-emerald-600 border-emerald-200/50 shadow-sm">
-                  <TrendingUp size={14} strokeWidth={3} />{" "}
-                  {weeklyAnalytics.growth > 0 ? "+" : ""}
-                  {Math.round(weeklyAnalytics.growth * 0.1)}%
                 </div>
               </div>
 
