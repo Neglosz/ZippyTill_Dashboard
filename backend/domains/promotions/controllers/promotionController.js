@@ -62,6 +62,17 @@ const promotionController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  previewPromotion: async (req, res) => {
+    try {
+      const { promoData, products } = req.body;
+      const data = promotionService.previewPromotion(promoData, products);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
+
 
 module.exports = promotionController;

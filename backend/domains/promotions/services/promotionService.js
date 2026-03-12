@@ -1,6 +1,53 @@
 const { supabase } = require("../../core/config/supabase");
 
 const promotionService = {
+  calculatePromotionPrice(productPrice, promoType, promoValue) {
+    if (promoType === "discount_percent" || promoType === "percent") {
+      return productPrice - (productPrice * (parseFloat(promoValue) || 0)) / 100;
+    }
+    if (promoType === "discount_amount" || promoType === "amount") {
+      return Math.max(0, productPrice - (parseFloat(promoValue) || 0));
+    }
+    return productPrice;
+  },
+
+  previewPromotion(promoData, products) {
+    const { type, value } = promoData;
+
+    return products.map(product => {
+      const originalPrice = Number(product.price || 0);
+      const costPrice = Number(product.cost_price || product.costPrice || 0);
+      const originalProfit = originalPrice - costPrice;
+
+      const promoPrice = this.calculatePromotionPrice(originalPrice, type, value);
+      const promoProfit = promoPrice - costPrice;
+
+      // TC139: Acceptable Profit = Original Profit * (1 - %Discount)
+      let discountRate = 0;
+      if (type === "discount_percent" || type === "percent") {
+        discountRate = (parseFloat(value) || 0) / 100;
+      } else if ((type === "discount_amount" || type === "amount") && originalPrice > 0) {
+        discountRate = (parseFloat(value) || 0) / originalPrice;
+      }
+
+      const dynamicAcceptableProfit = originalProfit * (1 - discountRate);
+      const isProfitAcceptable = promoProfit >= dynamicAcceptableProfit;
+      const isLoss = promoProfit < 0;
+
+      return {
+        id: product.id,
+        name: product.name,
+        originalPrice,
+        promoPrice,
+        promoProfit,
+        dynamicAcceptableProfit,
+        isProfitAcceptable,
+        isLoss,
+        profitPercentage: promoPrice > 0 ? (promoProfit / promoPrice) * 100 : 0
+      };
+    });
+  },
+
   getPromotions: async (storeId) => {
     if (!storeId) throw new Error("Store ID is required");
     try {
@@ -109,15 +156,12 @@ const promotionService = {
     console.log(`[promotionService] Attempting to delete promotion: ${promotionId}`);
     if (!promotionId) throw new Error("Promotion ID is required");
 
-    // If authHeader is provided, use it to set the session for this request
-    // This helps bypass RLS issues if the anon key is restricted
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
       await supabase.auth.setSession({ access_token: token, refresh_token: "" });
     }
 
     try {
-      // 1. Set promotion_id to null in order_items to avoid foreign key constraint violation
       console.log(`[promotionService] Step 1: Clearing promotion_id in order_items for promo ${promotionId}`);
       const { data: updateData, error: updateError } = await supabase
         .from("order_items")
@@ -127,34 +171,23 @@ const promotionService = {
       
       if (updateError) {
         console.error("[promotionService] Error clearing promotion_id in order_items:", updateError);
-      } else {
-        console.log(`[promotionService] Successfully cleared promotion_id in ${updateData?.length || 0} order_items`);
       }
 
-      // 2. Delete all promotion items to avoid foreign key constraints
       console.log(`[promotionService] Step 2: Deleting promotion_items for promo ${promotionId}`);
       const { error: itemsError } = await supabase
         .from("promotion_items")
         .delete()
         .eq("promotion_id", promotionId);
-      if (itemsError) {
-        console.error("[promotionService] Error deleting promotion_items:", itemsError);
-        throw itemsError;
-      }
+      if (itemsError) throw itemsError;
 
-      // 3. Then delete the promotion itself
       console.log(`[promotionService] Step 3: Deleting promotion ${promotionId}`);
       const { error: promoError } = await supabase
         .from("promotions")
         .delete()
         .eq("id", promotionId);
       
-      if (promoError) {
-        console.error("[promotionService] Error deleting promotion:", promoError);
-        throw promoError;
-      }
+      if (promoError) throw promoError;
 
-      console.log(`[promotionService] Successfully deleted promotion ${promotionId}`);
       return true;
     } catch (error) {
       console.error("Error in deletePromotion:", error);

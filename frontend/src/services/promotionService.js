@@ -25,6 +25,11 @@ export const promotionService = {
     return apiClient.delete(`/promotions/${promotionId}/items/${productId}`);
   },
 
+  previewPromotion: async (promoData, products) => {
+    return apiClient.post("/promotions/preview", { promoData, products });
+  },
+
+  // Legacy frontend logic - prefer backend previewPromotion
   calculateEfficiency: (items, totalSales) => {
     return Math.floor(Math.random() * 40) + 60;
   },

@@ -1,6 +1,55 @@
 const { supabase } = require("../../core/config/supabase");
 
+/**
+ * Calculation logic moved from frontend to ensure backend is the source of truth.
+ * Formulas and brackets are preserved exactly as they were in the frontend.
+ */
+
 const taxService = {
+    calculatePIT(income, expenses, deductions) {
+        const taxableIncome = Math.max(0, (Number(income) || 0) - (Number(expenses) || 0) - (Number(deductions) || 0));
+        
+        let remaining = taxableIncome;
+        let totalTax = 0;
+        const brackets = [
+            { min: 0, limit: 150000, rate: 0, label: "ยกเว้น (0%)" },
+            { min: 150001, limit: 150000, rate: 0.05, label: "5%" },
+            { min: 300001, limit: 200000, rate: 0.1, label: "10%" },
+            { min: 500001, limit: 250000, rate: 0.15, label: "15%" },
+            { min: 750001, limit: 250000, rate: 0.2, label: "20%" },
+            { min: 1000001, limit: 1000000, rate: 0.25, label: "25%" },
+            { min: 2000001, limit: 3000000, rate: 0.3, label: "30%" },
+            { min: 5000001, limit: Infinity, rate: 0.35, label: "35%" },
+        ];
+
+        let currentRateLabel = "0%";
+        for (const bracket of brackets) {
+            if (remaining <= 0) break;
+            const taxableInThisBracket = Math.min(remaining, bracket.limit);
+            totalTax += taxableInThisBracket * bracket.rate;
+            remaining -= taxableInThisBracket;
+            if (taxableInThisBracket > 0) currentRateLabel = bracket.label;
+        }
+
+        return {
+            taxableIncome,
+            totalTax,
+            currentRateLabel,
+        };
+    },
+
+    calculateVAT(buyAmount, sellAmount) {
+        const buyVat = ((Number(buyAmount) || 0) * 7) / 100;
+        const sellVat = ((Number(sellAmount) || 0) * 7) / 100;
+        const netVat = sellVat - buyVat;
+
+        return {
+            buyVat,
+            sellVat,
+            netVat,
+        };
+    },
+
     async getTaxSummary(branchId, year, period) {
         if (!branchId) throw new Error("Branch ID is required");
 
@@ -92,23 +141,24 @@ const taxService = {
             0,
         );
 
-        // 4. Calculate Taxes based on user formula (7/100)
-        const outputTax = totalOrderRevenue * 7 / 100;
-        const inputTax = totalCogs * 7 / 100;
+        const totalExpenses = generalExpenses + totalCogs;
+
+        // Perform calculations using extracted logic
+        const pit = this.calculatePIT(totalIncome, totalExpenses, 0);
+        const vat = this.calculateVAT(totalCogs, totalOrderRevenue);
 
         return {
             totalIncome,
-            totalExpenses: generalExpenses + totalCogs,
-            outputTax,
-            inputTax,
-            netTax: outputTax - inputTax,
+            totalExpenses,
+            ...pit,
+            ...vat,
             details: {
                 orderRevenue: totalOrderRevenue,
                 otherIncome: totalOtherIncome,
                 generalExpenses,
                 cogs: totalCogs,
-                outputTax, // Also include in details for clarity
-                inputTax,
+                outputTax: vat.sellVat,
+                inputTax: vat.buyVat,
                 period,
                 year
             }
@@ -117,3 +167,4 @@ const taxService = {
 };
 
 module.exports = taxService;
+
