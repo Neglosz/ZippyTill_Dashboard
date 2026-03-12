@@ -13,6 +13,10 @@ export const storeService = {
     return apiClient.get(`/stores/${storeId}/stats`);
   },
 
+  async getStoreById(storeId) {
+    return apiClient.get(`/stores/${storeId}`);
+  },
+
   async updateLastAccessed(storeId) {
     return apiClient.post(`/stores/${storeId}/access`);
   },

@@ -9,7 +9,7 @@ const storeService = {
       .from("stores")
       .select("*")
       .eq("owner_id", userId);
-    
+
     if (ownedError) throw ownedError;
 
     // Get stores where the user is a member (manager, staff, etc.)
@@ -17,17 +17,17 @@ const storeService = {
       .from("store_members")
       .select(`store_id, role, stores (*)`)
       .eq("user_id", userId);
-    
+
     if (memberError) throw memberError;
 
-    const memberStores = membershipData.map((m) => ({ 
-      ...m.stores, 
-      role: m.role 
+    const memberStores = membershipData.map((m) => ({
+      ...m.stores,
+      role: m.role
     }));
 
     // Combine and deduplicate
     const allStores = [...ownedStores.map((s) => ({ ...s, role: "owner" }))];
-    
+
     memberStores.forEach((ms) => {
       if (!allStores.find((s) => s.id === ms.id)) {
         allStores.push(ms);
@@ -36,7 +36,7 @@ const storeService = {
 
     // Sort by last accessed to show most relevant first
     allStores.sort((a, b) => (b.last_accessed_at ? new Date(b.last_accessed_at).getTime() : 0) - (a.last_accessed_at ? new Date(a.last_accessed_at).getTime() : 0));
-    
+
     return allStores;
   },
 
@@ -78,6 +78,18 @@ const storeService = {
   async updateLastAccessed(storeId) {
     if (!storeId) return;
     try { await supabase.from("stores").update({ last_accessed_at: new Date().toISOString() }).eq("id", storeId); } catch (err) { }
+  },
+
+  async getStoreById(storeId) {
+    if (!storeId) throw new Error("Store ID is required");
+    const { data, error } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("id", storeId)
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   async updateStore(storeId, updateData, userId) {

@@ -25,13 +25,13 @@ import { useParams, useNavigate } from "react-router-dom";
 const ProfilePage = () => {
   const { userId: urlUserId } = useParams();
   const navigate = useNavigate();
-  const { 
-    activeBranchId, 
-    activeBranchName, 
-    activeBranchImage, 
-    setActiveBranchImage, 
-    selectBranch, 
-    userRole 
+  const {
+    activeBranchId,
+    activeBranchName,
+    activeBranchImage,
+    setActiveBranchImage,
+    selectBranch,
+    userRole
   } = useBranch();
   const fileInputRef = useRef(null);
 
@@ -52,6 +52,9 @@ const ProfilePage = () => {
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editBranchName, setEditBranchName] = useState(branchName);
+  const [editUserPhone, setEditUserPhone] = useState(userProfile.phone);
+  const [editStoreAddress, setEditStoreAddress] = useState(storeData.address);
+  const [editStorePhone, setEditStorePhone] = useState(storeData.phone);
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -84,13 +87,14 @@ const ProfilePage = () => {
             setUserProfile({
               email: profileData.email || user.email || "",
               fullName: profileData.full_name || "",
+              phone: profileData.phone || "",
               role: profileData.role === "owner" ? "เจ้าของร้าน" : "ผู้จัดการ",
               createdAt: profileData.created_at
                 ? new Date(profileData.created_at).toLocaleDateString("th-TH", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
                 : "",
             });
           }
@@ -100,7 +104,7 @@ const ProfilePage = () => {
 
         // Load store data from Backend API
         if (activeBranchId) {
-          const store = await storeService.getStoreStats(activeBranchId); // storeService already exists
+          const store = await storeService.getStoreById(activeBranchId);
 
           if (store) {
             setBranchName(store.name);
@@ -111,8 +115,6 @@ const ProfilePage = () => {
             if (store.image_url) {
               setProfileImage(store.image_url);
             }
-            // If store has created_at, update profile created date if needed
-            // TC: Preserve original logic
           }
         }
       } catch (err) {
@@ -152,7 +154,9 @@ const ProfilePage = () => {
 
   // Open edit modal
   const handleOpenEdit = () => {
-    setEditBranchName(branchName);
+    setEditBranchName(branchName || "");
+    setEditStoreAddress(storeData.address || "");
+    setEditStorePhone(storeData.phone || "");
     setPreviewImage(profileImage);
     setImageFile(null);
     setIsEditModalOpen(true);
@@ -195,13 +199,15 @@ const ProfilePage = () => {
   const handleSave = async () => {
     // Basic client-side sanitization: strip HTML tags
     const sanitizedName = editBranchName.trim().replace(/<[^>]*>?/gm, '');
-    
+
     setSaving(true);
     try {
       // Update store in database
       if (activeBranchId) {
-        const updateData = { 
+        const updateData = {
           name: sanitizedName,
+          address: editStoreAddress.trim(),
+          phone: editStorePhone.trim(),
           image_url: previewImage // This will be the compressed base64 or null
         };
 
@@ -218,6 +224,11 @@ const ProfilePage = () => {
 
       // Update local state
       setBranchName(sanitizedName);
+      setStoreData(prev => ({
+        ...prev,
+        address: editStoreAddress.trim(),
+        phone: editStorePhone.trim()
+      }));
       setProfileImage(previewImage);
 
       setIsEditModalOpen(false);
@@ -293,22 +304,24 @@ const ProfilePage = () => {
                   />
                 ) : (
                   <span className="text-5xl font-black text-primary">
-                    {displayName.charAt(0).toUpperCase()}
+                    {(displayName || "").charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => {
-                  if (!isEditModalOpen) handleOpenEdit();
-                }}
-                className="absolute -bottom-2 -right-2 w-10 h-10 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-primary/50 active:scale-90 transition-all"
-              >
-                <Camera size={18} strokeWidth={2.5} />
-              </button>
+              {userRole !== 'manager' && (
+                <button
+                  onClick={() => {
+                    if (!isEditModalOpen) handleOpenEdit();
+                  }}
+                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-primary/50 active:scale-90 transition-all"
+                >
+                  <Camera size={18} strokeWidth={2.5} />
+                </button>
+              )}
             </div>
 
             <h2 className="text-2xl font-black text-gray-900 tracking-tighter mb-1">
-              {displayName}
+              {displayName || "ไม่มีชื่อสาขา"}
             </h2>
             <p className="text-sm font-medium text-inactive mb-2">
               {userProfile.email || "-"}
@@ -318,15 +331,17 @@ const ProfilePage = () => {
               {userProfile.role || "ผู้ดูแลระบบ"}
             </span>
 
-            <div className="w-full mt-8 pt-6 border-t border-gray-100">
-              <button
-                onClick={handleOpenEdit}
-                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gray-50 hover:bg-primary/5 text-gray-600 hover:text-primary rounded-2xl font-bold text-sm transition-all border border-gray-100 hover:border-primary/20 active:scale-95"
-              >
-                <Edit size={16} strokeWidth={2.5} />
-                แก้ไขโปรไฟล์
-              </button>
-            </div>
+            {userRole !== 'manager' && (
+              <div className="w-full mt-8 pt-6 border-t border-gray-100">
+                <button
+                  onClick={handleOpenEdit}
+                  className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gray-50 hover:bg-primary/5 text-gray-600 hover:text-primary rounded-2xl font-bold text-sm transition-all border border-gray-100 hover:border-primary/20 active:scale-95"
+                >
+                  <Edit size={16} strokeWidth={2.5} />
+                  แก้ไขโปรไฟล์
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right: Info Details */}
@@ -359,7 +374,7 @@ const ProfilePage = () => {
         icon={Edit}
         onSave={handleSave}
         saving={saving}
-        saveDisabled={!editBranchName.trim()}
+        saveDisabled={!editBranchName?.trim()}
       >
         {/* Image Upload */}
         <div className="flex flex-col items-center mb-8">
@@ -376,7 +391,7 @@ const ProfilePage = () => {
                 />
               ) : (
                 <span className="text-4xl font-black text-primary">
-                  {editBranchName.charAt(0).toUpperCase()}
+                  {(editBranchName || "").charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
@@ -403,7 +418,7 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Branch Name */}
+        {/* Form Fields */}
         <div className="mb-8">
           <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
             ชื่อสาขา
@@ -412,8 +427,29 @@ const ProfilePage = () => {
             type="text"
             value={editBranchName}
             onChange={(e) => setEditBranchName(e.target.value)}
-            className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all mb-4"
             placeholder="กรอกชื่อสาขา"
+          />
+
+          <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
+            เบอร์โทรศัพท์ (ร้าน/สาขา)
+          </label>
+          <input
+            type="text"
+            value={editStorePhone}
+            onChange={(e) => setEditStorePhone(e.target.value)}
+            className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all mb-4"
+            placeholder="กรอกเบอร์โทรศัพท์ร้าน"
+          />
+
+          <label className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2 block">
+            ที่อยู่ร้าน
+          </label>
+          <textarea
+            value={editStoreAddress}
+            onChange={(e) => setEditStoreAddress(e.target.value)}
+            className="w-full bg-gray-50/50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all h-24 resize-none"
+            placeholder="กรอกที่อยู่ร้าน"
           />
         </div>
       </Modal>
