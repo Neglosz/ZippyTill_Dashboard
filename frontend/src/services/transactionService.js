@@ -13,6 +13,11 @@ export const transactionService = {
     return apiClient.get(`/transactions/recent?storeId=${storeId}&limit=${limit}${dateQuery}`);
   },
 
+  getRecentActivity: async (storeId, limit = 100, filterDate = null) => {
+    const dateQuery = filterDate ? `&filterDate=${filterDate}` : "";
+    return apiClient.get(`/transactions/activity?storeId=${storeId}&limit=${limit}${dateQuery}`);
+  },
+
   getFinanceStats: async (storeId, viewMode, date) => {
     const dateStr = date instanceof Date 
       ? date.toLocaleDateString('en-CA') // YYYY-MM-DD in local time

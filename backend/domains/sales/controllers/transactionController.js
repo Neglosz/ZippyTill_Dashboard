@@ -21,6 +21,16 @@ const transactionController = {
     }
   },
 
+  async getRecentActivity(req, res) {
+    try {
+      const { storeId, limit, filterDate } = req.query;
+      const data = await transactionService.getRecentActivity(storeId, limit, filterDate);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async getFinanceStats(req, res) {
     try {
       const { storeId, viewMode, date } = req.query;

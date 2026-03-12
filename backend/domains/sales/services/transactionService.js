@@ -123,6 +123,82 @@ const transactionService = {
     else return aggregateByMonth(combinedData);
   },
 
+  getRecentActivity: async (storeId, limit = 100, filterDate = null) => {
+    if (!storeId) throw new Error("Store ID is required");
+
+    // Fetch orders and manual transactions in parallel
+    const [ordersRes, manualRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("id, order_no, total_amount, payment_status, status, created_at, payment_type, customers_info(name), payments(method)")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabase
+        .from("account_transactions")
+        .select("*, orders:reference_order_id(customers_info(name))")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(limit)
+    ]);
+
+    if (ordersRes.error) throw ordersRes.error;
+    if (manualRes.error) throw manualRes.error;
+
+    let recentOrders = ordersRes.data || [];
+    let recentManual = manualRes.data || [];
+
+    // Date filtering logic (same as frontend)
+    if (filterDate) {
+      recentOrders = recentOrders.filter(o => o.created_at.startsWith(filterDate));
+      recentManual = recentManual.filter(m => m.created_at.startsWith(filterDate));
+    }
+
+    const formatPaymentMethod = (sale) => {
+      if (sale.payment_type === "credit_sale") return "ค้างชำระ";
+      const method = sale.payments?.[0]?.method;
+      if (method === "qr_promptpay" || method === "transfer") return "โอนเงิน";
+      return "เงินสด";
+    };
+
+    const normalizedOrders = recentOrders.map((o) => ({
+      ...o,
+      source: "order",
+      displayType: formatPaymentMethod(o),
+      displayAmount: Number(o.total_amount),
+      displayName: o.order_no,
+      displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
+      isIncome: true,
+      clickable: true,
+      isCancelled: o.payment_status === "cancelled" || o.status === "cancelled",
+    }));
+
+    const normalizedManual = recentManual
+      .filter((m) => !(m.category === "sales" && m.reference_order_id))
+      .map((m) => {
+        let displayName = m.description || m.category || "ไม่ระบุรายการ";
+        const customerName = m.orders?.customers_info?.name;
+        if (m.category === "debt_payment" && customerName) {
+          displayName = `รับชำระหนี้ : ${customerName}`;
+        }
+        return {
+          ...m,
+          source: "manual",
+          displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
+          displayAmount: Number(m.amount),
+          displayName,
+          displaySubtitle: m.category === "debt_payment" ? "ชำระหนี้" : m.category,
+          isIncome: m.trans_type === "income",
+          clickable: false,
+          isCancelled: false,
+        };
+      });
+
+    return [...normalizedOrders, ...normalizedManual].sort(
+      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    );
+  },
+
   getRecentTransactions: async (storeId, limit = 10, date) => {
     if (!storeId) throw new Error("Store ID is required");
     

@@ -208,6 +208,13 @@ const productService = {
       throw new Error("ไม่สามารถลบได้เนื่องจากสินค้าอยู่ในออเดอร์ที่ยังไม่ชำระเงิน");
     }
 
+    // Fetch product info for logging before delete
+    const { data: product } = await supabase
+      .from("products")
+      .select("name, stock_qty, image_url")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase
       .from("products")
       .update({ deleted_at: new Date().toISOString() })
@@ -215,6 +222,22 @@ const productService = {
       .eq("store_id", branchId);
 
     if (error) throw error;
+
+    // Automatically record stock removal history (Moved from frontend)
+    if (product) {
+      const { data: userData } = await supabase.auth.getUser();
+      await supabase.from("inventory_transactions").insert({
+        product_id: id,
+        trans_type: "out",
+        qty: product.stock_qty || 0,
+        reference_type: "product_deletion",
+        notes: "ลบสินค้าออกจากระบบ (อัตโนมัติ)",
+        store_id: branchId,
+        created_by: userData?.user?.id,
+        created_at: new Date().toISOString(),
+      });
+    }
+
     return true;
   },
 
@@ -438,10 +461,21 @@ const productService = {
       note: item.notes || "ปรับสต็อก",
     }));
 
-    const allMovements = [...movements, ...inventoryMovements];
-    return allMovements.sort(
+    const allMovements = [...movements, ...inventoryMovements].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at),
     );
+
+    // Calculate summary logic (moved from frontend)
+    const summary = {
+      totalOut: Math.round(allMovements
+        .filter(m => m.type === "OUT" && m.reference_type !== "product_deletion")
+        .reduce((sum, m) => sum + m.qty, 0)),
+      totalIn: Math.round(allMovements
+        .filter(m => m.type === "IN")
+        .reduce((sum, m) => sum + m.qty, 0))
+    };
+
+    return { movements: allMovements, summary };
   },
 
   async getTopStockProducts(branchId, limit = 10) {
