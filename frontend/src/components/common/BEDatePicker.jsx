@@ -7,6 +7,7 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     const [currentDate, setCurrentDate] = useState(value ? new Date(value) : new Date());
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0, elementTop: 0 });
     const [isReady, setIsReady] = useState(false);
+    const [showAbove, setShowAbove] = useState(false);
     const containerRef = useRef(null);
     const triggerRef = useRef(null);
 
@@ -20,7 +21,9 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     // Calculate dynamic styles based on align prop
     const getDropdownStyles = () => {
         const baseStyles = {
-            top: `${coords.top + 8}px`,
+            top: showAbove
+                ? `${coords.elementTop - 360}px` // Approximate height of datepicker
+                : `${coords.top + 8}px`,
             width: '280px'
         };
 
@@ -61,6 +64,10 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
     const updateCoords = () => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const dropdownHeight = 360; // Approximate height with padding
+            const spaceBelow = windowHeight - rect.bottom;
+
             setCoords({
                 top: rect.bottom + window.scrollY,
                 left: rect.left + window.scrollX,
@@ -68,6 +75,7 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
                 height: rect.height,
                 elementTop: rect.top + window.scrollY
             });
+            setShowAbove(spaceBelow < dropdownHeight && rect.top > dropdownHeight);
             setIsReady(true);
         }
     };
@@ -76,13 +84,13 @@ const BEDatePicker = ({ value, onChange, placeholder = "วัน/เดือ�
         if (isOpen) {
             setIsReady(false);
             updateCoords();
-            
+
             // Re-calculate after a tiny delay to ensure proper layout
             const timer = setTimeout(updateCoords, 0);
-            
+
             window.addEventListener('scroll', updateCoords, true);
             window.addEventListener('resize', updateCoords);
-            
+
             return () => {
                 clearTimeout(timer);
                 window.removeEventListener('scroll', updateCoords, true);
