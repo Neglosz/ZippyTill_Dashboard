@@ -219,8 +219,8 @@ const saleService = {
         .filter(t => t.trans_type === "expense")
         .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-      // Total Net Revenue
-      const totalRevenue = totalOrderRevenue + totalOtherIncome - totalOtherExpense;
+      // Total Gross Revenue
+      const totalRevenue = totalOrderRevenue + totalOtherIncome;
 
       // 3. Fetch ALL order items to get total sold qty and verify revenue
       let totalSold = 0;
@@ -302,8 +302,8 @@ const saleService = {
         .filter(t => t.trans_type === "expense")
         .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-      // Today's Net Revenue/Cashflow
-      const todayRevenue = todayOrderRevenue + todayOtherIncome - todayOtherExpense;
+      // Today's Gross Revenue
+      const todayRevenue = todayOrderRevenue + todayOtherIncome;
 
       // 2. All-time revenue & orders
       const [allOrders, allManualTxns] = await Promise.all([
@@ -327,7 +327,7 @@ const saleService = {
         .filter(t => t.trans_type === "expense")
         .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-      const totalRevenue = totalOrderRevenue + totalOtherIncome - totalOtherExpense;
+      const totalRevenue = totalOrderRevenue + totalOtherIncome;
 
       // 3. Total items sold
       let totalSold = 0;
