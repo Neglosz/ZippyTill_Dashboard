@@ -35,26 +35,17 @@ const StockReportPage = () => {
       setError(null);
 
       // Fetch movements and notifications in parallel
-      const [movements, notifications] = await Promise.all([
+      const [response, notifications] = await Promise.all([
         productService.getStockMovements(activeBranchId),
         productService.getDashboardNotifications(activeBranchId),
       ]);
 
-      setTransactions(movements);
-
-      // Calculate simple summary from movements
-      const out = movements
-        .filter(
-          (m) => m.type === "OUT" && m.reference_type !== "product_deletion",
-        )
-        .reduce((sum, m) => sum + m.qty, 0);
-      const in_move = movements
-        .filter((m) => m.type === "IN")
-        .reduce((sum, m) => sum + m.qty, 0);
-
+      // Use pre-calculated movements and summary from backend
+      setTransactions(response.movements || []);
+      
       setSummary({
-        totalOut: Math.round(out),
-        totalIn: Math.round(in_move),
+        totalOut: response.summary?.totalOut || 0,
+        totalIn: response.summary?.totalIn || 0,
         lowStockCount: notifications.lowStock?.length || 0,
       });
     } catch (err) {

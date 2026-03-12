@@ -142,84 +142,21 @@ const FinancePage = () => {
               ? dateStr.substring(0, 4)
               : dateStr);
 
-        const [stats, pStats, recentOrders, recentManual] = await Promise.all([
+        const [stats, pStats, activity] = await Promise.all([
           transactionService.getFinanceStats(activeBranchId, viewMode, dateStr),
           transactionService.getFinanceStats(
             activeBranchId,
             paymentMode,
             dateStr,
           ),
-          orderService.getRecentOrders(activeBranchId, filterDateStr),
-          transactionService.getRecentTransactions(
-            activeBranchId,
-            100,
-            filterDateStr,
-          ),
+          transactionService.getRecentActivity(activeBranchId, 100, filterDateStr),
         ]);
 
-        console.log(
-          `Finance Debug: Orders: ${recentOrders?.length || 0}, Manual: ${recentManual?.length || 0}`,
-        );
+        console.log(`Finance Debug: Activities: ${activity?.length || 0}`);
 
         setMetrics(stats);
         setPaymentChannelsData(pStats.paymentChannels || []);
-
-        const formatPaymentMethod = (sale) => {
-          if (sale.payment_type === "credit_sale") return "ค้างชำระ";
-          const method = sale.payments?.[0]?.method;
-          if (method === "qr_promptpay" || method === "transfer")
-            return "โอนเงิน";
-          return "เงินสด";
-        };
-
-        const normalizedOrders = (recentOrders || []).map((o) => ({
-          ...o,
-          source: "order",
-          displayType: formatPaymentMethod(o),
-          displayAmount: Number(o.total_amount),
-          displayName: o.order_no,
-          displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
-          isIncome: true,
-          clickable: true,
-          isCancelled:
-            o.payment_status === "cancelled" || o.status === "cancelled",
-        }));
-
-        const normalizedManual = (recentManual || [])
-          .filter((m) => {
-            return !(m.category === "sales" && m.reference_order_id);
-          })
-          .map((m) => {
-            let displayName = m.description || m.category || "ไม่ระบุรายการ";
-            const customerName = m.orders?.customers_info?.name;
-
-            if (m.category === "debt_payment" && customerName) {
-              displayName = `รับชำระหนี้ : ${customerName}`;
-            }
-
-            return {
-              ...m,
-              source: "manual",
-              displayType: m.trans_type === "income" ? "รายรับอื่น" : "รายจ่าย",
-              displayAmount: Number(m.amount),
-              displayName,
-              displaySubtitle:
-                m.category === "debt_payment" ? "ชำระหนี้" : m.category,
-              isIncome: m.trans_type === "income",
-              clickable: false,
-              isCancelled: false,
-            };
-          });
-
-        const combined = [...normalizedOrders, ...normalizedManual].sort(
-          (a, b) => {
-            const dateA = new Date(a.created_at || 0).getTime();
-            const dateB = new Date(b.created_at || 0).getTime();
-            return dateB - dateA;
-          },
-        );
-
-        setTransactions(combined);
+        setTransactions(activity || []);
       } catch (error) {
         console.error("FinancePage: fetchFinanceData failed:", error);
       } finally {
