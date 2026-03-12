@@ -24,7 +24,7 @@ import { productService } from "../services/productService";
 import { saleService } from "../services/saleService";
 import { orderService } from "../services/orderService";
 import { transactionService } from "../services/transactionService";
-import { creditService } from "../services/creditService";
+import { financeService } from "../services/financeService";
 import { useBranch } from "../contexts/BranchContext";
 import { supabase } from "../lib/supabase";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
@@ -177,14 +177,20 @@ const DashboardPage = () => {
       };
       loadNotifications();
 
-      // Overdue Items logic
+      // Overdue Items logic - Refactored to use backend summary
       const loadOverdue = async () => {
         try {
-          const items = await creditService.getOverdueItems(activeBranchId);
-          const totalOutstanding = (items || []).reduce((sum, item) => sum + (item.amount || 0), 0);
-          const uniqueCustomers = [...new Set((items || []).map((i) => i.customerId))];
+          const [items, summary] = await Promise.all([
+            financeService.getOverdueItems(activeBranchId),
+            financeService.getOverdueSummary(activeBranchId)
+          ]);
+          
           const avatars = (items || []).slice(0, 4).map(i => i.imageUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${i.customerId}`);
-          setOutstanding({ amount: totalOutstanding, customerCount: uniqueCustomers.length, customers: avatars });
+          setOutstanding({ 
+            amount: summary.totalOverdueAmount, 
+            customerCount: summary.uniqueOverdueCustomers, 
+            customers: avatars 
+          });
         } catch (err) {
           console.error("Dashboard: Overdue failed:", err);
         } finally {

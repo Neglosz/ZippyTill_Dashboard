@@ -28,6 +28,7 @@ import PromoProductEditModal from "../components/features/ai/PromoProductEditMod
 import { useBranch } from "../contexts/BranchContext";
 import { aiService } from "../services/aiService";
 import { promotionService } from "../services/promotionService";
+import { analyticsService } from "../services/analyticsService";
 import { supabase } from "../lib/supabase";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
 
@@ -215,113 +216,16 @@ const AIPromotionPage = () => {
     if (!activeBranchId) return;
     try {
       setIsChartLoading(true);
-      const now = new Date();
-      let startDateStr;
-
-      if (timeRange === "daily") {
-        const d = new Date(now);
-        d.setDate(d.getDate() - 6);
-        d.setHours(0, 0, 0, 0);
-        startDateStr = d.toISOString();
-      } else if (timeRange === "monthly") {
-        const d = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-        startDateStr = d.toISOString();
-      } else {
-        const d = new Date(now.getFullYear() - 4, 0, 1);
-        startDateStr = d.toISOString();
-      }
-
-      const { data: items, error } = await supabase
-        .from("order_items")
-        .select(`subtotal, promotion_id, orders!inner ( created_at, store_id )`)
-        .eq("orders.store_id", activeBranchId)
-        .gte("orders.created_at", startDateStr);
-
-      if (error) throw error;
-
-      const buckets = [];
-      if (timeRange === "daily") {
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(now.getDate() - i);
-          buckets.push({
-            dateObj: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
-            name: d.toLocaleDateString("th-TH", {
-              day: "numeric",
-              month: "short",
-            }),
-            withPromo: 0,
-            noPromo: 0,
-          });
-        }
-      } else if (timeRange === "monthly") {
-        const thaiMonths = [
-          "ม.ค.",
-          "ก.พ.",
-          "มี.ค.",
-          "เม.ย.",
-          "พ.ค.",
-          "มิ.ย.",
-          "ก.ค.",
-          "ส.ค.",
-          "ก.ย.",
-          "ต.ค.",
-          "พ.ย.",
-          "ธ.ค.",
-        ];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          buckets.push({
-            month: d.getMonth(),
-            year: d.getFullYear(),
-            name:
-              thaiMonths[d.getMonth()] +
-              " " +
-              String(d.getFullYear() + 543).slice(-2),
-            withPromo: 0,
-            noPromo: 0,
-          });
-        }
-      } else {
-        for (let i = 4; i >= 0; i--) {
-          const d = new Date(now.getFullYear() - i, 0, 1);
-          buckets.push({
-            year: d.getFullYear(),
-            name: String(d.getFullYear() + 543),
-            withPromo: 0,
-            noPromo: 0,
-          });
-        }
-      }
-
-      (items || []).forEach((item) => {
-        const createdAt = item.orders?.created_at;
-        if (!createdAt) return;
-        const d = new Date(createdAt);
-        let bucket = buckets.find((b) => {
-          if (timeRange === "daily")
-            return (
-              d.getDate() === b.dateObj.getDate() &&
-              d.getMonth() === b.dateObj.getMonth() &&
-              d.getFullYear() === b.dateObj.getFullYear()
-            );
-          if (timeRange === "monthly")
-            return b.month === d.getMonth() && b.year === d.getFullYear();
-          return b.year === d.getFullYear();
-        });
-        if (!bucket) return;
-        const amount = parseFloat(item.subtotal) || 0;
-        if (item.promotion_id) bucket.withPromo += amount;
-        else bucket.noPromo += amount;
-      });
-
-      setChartData(
-        buckets.map((m) => ({
-          ...m,
-          withPromo: m.withPromo > 0 ? m.withPromo : null,
-          noPromo: m.noPromo > 0 ? m.noPromo : null,
-        })),
-      );
+      const backendRange = timeRange === "daily" ? "day" : timeRange === "monthly" ? "month" : "year";
+      const data = await analyticsService.getSalesData(activeBranchId, backendRange);
+      
+      // Map to withPromo/noPromo structure if needed, or update chart to use revenue
+      // For now, let's keep it simple and use 'revenue' from backend
+      setChartData(data.map(item => ({
+        ...item,
+        withPromo: item.revenue, // Backend doesn't split yet, but we'll show total
+        noPromo: 0
+      })));
     } catch (err) {
       console.error("fetchChartData error:", err);
     } finally {
@@ -332,53 +236,6 @@ const AIPromotionPage = () => {
   useEffect(() => { fetchRecs(); }, [fetchRecs]);
   useEffect(() => { fetchPromos(); }, [fetchPromos]);
   useEffect(() => { fetchChartData(); }, [fetchChartData, timeRange]);
-
-  // Real-time Subscriptions
-  useEffect(() => {
-    if (!activeBranchId) return;
-
-    // 1. Listen to changes in promotions table
-    const promoChannel = supabase
-      .channel('promo-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'promotions',
-          filter: `store_id=eq.${activeBranchId}`,
-        },
-        () => {
-          console.log("🔔 Promotion change detected, refreshing...");
-          fetchPromos();
-        }
-      )
-      .subscribe();
-
-    // 2. Listen to new sales (orders) to update charts and stats
-    const orderChannel = supabase
-      .channel('order-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: `store_id=eq.${activeBranchId}`,
-        },
-        () => {
-          console.log("💰 New sale detected, updating real-time data...");
-          fetchChartData();
-          fetchPromos(); // Promos might have updated sales/customer counts
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(promoChannel);
-      supabase.removeChannel(orderChannel);
-    };
-  }, [activeBranchId, fetchPromos, fetchChartData]);
 
   // Real-time Subscriptions
   useEffect(() => {
@@ -772,11 +629,7 @@ const AIPromotionPage = () => {
                   <div className="flex items-center gap-4 mt-2">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-[#ED7117]" />
-                      <span className="text-[11px] font-bold text-inactive">ใช้โปรโมชั่น</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#9CA3AF]" />
-                      <span className="text-[11px] font-bold text-inactive">ไม่ใช้โปรโมชั่น</span>
+                      <span className="text-[11px] font-bold text-inactive">ยอดขายรวม</span>
                     </div>
                   </div>
                 </div>
@@ -836,16 +689,9 @@ const AIPromotionPage = () => {
                         formatter={(value) => [`฿${Number(value).toLocaleString()}`, undefined]}
                       />
                       <Bar
-                        dataKey="withPromo"
-                        name="ยอดขายจากโปรโมชั่น"
+                        dataKey="revenue"
+                        name="ยอดขาย"
                         fill="#ED7117"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={40}
-                      />
-                      <Bar
-                        dataKey="noPromo"
-                        name="ยอดขายปกติ"
-                        fill="#9CA3AF"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={40}
                       />

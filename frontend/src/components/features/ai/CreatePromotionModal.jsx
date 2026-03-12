@@ -65,6 +65,34 @@ const CreatePromotionModal = ({
   const [isParsingPrompt, setIsParsingPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [previewData, setPreviewData] = useState([]);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Backend preview calculation
+  useEffect(() => {
+    const fetchPreview = async () => {
+      if (step === 3 && selectedProducts.length > 0) {
+        setIsPreviewLoading(true);
+        try {
+          const result = await promotionService.previewPromotion(
+            { 
+              type: promoData.type === "percent" ? "discount_percent" : "discount_amount", 
+              value: promoData.value 
+            },
+            selectedProducts
+          );
+          setPreviewData(result);
+        } catch (error) {
+          console.error("Failed to fetch promotion preview:", error);
+        } finally {
+          setIsPreviewLoading(false);
+        }
+      }
+    };
+
+    fetchPreview();
+  }, [step, selectedProducts, promoData.type, promoData.value]);
+
   const handleCreatePromotion = async () => {
     if (!activeBranchId) return;
     setIsSubmitting(true);
@@ -525,14 +553,6 @@ const CreatePromotionModal = ({
         errors.value = "ค่าต้องมากกว่า 0";
       } else if (promoData.type === "percent" && val > 100) {
         errors.value = "ส่วนลดต้องไม่เกิน 100%";
-      } else {
-        const hasLoss = selectedProducts.some(product => {
-          let promoPrice = product.price;
-          if (promoData.type === "percent") promoPrice = product.price - (product.price * val / 100);
-          else if (promoData.type === "amount") promoPrice = product.price - val;
-          return promoPrice < product.costPrice;
-        });
-        if (hasLoss) warnings.value = "ราคาขายต่ำกว่าต้นทุนสำหรับบางสินค้า";
       }
 
       const minQty = parseFloat(promoData.minSpend);
@@ -551,7 +571,7 @@ const CreatePromotionModal = ({
     }
 
     return { errors, warnings, isValid: Object.keys(errors).length === 0 };
-  }, [promoData, selectedProducts]);
+  }, [promoData]);
 
   if (!isOpen) return null;
 
@@ -618,7 +638,7 @@ const CreatePromotionModal = ({
                     <input type="number" value={promoData.value} onChange={(e) => setPromoData({ ...promoData, value: e.target.value })} className={`w-full px-5 py-4 pr-16 rounded-xl border-2 focus:outline-none focus:ring-4 text-2xl font-black text-gray-900 transition-all ${step2Validation.errors.value ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-gray-200 focus:border-primary focus:ring-primary/10'}`} placeholder="0" />
                     <div className="absolute right-5 top-1/2 -translate-y-1/2 text-primary font-black text-lg">{promoData.type === "percent" ? "%" : promoData.type === "amount" ? "฿" : promoData.type === "buy_get" ? commonUnit : "OFF"}</div>
                   </div>
-                  {step2Validation.errors.value ? <p className="text-red-500 text-[10px] font-bold mt-1.5 ml-1 flex items-center gap-1"><AlertCircle size={10} /> {step2Validation.errors.value}</p> : step2Validation.warnings.value ? <p className="text-orange-500 text-[10px] font-bold mt-1.5 ml-1 flex items-center gap-1"><AlertCircle size={10} /> {step2Validation.warnings.value}</p> : null}
+                  {step2Validation.errors.value ? <p className="text-red-500 text-[10px] font-bold mt-1.5 ml-1 flex items-center gap-1"><AlertCircle size={10} /> {step2Validation.errors.value}</p> : null}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">จำนวนขั้นต่ำ ({commonUnit})</label>
@@ -692,12 +712,6 @@ const CreatePromotionModal = ({
     </div>
   );
 
-  const calculatePromotionPrice = (originalPrice) => {
-    if (promoData.type === "percent") return originalPrice - (originalPrice * (parseFloat(promoData.value) || 0)) / 100;
-    if (promoData.type === "amount") return Math.max(0, originalPrice - (parseFloat(promoData.value) || 0));
-    return originalPrice;
-  };
-
   const handleSaveEdit = () => {
     if (!editingProduct) return;
     const updatedProducts = selectedProducts.map((p) => p.id === editingProduct.id ? { ...p, quantity: parseFloat(editFormData.quantity) || p.quantity, costPrice: parseFloat(editFormData.costPrice) || p.costPrice, expiryDate: editFormData.expiryDate || p.expiryDate, acceptableProfit: parseFloat(editFormData.acceptableProfit) || p.acceptableProfit, lastSalePrice: parseFloat(editFormData.lastSalePrice) || p.lastSalePrice } : p);
@@ -712,7 +726,7 @@ const CreatePromotionModal = ({
   };
 
   const renderStep3 = () => {
-    const productsWithLoss = selectedProducts.filter(product => calculatePromotionPrice(product.price) < product.costPrice);
+    const productsWithLoss = previewData.filter(p => p.isLoss);
     return (
       <div className="flex flex-col gap-4 h-full">
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-md relative overflow-hidden">
@@ -738,75 +752,66 @@ const CreatePromotionModal = ({
         <div className="bg-white border border-gray-100 rounded-3xl shadow-premium overflow-hidden flex-1 flex flex-col min-h-0">
           <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white"><h3 className="font-black text-lg text-gray-900 flex items-center gap-2"><ShoppingBag size={20} className="text-primary" />รายการสินค้า</h3></div>
           <div className="flex-1 overflow-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-black text-gray-600 uppercase tracking-wider">สินค้า</th>
-                  <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">ราคาขาย</th>
-                  <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">กำไร</th>
-                  <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">กำไรที่ยอมรับได้</th>
-                  <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">จำนวน</th>
-                  <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">วันที่หมดอายุ</th>
-                  <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">คงเหลือ</th>
-                  <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">ราคาขายล่าสุด</th>
-                  <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">แก้ไข</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {selectedProducts.map((product) => {
-                  const promoPrice = calculatePromotionPrice(product.price);
-                  const promoProfit = promoPrice - product.costPrice;
-                  
-                  // TC139: Acceptable Profit = Original Profit * (1 - %Discount)
-                  // For non-percent types, we still use a default 70% threshold of original profit
-                  let discountRate = 0;
-                  if (promoData.type === "percent") {
-                    discountRate = (parseFloat(promoData.value) || 0) / 100;
-                  } else if (promoData.type === "amount" && product.price > 0) {
-                    discountRate = (parseFloat(promoData.value) || 0) / product.price;
-                  }
-                  
-                  const dynamicAcceptableProfit = product.profit * (1 - discountRate);
-                  const isProfitAcceptable = promoProfit >= dynamicAcceptableProfit;
-                  const isLoss = promoProfit < 0;
-
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3 max-w-[200px]">
-                          <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">{product.image ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" /> : <Package className="text-gray-300 w-1/2 h-1/2" />}</div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-gray-900 truncate" title={product.name}>
-                              {product.name}
-                            </p>
+            {isPreviewLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <RotateCw className="animate-spin text-primary" />
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-black text-gray-600 uppercase tracking-wider">สินค้า</th>
+                    <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">ราคาขาย</th>
+                    <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">กำไร</th>
+                    <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">กำไรที่ยอมรับได้</th>
+                    <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">จำนวน</th>
+                    <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">วันที่หมดอายุ</th>
+                    <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">คงเหลือ</th>
+                    <th className="px-4 py-3 text-right text-xs font-black text-gray-600 uppercase tracking-wider">ราคาขายล่าสุด</th>
+                    <th className="px-4 py-3 text-center text-xs font-black text-gray-600 uppercase tracking-wider">แก้ไข</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {previewData.map((item) => {
+                    const product = selectedProducts.find(p => p.id === item.id);
+                    return (
+                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3 max-w-[200px]">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">{product?.image ? <img src={product.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="text-gray-300 w-1/2 h-1/2" />}</div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate" title={item.name}>
+                                {item.name}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">฿{(promoPrice || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right">
-                        <div className="flex flex-col items-end">
-                          <span
-                            className={`text-sm font-bold ${isLoss ? "text-red-500 animate-pulse" : isProfitAcceptable ? "text-emerald-600" : "text-orange-500"}`}
-                          >
-                            ฿{(promoProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                          </span>
-                          {isLoss && <span className="text-[9px] font-bold text-red-600 uppercase mt-0.5 bg-red-50 px-1 rounded">ราคาต่ำกว่าต้นทุน</span>}
-                          <span className="text-xs text-gray-500">({((promoProfit / promoPrice) * 100).toFixed(1)}%)</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-semibold text-gray-700">฿{(dynamicAcceptableProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center"><span className="text-sm font-bold text-gray-900">{(product.quantity || 0).toLocaleString()}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center"><span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded">{product.expiryDate ? new Date(product.expiryDate).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }) : "ไม่มีกำหนด"}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-semibold text-gray-600">{(product.remaining || 0).toLocaleString()} {product.unitType}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-bold text-gray-900">฿{(product.lastSalePrice || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProduct(product); setEditFormData({ quantity: product.quantity, costPrice: product.costPrice, expiryDate: product.expiryDate, acceptableProfit: product.acceptableProfit, lastSalePrice: product.lastSalePrice }); setShowEditModal(true); }} className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center mx-auto group"><Edit size={16} className="group-hover:scale-110 transition-transform" /></button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-black bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">฿{(item.promoPrice || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right">
+                          <div className="flex flex-col items-end">
+                            <span
+                              className={`text-sm font-bold ${item.isLoss ? "text-red-500 animate-pulse" : item.isProfitAcceptable ? "text-emerald-600" : "text-orange-500"}`}
+                            >
+                              ฿{(item.promoProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </span>
+                            {item.isLoss && <span className="text-[9px] font-bold text-red-600 uppercase mt-0.5 bg-red-50 px-1 rounded">ราคาต่ำกว่าต้นทุน</span>}
+                            <span className="text-xs text-gray-500">({item.profitPercentage.toFixed(1)}%)</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-semibold text-gray-700">฿{(item.dynamicAcceptableProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center"><span className="text-sm font-bold text-gray-900">{(product?.quantity || 0).toLocaleString()}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center"><span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded">{product?.expiryDate ? new Date(product.expiryDate).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }) : "ไม่มีกำหนด"}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-semibold text-gray-600">{(product?.remaining || 0).toLocaleString()} {product?.unitType}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right"><span className="text-sm font-bold text-gray-900">฿{(product?.lastSalePrice || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProduct(product); setEditFormData({ quantity: product.quantity, costPrice: product.costPrice, expiryDate: product.expiryDate, acceptableProfit: product.acceptableProfit, lastSalePrice: product.lastSalePrice }); setShowEditModal(true); }} className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center mx-auto group"><Edit size={16} className="group-hover:scale-110 transition-transform" /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3">
             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBack(); }} className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-2"><ChevronLeft size={18} />ย้อนกลับแก้ไข</button>

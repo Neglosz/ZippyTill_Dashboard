@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { productService } from "../services/productService";
-import { creditService } from "../services/creditService";
+import { financeService } from "../services/financeService";
 import { settingService } from "../services/settingService";
+
 import { notificationService } from "../services/notificationService";
 
 export const useNotifications = (activeBranchId) => {
@@ -48,10 +49,11 @@ export const useNotifications = (activeBranchId) => {
       setLoading(true);
 
       const [overdueItems, dashboardNotifs, persistentNotifs] = await Promise.all([
-        creditService.getOverdueItems(activeBranchId).catch(() => []),
+        financeService.getOverdueItems(activeBranchId).catch(() => []),
         productService.getDashboardNotifications(activeBranchId).catch(() => ({ expired: [], expiringSoon: [], lowStock: [] })),
         notificationService.getNotifications(activeBranchId).catch(() => [])
       ]);
+
 
       const overdueList = (overdueItems || []).map(item => ({
         id: `overdue-${item.id}`,

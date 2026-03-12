@@ -15,9 +15,11 @@ const productRoutes = require("../../inventory/routes/productRoutes");
 
 const orderRoutes = require("../../sales/routes/orderRoutes");
 const financeRoutes = require("../../sales/routes/financeRoutes");
-const creditRoutes = require("../../sales/routes/creditRoutes");
 const saleRoutes = require("../../sales/routes/saleRoutes");
 const transactionRoutes = require("../../sales/routes/transactionRoutes");
+const analyticsRoutes = require("../../sales/routes/analyticsRoutes");
+
+
 
 const promotionRoutes = require("../../promotions/routes/promotionRoutes");
 const taxRoutes = require("../../taxes/routes/taxRoutes");
@@ -35,8 +37,10 @@ router.use("/products", productRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/orders", orderRoutes);
 router.use("/finance", financeRoutes);
-router.use("/credit", creditRoutes);
 router.use("/promotions", promotionRoutes);
+router.use("/analytics", analyticsRoutes);
+
+
 router.use("/sales", saleRoutes);
 
 // --- Store & Notifications Priority Section ---

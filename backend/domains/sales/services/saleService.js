@@ -124,15 +124,16 @@ const saleService = {
   },
 
   /**
-   * Calculate revenue grouped by product category
+   * Calculate revenue grouped by product category with percentages
    */
   getSalesByCategory: async (branchId) => {
     if (!branchId) throw new Error("Branch ID is required");
 
     try {
-      // 1. Fetch ALL non-cancelled orders to get their IDs
-      const allOrders = await fetchAllOrders(branchId, "id");
+      // 1. Fetch ALL non-cancelled orders to get their IDs and total revenue
+      const allOrders = await fetchAllOrders(branchId, "id, total_amount");
       const orderIds = allOrders.map((o) => o.id);
+      const totalRevenue = allOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
 
       if (orderIds.length === 0) return [];
 
@@ -171,12 +172,17 @@ const saleService = {
 
       return Object.values(categoryMap)
         .filter((cat) => cat.revenue > 0)
+        .map(cat => ({
+          ...cat,
+          percentage: totalRevenue > 0 ? ((cat.revenue / totalRevenue) * 100).toFixed(0) : 0
+        }))
         .sort((a, b) => b.revenue - a.revenue);
     } catch (error) {
       console.error("getSalesByCategory Error:", error);
       return [];
     }
   },
+
 
   /**
    * Get overall sales summary including total stock, items sold, and revenue

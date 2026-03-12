@@ -23,7 +23,7 @@ import SummaryStats from "../components/features/outstanding/SummaryStats";
 import EditDebtorModal from "../components/features/outstanding/EditDebtorModal";
 import DebtorDetailModal from "../components/features/outstanding/DebtorDetailModal";
 import ExportModal from "../components/features/outstanding/ExportModal";
-import { creditService } from "../services/creditService";
+import { financeService } from "../services/financeService";
 import { supabase } from "../lib/supabase";
 import { useBranch } from "../contexts/BranchContext";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
@@ -50,20 +50,24 @@ const OverduePage = () => {
   });
 
   const [overdueItems, setOverdueItems] = useState([]);
-  const [recoveryStats, setRecoveryStats] = useState({ rate: 0, totalPaid: 0, totalDebt: 0 });
-  const [totalSalesAmount, setTotalSalesAmount] = useState(0);
+  const [summaryData, setSummaryData] = useState({
+    totalOverdueAmount: 0,
+    overdueRate: 0,
+    maxOverdueDays: 0,
+    uniqueOverdueCustomers: 0
+  });
 
   const fetchItems = useCallback(
     async (isBackground = false) => {
       if (!activeBranchId) return;
       try {
         if (!isBackground) setIsLoading(true);
-        const [data, stats] = await Promise.all([
-          creditService.getOverdueItems(activeBranchId),
-          creditService.getRecoveryRate(activeBranchId),
+        const [items, summary] = await Promise.all([
+          financeService.getOverdueItems(activeBranchId),
+          financeService.getOverdueSummary(activeBranchId),
         ]);
-        setOverdueItems(data);
-        setRecoveryStats(stats);
+        setOverdueItems(items);
+        setSummaryData(summary);
       } catch (err) {
         console.error("Error fetching items:", err);
         if (!isBackground)
@@ -75,34 +79,12 @@ const OverduePage = () => {
     [activeBranchId],
   );
 
-  const fetchTotalSales = useCallback(async () => {
-    if (!activeBranchId) return;
-    try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("total_amount")
-        .eq("store_id", activeBranchId);
-      if (error) throw error;
-      const total = (data || []).reduce(
-        (sum, o) => sum + Number(o.total_amount || 0),
-        0,
-      );
-      setTotalSalesAmount(total);
-    } catch (err) {
-      console.error("Error fetching total sales:", err);
-    }
-  }, [activeBranchId]);
-
   useEffect(() => {
     if (!activeBranchId) return;
 
     fetchItems();
-    fetchTotalSales();
 
     // Setup Realtime Subscription
-    // Note: We remove the store_id filter if it doesn't exist on the table
-    // and instead verify the store/customer in the callback if needed,
-    // or we fetch all and let the background refresh handle the filtering.
     const channelAccounts = supabase
       .channel(`credit_accounts_realtime_${activeBranchId}`)
       .on(
@@ -112,11 +94,9 @@ const OverduePage = () => {
           schema: "public",
           table: "credit_accounts",
         },
-        (payload) => {
-          // Refresh everything when any credit account changes
+        () => {
           console.log("Debt change detected, refreshing KPIs...");
           fetchItems(true);
-          fetchTotalSales();
         },
       )
       .subscribe();
@@ -137,29 +117,11 @@ const OverduePage = () => {
       )
       .subscribe();
 
-    const channelOrders = supabase
-      .channel(`orders_realtime_${activeBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "orders",
-          filter: `store_id=eq.${activeBranchId}`,
-        },
-        (payload) => {
-          console.log("New order detected, updating stats...");
-          fetchTotalSales();
-        },
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(channelAccounts);
       supabase.removeChannel(channelPayments);
-      supabase.removeChannel(channelOrders);
     };
-  }, [activeBranchId, fetchItems, fetchTotalSales]);
+  }, [activeBranchId, fetchItems]);
 
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -201,10 +163,6 @@ const OverduePage = () => {
         (queryDigits && phone.includes(queryDigits)) ||
         email.includes(queryLower);
 
-      if (query && matches) {
-        console.log(`Overdue Search: Match found for "${query}" -> "${item.name}"`);
-      }
-
       if (!matches) return;
 
       const cid = item.customerId || item.name;
@@ -233,16 +191,7 @@ const OverduePage = () => {
     return Object.values(groups).sort((a, b) => b.totalAmount - a.totalAmount);
   }, [overdueItems, searchQuery]);
 
-  const totalOverdueAmount = overdueItems.reduce(
-    (sum, item) => sum + Number(item.amount),
-    0,
-  );
-  // % ค้าง = ยอดเงินที่ค้าง / ยอดขายทั้งหมด × 100
-  const overdueRate =
-    totalSalesAmount > 0
-      ? Math.round((totalOverdueAmount / totalSalesAmount) * 100)
-      : 0;
-  const totalOverdueCount = groupedCustomers.length;
+  const { totalOverdueAmount, overdueRate, maxOverdueDays, uniqueOverdueCustomers } = summaryData;
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return "";
@@ -253,20 +202,9 @@ const OverduePage = () => {
     return phone;
   };
 
-  const calculateOverdueDays = (dateString) => {
-    if (!dateString) return 0;
-    const due = new Date(dateString);
-    const today = new Date();
-    due.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    const timeDiff = today.getTime() - due.getTime();
-    const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
   const handleSaveEdit = async (updatedItem) => {
     try {
-      const result = await creditService.updateDebtor(
+      const result = await financeService.updateDebtor(
         updatedItem.id,
         updatedItem,
         activeBranchId,
@@ -291,6 +229,7 @@ const OverduePage = () => {
 
       setEditingItem(null);
       setShowEditSuccess(true);
+      fetchItems(true); // Refresh summary
     } catch (err) {
       console.error("Error updating item:", err);
       alert("ไม่สามารถอัปเดตข้อมูลได้");
@@ -298,7 +237,7 @@ const OverduePage = () => {
   };
 
   const handleSaveCustomerInfo = async (customerId, updateData) => {
-    const result = await creditService.updateCustomerInfo(
+    const result = await financeService.updateCustomerInfo(
       customerId,
       updateData,
       activeBranchId,
@@ -326,19 +265,20 @@ const OverduePage = () => {
           name: result.name,
           phone: result.phone,
           customerDueDate: result.customerDueDate,
-          maxOverdueDays: calculateOverdueDays(result.customerDueDate),
+          maxOverdueDays: financeService.calculateOverdueDays(result.customerDueDate),
           items: prev.items.map((i) => ({
             ...i,
             name: result.name,
             phone: result.phone,
             customerDueDate: result.customerDueDate,
-            overdueDays: calculateOverdueDays(result.customerDueDate),
+            overdueDays: financeService.calculateOverdueDays(result.customerDueDate),
           })),
         }
         : prev,
     );
 
     setShowEditSuccess(true);
+    fetchItems(true); // Refresh summary
   };
 
   const handleExportExcel = async () => {
@@ -514,8 +454,8 @@ const OverduePage = () => {
         <SummaryStats
           totalCount={overdueItems.length}
           totalAmount={totalOverdueAmount}
-          recentCount={totalOverdueCount}
-          recoveryRate={recoveryStats?.totalPaid || 0}
+          recentCount={groupedCustomers.length}
+          recoveryRate={summaryData?.totalPaid || 0}
           overdueRate={overdueRate}
         />
 

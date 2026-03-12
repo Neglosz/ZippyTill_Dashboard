@@ -13,6 +13,17 @@ const taxController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async calculate(req, res) {
+        try {
+            const { income, expenses, deductions, buyAmount, sellAmount } = req.body;
+            const pit = taxService.calculatePIT(income, expenses, deductions);
+            const vat = taxService.calculateVAT(buyAmount, sellAmount);
+            res.json({ ...pit, ...vat });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

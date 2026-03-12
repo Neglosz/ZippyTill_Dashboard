@@ -26,6 +26,16 @@ const TaxCalculationPage = () => {
 
   const [taxType, setTaxType] = useState("ภ.ง.ด. 90");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const [taxData, setTaxData] = useState({
+    totalTax: 0,
+    taxableIncome: 0,
+    currentRateLabel: "0%",
+    buyVat: 0,
+    sellVat: 0,
+    netVat: 0
+  });
 
   // Fetch Tax Data when ภ.ง.ด. 90 is selected
   useEffect(() => {
@@ -56,46 +66,30 @@ const TaxCalculationPage = () => {
     fetchTaxData();
   }, [taxType, activeBranchId]);
 
-  // --- PIT Calculation Logic ---
-  const taxableIncome = Math.max(
-    0,
-    (Number(income) || 0) - (Number(expenses) || 0) - (Number(deductions) || 0),
-  );
-
-  const pitResult = useMemo(() => {
-    let remaining = taxableIncome;
-    let totalTax = 0;
-    const brackets = [
-      { min: 0, limit: 150000, rate: 0, label: "ยกเว้น (0%)" },
-      { min: 150001, limit: 150000, rate: 0.05, label: "5%" },
-      { min: 300001, limit: 200000, rate: 0.1, label: "10%" },
-      { min: 500001, limit: 250000, rate: 0.15, label: "15%" },
-      { min: 750001, limit: 250000, rate: 0.2, label: "20%" },
-      { min: 1000001, limit: 1000000, rate: 0.25, label: "25%" },
-      { min: 2000001, limit: 3000000, rate: 0.3, label: "30%" },
-      { min: 5000001, limit: Infinity, rate: 0.35, label: "35%" },
-    ];
-
-    let currentRateLabel = "0%";
-    for (const bracket of brackets) {
-      if (remaining <= 0) break;
-      const taxableInThisBracket = Math.min(remaining, bracket.limit);
-      totalTax += taxableInThisBracket * bracket.rate;
-      remaining -= taxableInThisBracket;
-      if (taxableInThisBracket > 0) currentRateLabel = bracket.label;
-    }
-
-    return {
-      taxableIncome,
-      totalTax,
-      currentRateLabel,
+  // --- Backend Calculation ---
+  useEffect(() => {
+    const calculate = async () => {
+      setIsCalculating(true);
+      try {
+        const result = await taxService.calculateTax({
+          income: Number(income) || 0,
+          expenses: Number(expenses) || 0,
+          deductions: Number(deductions) || 0,
+          buyAmount: Number(buyVatAmount) || 0,
+          sellAmount: Number(sellVatAmount) || 0
+        });
+        setTaxData(result);
+      } catch (error) {
+        console.error("Failed to calculate tax:", error);
+      } finally {
+        setIsCalculating(false);
+      }
     };
-  }, [taxableIncome]);
 
-  // --- VAT Calculation Logic ---
-  const buyVat = ((Number(buyVatAmount) || 0) * 7) / 100;
-  const sellVat = ((Number(sellVatAmount) || 0) * 7) / 100;
-  const netVat = sellVat - buyVat;
+    calculate();
+  }, [income, expenses, deductions, buyVatAmount, sellVatAmount]);
+
+  const { totalTax, taxableIncome, currentRateLabel, buyVat, sellVat, netVat } = taxData;
 
   const formatCurrency = (val) => {
     const num = Number(val) || 0;
@@ -251,7 +245,7 @@ const TaxCalculationPage = () => {
                 <Calculator className="w-5 h-5 text-primary" />
               </div>
               <h2 className="text-xl font-black tracking-tight text-gray-900 uppercase">
-                ผลการคำนวณ
+                ผลการคำนวณ {isCalculating && <span className="text-[10px] lowercase text-inactive ml-2">(กำลังคำนวณ...)</span>}
               </h2>
             </div>
 
@@ -304,12 +298,12 @@ const TaxCalculationPage = () => {
               {[
                 {
                   label: "รายได้สุทธิ",
-                  val: pitResult.taxableIncome,
+                  val: taxableIncome,
                   icon: <ReceiptText className="w-4 h-4" />,
                 },
                 {
                   label: "อัตราภาษีสุดท้าย",
-                  val: pitResult.currentRateLabel,
+                  val: currentRateLabel,
                   isRate: true,
                   icon: <Calculator className="w-4 h-4" />,
                 },
@@ -342,7 +336,7 @@ const TaxCalculationPage = () => {
                   </span>
                   <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter flex items-baseline gap-2 overflow-hidden whitespace-nowrap">
                     <span className="truncate">
-                      ฿{formatCurrency(pitResult.totalTax)}
+                      ฿{formatCurrency(totalTax)}
                     </span>
                     <span className="text-xl font-bold text-white/80 tracking-normal uppercase shrink-0">
                       บาท

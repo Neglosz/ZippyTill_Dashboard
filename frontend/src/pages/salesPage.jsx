@@ -178,15 +178,15 @@ const SalesPage = () => {
           setSalesSummary(metricsData || { totalRevenue: 0, todayRevenue: 0, totalSold: 0, totalProducts: 0 });
 
           // Process category sales for the pie chart and list
-          const totalRevenue = parseFloat(metricsData?.totalRevenue) || 0;
           const processedCatData = (catData || [])
             .filter((c) => c.revenue > 0)
             .map((c, index) => ({
               ...c,
-              percentage: totalRevenue > 0 ? ((c.revenue / totalRevenue) * 100).toFixed(0) : 0,
+              percentage: c.percentage || 0,
               color: colors[index % colors.length],
               value: c.revenue,
             }));
+
 
           setCategorySales(processedCatData);
         }
