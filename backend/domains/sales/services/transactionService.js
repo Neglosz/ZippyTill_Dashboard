@@ -130,7 +130,7 @@ const transactionService = {
     const [ordersRes, manualRes] = await Promise.all([
       supabase
         .from("orders")
-        .select("id, order_no, total_amount, payment_status, status, created_at, payment_type, customers_info(name), payments(method)")
+        .select("id, order_no, total_amount, payment_status, created_at, payment_type, customers_info(name), payments(method)")
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
         .limit(limit),
@@ -170,7 +170,7 @@ const transactionService = {
       displaySubtitle: o.customers_info?.name || "ลูกค้าทั่วไป",
       isIncome: true,
       clickable: true,
-      isCancelled: o.payment_status === "cancelled" || o.status === "cancelled",
+      isCancelled: o.payment_status === "cancelled",
     }));
 
     const normalizedManual = recentManual

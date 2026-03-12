@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use("/api", apiRoutes);
+app.use("/api", apiRoutes); 
 
 // Root endpoint
 app.get("/", (req, res) => {
