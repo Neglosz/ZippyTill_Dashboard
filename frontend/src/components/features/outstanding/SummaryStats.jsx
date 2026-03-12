@@ -101,7 +101,7 @@ const SummaryStats = ({
           </div>
           <div className="relative z-10 text-right">
             <p className="text-[10px] font-black text-inactive uppercase tracking-[0.2em] mb-2.5">
-              ว่าชำระไปเท่าไรแล้ว
+              จำนวนเงินที่ชำระแล้ว
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none flex items-baseline justify-end">
               <span className="text-lg mr-1.5 opacity-50 font-bold">฿</span>

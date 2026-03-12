@@ -42,7 +42,7 @@ const StockReportPage = () => {
 
       // Use pre-calculated movements and summary from backend
       setTransactions(response.movements || []);
-      
+
       setSummary({
         totalOut: response.summary?.totalOut || 0,
         totalIn: response.summary?.totalIn || 0,
@@ -101,7 +101,7 @@ const StockReportPage = () => {
     return transactions
       .map((tx) => ({
         ...tx,
-        displayType: tx.reference_type === "manual_update" ? "ADJUST" : tx.type,
+        displayType: tx.type,
       }))
       .filter((tx) => {
         const searchLower = searchQuery.toLowerCase();
@@ -202,7 +202,7 @@ const StockReportPage = () => {
         </div>
 
         <div className="flex gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100 w-full lg:w-auto overflow-x-auto no-scrollbar">
-          {["ALL", "IN", "OUT", "ADJUST"].map((type) => (
+          {["ALL", "IN", "OUT"].map((type) => (
             <button
               key={type}
               onClick={() => setSelectedType(type)}
@@ -215,9 +215,7 @@ const StockReportPage = () => {
                 ? "ทั้งหมด"
                 : type === "IN"
                   ? "นำเข้า"
-                  : type === "OUT"
-                    ? "นำออก"
-                    : "ปรับสต็อก"}
+                  : "นำออก"}
             </button>
           ))}
         </div>
@@ -288,9 +286,8 @@ const StockReportPage = () => {
                             />
                           ) : null}
                           <div
-                            className={`items-center justify-center w-full h-full text-gray-300 ${
-                              tx.imageUrl ? "hidden" : "flex"
-                            }`}
+                            className={`items-center justify-center w-full h-full text-gray-300 ${tx.imageUrl ? "hidden" : "flex"
+                              }`}
                           >
                             <Package size={32} strokeWidth={1.5} />
                           </div>
@@ -307,28 +304,19 @@ const StockReportPage = () => {
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap
                         ${tx.displayType === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                            : tx.displayType === "OUT"
-                              ? "bg-rose-50 text-rose-600 border border-rose-100"
-                              : "bg-amber-50 text-amber-600 border border-amber-100"
+                            : "bg-rose-50 text-rose-600 border border-rose-100"
                           }`}
                       >
-                        {tx.displayType === "IN"
-                          ? "นำเข้า"
-                          : tx.displayType === "OUT"
-                            ? "นำออก"
-                            : "ปรับสต็อก"}
+                        {tx.displayType === "IN" ? "นำเข้า" : "นำออก"}
                       </span>
                     </td>
                     <td
-                      className={`py-4 px-4 text-center font-black text-2xl tracking-tighter align-middle whitespace-nowrap ${tx.displayType === "OUT" ||
-                        (tx.displayType === "ADJUST" && tx.qty < 0)
+                      className={`py-4 px-4 text-center font-black text-2xl tracking-tighter align-middle whitespace-nowrap ${tx.displayType === "OUT"
                         ? "text-rose-500"
                         : "text-emerald-500"
                         }`}
                     >
-                      {tx.displayType === "OUT" || (tx.displayType === "ADJUST" && tx.qty < 0)
-                        ? "-"
-                        : "+"}
+                      {tx.displayType === "OUT" ? "-" : ""}
                       {tx.qty.toLocaleString()}
                     </td>
                     <td className="py-4 px-4 text-center text-inactive font-medium text-sm group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px] align-middle">

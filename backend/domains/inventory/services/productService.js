@@ -294,10 +294,10 @@ const productService = {
       const expParts = batch.expire_date.split('-');
       const expDate = new Date(expParts[0], expParts[1] - 1, expParts[2]);
       expDate.setHours(0, 0, 0, 0);
-      
+
       const now = new Date();
       now.setHours(0, 0, 0, 0);
-      
+
       const diffTime = expDate.getTime() - now.getTime();
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -420,7 +420,21 @@ const productService = {
       note: item.notes || "ปรับสต็อก",
     }));
 
-    const allMovements = [...movements, ...inventoryMovements].sort(
+    // Deduplicate: If an inventory transaction matches a sale (same product, same store, same qty, same type, within 5s),
+    // favor the sale movement (which has order info) over the generic manual update.
+    const filteredInventoryMovements = inventoryMovements.filter(txn => {
+      if (txn.reference_type !== 'manual_update') return true;
+
+      const isDuplicate = movements.some(sale =>
+        sale.product === txn.product &&
+        sale.qty === txn.qty &&
+        Math.abs(new Date(sale.created_at) - new Date(txn.created_at)) < 5000
+      );
+
+      return !isDuplicate;
+    });
+
+    const allMovements = [...movements, ...filteredInventoryMovements].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at),
     );
 
