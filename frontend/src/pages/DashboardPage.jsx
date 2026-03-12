@@ -44,6 +44,7 @@ const DashboardPage = () => {
   const [selectedTransaction, setSelectedTransaction] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isInitialLoading, setIsInitialLoading] = React.useState(true);
+  const hasShownModal = React.useRef(false);
   
   // Data States
   const [metrics, setMetrics] = React.useState({
@@ -159,13 +160,14 @@ const DashboardPage = () => {
           const data = await productService.getDashboardNotifications(activeBranchId);
           setNotificationData(data);
           
-          // Check if there are any items to notify about
+          // Check if there are any items to notify about and only show if not shown before
           const totalItems = (data.expired?.length || 0) + 
                             (data.expiringSoon?.length || 0) + 
                             (data.lowStock?.length || 0);
           
-          if (totalItems > 0) {
+          if (totalItems > 0 && !hasShownModal.current) {
             setIsSystemModalOpen(true);
+            hasShownModal.current = true;
           }
         } catch (err) {
           console.error("Dashboard: Notifications failed:", err);

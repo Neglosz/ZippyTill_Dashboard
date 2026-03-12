@@ -113,7 +113,7 @@ const AddProductModal = ({
           setFormData((prev) => ({ ...prev, image: compressedBase64 }));
         };
       };
-      reader.readAsAsDataURL(file);
+      reader.readAsDataURL(file);
     }
     // Reset input so the same file can be picked again
     e.target.value = "";
@@ -404,7 +404,7 @@ const AddProductModal = ({
                         onChange={handleCategoryChange}
                         className="w-full bg-[#F8FAFD] border-none rounded-[12px] px-4 py-2.5 text-sm font-bold text-[#1B2559] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer shadow-sm"
                       >
-                        <option value="">เลือกหมวดหมู่</option>
+                        <option value="">ทั่วไป</option>
                         {(filteredCategories || []).map((cat) => (
                           <option key={cat.id} value={cat.id}>
                             {cat.name}
