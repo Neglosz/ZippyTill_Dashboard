@@ -38,8 +38,19 @@ export const productService = {
     });
   },
 
+  _notificationCache: new Map(),
   async getDashboardNotifications(branchId) {
-    return apiClient.get(`/products/notifications?branchId=${branchId}`);
+    if (this._notificationCache.has(branchId)) {
+      return this._notificationCache.get(branchId);
+    }
+    const promise = apiClient.get(`/products/notifications?branchId=${branchId}`)
+      .finally(() => {
+        // Clean up cache after a short delay or after completion to allow shared access
+        setTimeout(() => this._notificationCache.delete(branchId), 5000);
+      });
+    
+    this._notificationCache.set(branchId, promise);
+    return promise;
   },
 
   async getProductBatches(productId) {

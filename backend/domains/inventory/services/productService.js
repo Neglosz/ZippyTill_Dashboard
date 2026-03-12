@@ -405,6 +405,7 @@ const productService = {
       imageUrl: item.products?.image_url,
       type: "OUT",
       qty: item.qty,
+      reference_type: "sale",
       note: `ออเดอร์ #${item.orders?.order_no || "N/A"}`,
     }));
 

@@ -105,8 +105,9 @@ const BranchSelectionPage = () => {
     }
 
     try {
-      // 1. Update last accessed
-      await storeService.updateLastAccessed(branch.id);
+      // 1. Update last accessed (Non-blocking)
+      storeService.updateLastAccessed(branch.id).catch(err => console.error("Failed to update last accessed:", err));
+      
       localStorage.setItem("last_accessed_branch_id", branch.id);
       localStorage.setItem("last_accessed_timestamp", new Date().toISOString());
 
@@ -114,19 +115,12 @@ const BranchSelectionPage = () => {
       selectBranch(branch);
       sessionStorage.setItem("selected_branch_id", branch.id);
 
-      // 3. FASTEST TRIGGER: Pre-fetch notifications immediately
-      let initialNotifications = null;
-      try {
-        initialNotifications = await productService.getDashboardNotifications(branch.id);
-      } catch (err) {
-        console.error("Pre-fetch notifications failed:", err);
-      }
+      // 3. Navigate immediately
+      navigate("/dashboard", { replace: true });
 
-      // 4. Navigate to dashboard with pre-fetched data
-      navigate("/dashboard", { 
-        replace: true, 
-        state: { initialNotifications } 
-      });
+      // 4. Background fetch (Optional, since DashboardLayout handles it too)
+      productService.getDashboardNotifications(branch.id)
+        .catch(err => console.error("Pre-fetch notifications failed:", err));
     } catch (err) {
       console.error("Error selecting branch:", err);
       selectBranch(branch);
