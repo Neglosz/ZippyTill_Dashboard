@@ -1,0 +1,40 @@
+steps:
+  # ===== BACKEND =====
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'backend'
+    args: ['install']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'zippytill-backend'          # ชื่อ service
+      - '--source'
+      - 'backend'                     # folder ที่จะ deploy
+      - '--region'
+      - 'asia-southeast3'               # region เดียวกับที่ตั้งไว้
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+  # ===== FRONTEND =====
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'frontend'
+    args: ['install']
+
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'frontend'
+    args: ['run', 'build']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'zippytill-frontend'         # ชื่อ service
+      - '--source'
+      - 'frontend'
+      - '--region'
+      - 'asia-southeast3'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
