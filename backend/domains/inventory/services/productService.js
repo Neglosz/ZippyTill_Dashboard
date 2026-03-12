@@ -81,20 +81,6 @@ const productService = {
       });
     }
 
-    if (data?.id) {
-      const { data: userData } = await supabase.auth.getUser();
-      await supabase.from("inventory_transactions").insert({
-        product_id: data.id,
-        trans_type: "in",
-        qty: initialQty,
-        reference_type: "product_creation",
-        notes: initialQty > 0 ? "นำเข้าสินค้าใหม่" : "เพิ่มสินค้าใหม่ (ยังไม่มีสต็อก)",
-        store_id: branchId,
-        created_by: userData?.user?.id,
-        created_at: new Date().toISOString(),
-      });
-    }
-
     return data;
   },
 
@@ -123,13 +109,6 @@ const productService = {
     const lowStockThreshold = productData.lowStockThreshold || productData.low_stock_threshold;
     if (lowStockThreshold !== undefined) updateData.low_stock_threshold = Number(lowStockThreshold);
 
-    // Fetch old data for stock change tracking
-    const { data: oldProduct } = await supabase
-      .from("products")
-      .select("stock_qty")
-      .eq("id", id)
-      .single();
-
     const { data, error } = await supabase
       .from("products")
       .update(updateData)
@@ -139,26 +118,6 @@ const productService = {
       .single();
 
     if (error) throw error;
-
-    // Track manual stock changes
-    const newQty = updateData.stock_qty;
-    const oldQty = oldProduct?.stock_qty || 0;
-
-    if (newQty !== undefined && newQty !== oldQty) {
-      const diff = newQty - oldQty;
-      const { data: userData } = await supabase.auth.getUser();
-
-      await supabase.from("inventory_transactions").insert({
-        product_id: id,
-        trans_type: diff > 0 ? "in" : "out",
-        qty: Math.abs(diff),
-        reference_type: "manual_update",
-        notes: `ปรับปรุงสต็อกด้วยตนเอง (จาก ${oldQty} เป็น ${newQty})`,
-        store_id: branchId,
-        created_by: userData?.user?.id,
-        created_at: new Date().toISOString(),
-      });
-    }
 
     // Handle batch update if expireDate is provided
     const expireDate = productData.expireDate;
