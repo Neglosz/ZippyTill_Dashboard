@@ -73,14 +73,20 @@ const StockReportPage = () => {
   };
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch =
-        (tx.product && tx.product.toLowerCase().includes(searchLower)) ||
-        (tx.note && tx.note.toLowerCase().includes(searchLower));
-      const matchesType = selectedType === "ALL" || tx.type === selectedType;
-      return matchesSearch && matchesType;
-    });
+    return transactions
+      .map((tx) => ({
+        ...tx,
+        displayType: tx.reference_type === "manual_update" ? "ADJUST" : tx.type,
+      }))
+      .filter((tx) => {
+        const searchLower = searchQuery.toLowerCase();
+        const matchesSearch =
+          (tx.product && tx.product.toLowerCase().includes(searchLower)) ||
+          (tx.note && tx.note.toLowerCase().includes(searchLower));
+        const matchesType =
+          selectedType === "ALL" || tx.displayType === selectedType;
+        return matchesSearch && matchesType;
+      });
   }, [transactions, searchQuery, selectedType]);
 
   if (isLoading) {
@@ -110,7 +116,7 @@ const StockReportPage = () => {
               สินค้าขายออก (ทั้งหมด)
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              {summary.totalOut}{" "}
+              {summary.totalOut.toLocaleString()}{" "}
               <span className="text-lg font-black text-inactive">รายการ</span>
             </h3>
           </div>
@@ -127,7 +133,7 @@ const StockReportPage = () => {
               สินค้านำเข้า (ทั้งหมด)
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-              {summary.totalIn}{" "}
+              {summary.totalIn.toLocaleString()}{" "}
               <span className="text-lg font-black text-inactive">รายการ</span>
             </h3>
           </div>
@@ -144,7 +150,7 @@ const StockReportPage = () => {
               สินค้าใกล้หมดสต็อก
             </p>
             <h3 className="text-3xl font-black tracking-tighter text-amber-600 leading-none">
-              {summary.lowStockCount}{" "}
+              {summary.lowStockCount.toLocaleString()}{" "}
               <span className="text-lg font-black text-inactive">รายการ</span>
             </h3>
           </div>
@@ -171,7 +177,7 @@ const StockReportPage = () => {
         </div>
 
         <div className="flex gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100 w-full lg:w-auto overflow-x-auto no-scrollbar">
-          {["ALL", "IN", "OUT"].map((type) => (
+          {["ALL", "IN", "OUT", "ADJUST"].map((type) => (
             <button
               key={type}
               onClick={() => setSelectedType(type)}
@@ -180,7 +186,13 @@ const StockReportPage = () => {
                 : "text-inactive hover:text-gray-900"
                 }`}
             >
-              {type === "ALL" ? "ทั้งหมด" : type === "IN" ? "นำเข้า" : "นำออก"}
+              {type === "ALL"
+                ? "ทั้งหมด"
+                : type === "IN"
+                  ? "นำเข้า"
+                  : type === "OUT"
+                    ? "นำออก"
+                    : "ปรับสต็อก"}
             </button>
           ))}
         </div>
@@ -256,31 +268,31 @@ const StockReportPage = () => {
                     <td className="py-4 px-4 text-center align-middle">
                       <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap
-                        ${tx.type === "IN"
+                        ${tx.displayType === "IN"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                            : tx.type === "OUT"
+                            : tx.displayType === "OUT"
                               ? "bg-rose-50 text-rose-600 border border-rose-100"
                               : "bg-amber-50 text-amber-600 border border-amber-100"
                           }`}
                       >
-                        {tx.type === "IN"
+                        {tx.displayType === "IN"
                           ? "นำเข้า"
-                          : tx.type === "OUT"
+                          : tx.displayType === "OUT"
                             ? "นำออก"
                             : "ปรับสต็อก"}
                       </span>
                     </td>
                     <td
-                      className={`py-4 px-4 text-center font-black text-2xl tracking-tighter align-middle whitespace-nowrap ${tx.type === "OUT" ||
-                        (tx.type === "ADJUST" && tx.qty < 0)
+                      className={`py-4 px-4 text-center font-black text-2xl tracking-tighter align-middle whitespace-nowrap ${tx.displayType === "OUT" ||
+                        (tx.displayType === "ADJUST" && tx.qty < 0)
                         ? "text-rose-500"
                         : "text-emerald-500"
                         }`}
                     >
-                      {tx.type === "OUT" || (tx.type === "ADJUST" && tx.qty < 0)
+                      {tx.displayType === "OUT" || (tx.displayType === "ADJUST" && tx.qty < 0)
                         ? "-"
                         : "+"}
-                      {Math.round(Math.abs(tx.qty)).toLocaleString()}
+                      {tx.qty.toLocaleString()}
                     </td>
                     <td className="py-4 px-4 text-center text-inactive font-medium text-sm italic group-hover:text-gray-600 transition-colors last-of-type:rounded-r-[20px] align-middle">
                       <div className="line-clamp-1" title={tx.note}>

@@ -28,6 +28,7 @@ import { creditService } from "../services/creditService";
 import { useBranch } from "../contexts/BranchContext";
 import { supabase } from "../lib/supabase";
 import { PageHeader, PageBackground } from "../components/common/PageHeader";
+import SystemNotificationModal from "../components/modals/SystemNotificationModal";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ const DashboardPage = () => {
   } = useBranch();
   const scrollRef = React.useRef(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = React.useState(false);
+  const [isSystemModalOpen, setIsSystemModalOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isInitialLoading, setIsInitialLoading] = React.useState(true);
@@ -156,6 +158,15 @@ const DashboardPage = () => {
         try {
           const data = await productService.getDashboardNotifications(activeBranchId);
           setNotificationData(data);
+          
+          // Check if there are any items to notify about
+          const totalItems = (data.expired?.length || 0) + 
+                            (data.expiringSoon?.length || 0) + 
+                            (data.lowStock?.length || 0);
+          
+          if (totalItems > 0) {
+            setIsSystemModalOpen(true);
+          }
         } catch (err) {
           console.error("Dashboard: Notifications failed:", err);
         } finally {
@@ -938,6 +949,12 @@ const DashboardPage = () => {
         onNewTransaction={() => {
           setIsReceiptModalOpen(false);
         }}
+      />
+
+      <SystemNotificationModal
+        isOpen={isSystemModalOpen}
+        onClose={() => setIsSystemModalOpen(false)}
+        data={notificationData}
       />
     </div>
   );

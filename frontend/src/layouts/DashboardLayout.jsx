@@ -31,8 +31,13 @@ const DashboardLayout = () => {
       return;
     }
 
-    // 1. INSTANT TRIGGER: Use pre-fetched data from location state if available
     const checkInitialData = () => {
+      // Defer notification check until verification is complete
+      if (isVerifying) return;
+
+      const hasShown = sessionStorage.getItem(`hasShownDashboardNotification_${currentBranchId}`);
+      if (hasShown) return;
+
       const initialData = location.state?.initialNotifications;
       if (initialData) {
         const hiddenNotifs = JSON.parse(sessionStorage.getItem(`hiddenNotifs_${currentBranchId}`) || "[]");
@@ -56,6 +61,8 @@ const DashboardLayout = () => {
 
     // 2. FASTEST TRIGGER: Check notifications if not pre-fetched
     const triggerNotifications = async () => {
+      // Allow trigger even if still verifying for immediate pop-up behavior
+
       const hasShown = sessionStorage.getItem(`hasShownDashboardNotification_${currentBranchId}`);
       if (hasShown || checkInProgress.current) return;
 
@@ -145,22 +152,18 @@ const DashboardLayout = () => {
     />
   );
 
-  if (isVerifying) {
-    return (
-      <div className="flex h-screen bg-[#F9FAFB] items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        {NotificationModal}
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-[#F9FAFB] font-sans overflow-hidden">
+      {isVerifying && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#F9FAFB]/80 backdrop-blur-sm">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        </div>
+      )}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto pl-6 pt-4 pr-6 bg-[#F9FAFB]" style={{ scrollbarGutter: "stable" }}>
-          <Outlet />
+          {!isVerifying && <Outlet />}
         </main>
       </div>
       <AIChatBot />
